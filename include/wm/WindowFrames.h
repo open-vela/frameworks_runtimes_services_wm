@@ -34,14 +34,21 @@ public:
     WindowFrames();
     ~WindowFrames();
 
+    WindowFrames(int32_t left, int32_t top, int32_t right, int32_t bottom);
+
     status_t writeToParcel(Parcel* out) const override;
     status_t readFromParcel(const Parcel* in) override;
 
+    int32_t getLeft() const;
+    int32_t getTop() const;
+    int32_t getRight() const;
+    int32_t getBottom() const;
+
 private:
-    int left;
-    int top;
-    int right;
-    int bottom;
+    int32_t mLeft;
+    int32_t mTop;
+    int32_t mRight;
+    int32_t mBottom;
 };
 
 } // namespace wm
