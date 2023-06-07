@@ -14,6 +14,33 @@
  * limitations under the License.
  */
 
+#define LOG_TAG "InputChannel"
+
+#include "wm/InputChannel.h"
+
 namespace os {
-namespace wm {} // namespace wm
+namespace wm {
+
+InputChannel::InputChannel() {}
+InputChannel::~InputChannel() {}
+
+status_t InputChannel::writeToParcel(Parcel* out) const {
+    status_t result = out->writeFileDescriptor(mEventFd);
+    return result;
+}
+
+status_t InputChannel::readFromParcel(const Parcel* in) {
+    mEventFd = dup(in->readFileDescriptor());
+    return android::OK;
+}
+
+int32_t InputChannel::getEventFd() {
+    return mEventFd;
+}
+
+void InputChannel::setEventFd(int32_t fd) {
+    mEventFd = fd;
+}
+
+} // namespace wm
 } // namespace os
