@@ -14,6 +14,41 @@
  * limitations under the License.
  */
 
+#define LOG_TAG "LayoutParams"
+
+#include "wm/LayoutParams.h"
+
+#include "ParcelUtils.h"
+
 namespace os {
-namespace wm {} // namespace wm
+namespace wm {
+
+LayoutParams::LayoutParams() {}
+LayoutParams::~LayoutParams() {}
+
+status_t LayoutParams::writeToParcel(Parcel* out) const {
+    SAFE_PARCEL(out->writeInt32, mWidth);
+    SAFE_PARCEL(out->writeInt32, mHeight);
+    SAFE_PARCEL(out->writeInt32, mX);
+    SAFE_PARCEL(out->writeInt32, mY);
+    SAFE_PARCEL(out->writeInt32, mType);
+    SAFE_PARCEL(out->writeInt32, mFlags);
+    SAFE_PARCEL(out->writeInt32, mFormat);
+    SAFE_PARCEL(out->writeStrongBinder, mToken);
+    return android::OK;
+}
+
+status_t LayoutParams::readFromParcel(const Parcel* in) {
+    SAFE_PARCEL(in->readInt32, &mWidth);
+    SAFE_PARCEL(in->readInt32, &mHeight);
+    SAFE_PARCEL(in->readInt32, &mX);
+    SAFE_PARCEL(in->readInt32, &mY);
+    SAFE_PARCEL(in->readInt32, &mType);
+    SAFE_PARCEL(in->readInt32, &mFlags);
+    SAFE_PARCEL(in->readInt32, &mFormat);
+    SAFE_PARCEL(in->readStrongBinder, &mToken);
+    return android::OK;
+}
+
+} // namespace wm
 } // namespace os

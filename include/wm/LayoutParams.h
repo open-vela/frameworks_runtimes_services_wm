@@ -36,6 +36,17 @@ public:
 
     status_t writeToParcel(Parcel* out) const override;
     status_t readFromParcel(const Parcel* in) override;
+
+    int32_t mWidth;
+    int32_t mHeight;
+    int32_t mX;
+    int32_t mY;
+    int32_t mType;
+    int32_t mFlags;
+    int32_t mFormat;
+    sp<IBinder> mToken;
+
+private:
 };
 
 } // namespace wm
