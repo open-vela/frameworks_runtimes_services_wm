@@ -36,10 +36,11 @@ public:
 
     status_t writeToParcel(Parcel* out) const override;
     status_t readFromParcel(const Parcel* in) override;
+    int32_t getEventFd();
+    void setEventFd(int32_t fd);
 
 private:
-    String8 mqCliName;
-    String8 mqSrvName;
+    int32_t mEventFd;
 };
 
 } // namespace wm
