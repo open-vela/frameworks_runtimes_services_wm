@@ -2,3 +2,5 @@
 Make.dep
 .depend
 .built
+aidl/**/*.h
+aidl/**/*.cpp
