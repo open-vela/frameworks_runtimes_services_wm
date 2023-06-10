@@ -26,8 +26,8 @@ import os.wm.SurfaceControl;
 interface IWindowManager {
     int getPhysicalDisplayInfo(int displayId, out DisplayInfo info);
 
-    int addWindow(IWindow window, in LayoutParams attrs, in int visibility, 
-                in int displayId, in int userId, out InputChannel outInputChannel);
+    int addWindow(IWindow window, in LayoutParams attrs, in int visibility, in int displayId,
+                  in int userId, out InputChannel outInputChannel);
 
     void removeWindow(IWindow window);
 
@@ -40,9 +40,8 @@ interface IWindowManager {
      * @param visibility Window root view's visibility.
      * @param outSurfaceControl Object in which is placed the new display surface.
      */
-    int relayout(IWindow window, in LayoutParams attrs, int requestedWidth, 
-                int requestedHeight, int visibility, out SurfaceControl outSurfaceControl);
-
+    int relayout(IWindow window, in LayoutParams attrs, int requestedWidth, int requestedHeight,
+                 int visibility, out SurfaceControl outSurfaceControl);
 
     /** Returns {@code true} if this binder is a registered window token. */
     boolean isWindowToken(in IBinder binder);
@@ -63,6 +62,14 @@ interface IWindowManager {
      * @displayId The ID of the display where this token should be removed.
      */
     void removeWindowToken(IBinder token, int displayId);
+
+    /**
+     * Change the visibility of a window by token.
+     *
+     * @param token Token to be changed
+     * @param visibility Window root view's visibility.
+     */
+    void updateWindowTokenVisibility(IBinder token, boolean visibility);
 
     int applyTransaction(in LayerState[] state);
 

@@ -21,54 +21,21 @@
 namespace os {
 namespace wm {
 
+using namespace android;
+
 WindowFrames::WindowFrames() {}
 WindowFrames::~WindowFrames() {}
 
-WindowFrames::WindowFrames(int32_t left, int32_t top, int32_t right, int32_t bottom)
-      : mLeft(left), mTop(top), mRight(right), mBottom(bottom) {}
+WindowFrames::WindowFrames(const Rect& rect) {
+    mFrame = rect;
+}
 
 status_t WindowFrames::writeToParcel(Parcel* out) const {
-    status_t result = out->writeInt32(mLeft);
-    if (result != android::OK) return result;
-
-    result = out->writeInt32(mTop);
-    if (result != android::OK) return result;
-
-    result = out->writeInt32(mRight);
-    if (result != android::OK) return result;
-
-    result = out->writeInt32(mBottom);
-    return result;
+    return mFrame.writeToParcel(out);
 }
 
 status_t WindowFrames::readFromParcel(const Parcel* in) {
-    status_t result = in->readInt32(&mLeft);
-    if (result != android::OK) return result;
-
-    result = in->readInt32(&mTop);
-    if (result != android::OK) return result;
-
-    result = in->readInt32(&mRight);
-    if (result != android::OK) return result;
-
-    result = in->readInt32(&mBottom);
-    return result;
-}
-
-int32_t WindowFrames::getLeft() const {
-    return mLeft;
-}
-
-int32_t WindowFrames::getTop() const {
-    return mTop;
-}
-
-int32_t WindowFrames::getRight() const {
-    return mRight;
-}
-
-int32_t WindowFrames::getBottom() const {
-    return mBottom;
+    return mFrame.readFromParcel(in);
 }
 
 } // namespace wm

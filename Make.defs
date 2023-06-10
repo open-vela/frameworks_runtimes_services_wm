@@ -19,5 +19,6 @@ CONFIGURED_APPS += $(APPDIR)/frameworks/base/wm
 
 CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/base/wm/aidl
 CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/base/wm/include
+CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/base/include
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/base/wm/include
 endif
