@@ -21,34 +21,31 @@
 #include <binder/Status.h>
 #include <utils/RefBase.h>
 
+#include "wm/Rect.h"
+
 namespace os {
 namespace wm {
-
 using namespace android;
 using namespace android::base;
 using namespace android::binder;
-using namespace std;
 
 class WindowFrames : public Parcelable {
 public:
     WindowFrames();
     ~WindowFrames();
 
-    WindowFrames(int32_t left, int32_t top, int32_t right, int32_t bottom);
+    WindowFrames(const Rect& rect);
 
     status_t writeToParcel(Parcel* out) const override;
     status_t readFromParcel(const Parcel* in) override;
 
-    int32_t getLeft() const;
-    int32_t getTop() const;
-    int32_t getRight() const;
-    int32_t getBottom() const;
+    Rect getFrame() const {
+        return mFrame;
+    }
 
 private:
-    int32_t mLeft;
-    int32_t mTop;
-    int32_t mRight;
-    int32_t mBottom;
+    /** The actual window bounds. */
+    Rect mFrame;
 };
 
 } // namespace wm
