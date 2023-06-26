@@ -40,6 +40,7 @@
 static void lv_mainwnd_constructor(const lv_obj_class_t* class_p, lv_obj_t* obj);
 static void lv_mainwnd_destructor(const lv_obj_class_t* class_p, lv_obj_t* obj);
 static void lv_mainwnd_event(const lv_obj_class_t* class_p, lv_event_t* e);
+static void lv_draw_mainwnd(lv_event_t* e);
 static void lv_mainwnd_buf_dsc_reset(lv_obj_t* obj);
 static void lv_mainwnd_metainfo_reset(lv_obj_t* obj);
 
@@ -168,9 +169,53 @@ static void lv_mainwnd_event(const lv_obj_class_t* class_p, lv_event_t* e)
         if (mainwnd->meta_info.acquire_buffer && mainwnd->buf_dsc.id == -1) {
             if (!mainwnd->meta_info.acquire_buffer(&mainwnd->meta_info, &mainwnd->buf_dsc)) {
                 LV_LOG_WARN("lv_mainwnd acquire_buffer FAILED");
+                return;
             }
-        } // TODO: Add draw method.
+            lv_draw_mainwnd(e);
+        }
     }
+}
+
+static void lv_draw_mainwnd(lv_event_t* e)
+{
+    lv_obj_t* obj = lv_event_get_target(e);
+    lv_mainwnd_t* mainwnd = (lv_mainwnd_t*)obj;
+
+    lv_res_t res = lv_obj_event_base(MY_CLASS, e);
+    if (res != LV_RES_OK)
+        return;
+
+    if (mainwnd->buf_dsc.data == NULL) {
+        LV_LOG_WARN("lv_draw_mainwnd: buffer source is NULL");
+        return;
+    }
+
+    if (mainwnd->buf_dsc.h == 0 || mainwnd->buf_dsc.w == 0) {
+        LV_LOG_WARN("lv_draw_mainwnd: buffer size is 0");
+        return;
+    }
+
+    lv_draw_ctx_t* draw_ctx = lv_event_get_draw_ctx(e);
+
+    lv_area_t win_coords;
+    lv_area_copy(&win_coords, &obj->coords);
+
+    win_coords.y1 = win_coords.y1;
+    win_coords.y2 = win_coords.y1 + mainwnd->buf_dsc.h - 1;
+    win_coords.x1 = win_coords.x1;
+    win_coords.x2 = win_coords.x1 + mainwnd->buf_dsc.w - 1;
+
+    lv_draw_img_dsc_t img_dsc;
+    lv_draw_img_dsc_init(&img_dsc);
+    lv_obj_init_draw_img_dsc(obj, LV_PART_MAIN, &img_dsc);
+
+    img_dsc.zoom = LV_IMG_ZOOM_NONE;
+    img_dsc.angle = 0;
+    img_dsc.pivot.x = mainwnd->buf_dsc.w / 2;
+    img_dsc.pivot.y = mainwnd->buf_dsc.h / 2;
+    img_dsc.antialias = 0;
+
+    lv_draw_img(draw_ctx, &img_dsc, &win_coords, mainwnd->buf_dsc.data);
 }
 
 static void lv_mainwnd_buf_dsc_reset(lv_obj_t* obj)
