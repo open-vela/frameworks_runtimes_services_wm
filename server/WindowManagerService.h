@@ -18,23 +18,49 @@
 
 #include <binder/Parcel.h>
 #include <binder/Parcelable.h>
-#include <binder/Status.h>
 #include <utils/RefBase.h>
+
+#include <map>
+#include <vector>
+
+#include "os/wm/BnWindowManager.h"
 
 namespace os {
 namespace wm {
 
-using namespace android;
-using namespace android::base;
-using namespace android::binder;
-using namespace std;
+using android::sp;
 
-class WindowManagerService {
+class WindowState;
+class WindowToken;
+
+typedef map<sp<IBinder>, WindowToken*> WindowTokenMap;
+typedef map<sp<IBinder>, WindowState*> WindowStateMap;
+
+class WindowManagerService : public BnWindowManager {
 public:
     WindowManagerService();
     ~WindowManagerService();
+    // define AIDL interfaces
+    Status getPhysicalDisplayInfo(int32_t displayId, DisplayInfo* info, int32_t* _aidl_return);
+    Status addWindow(const sp<IWindow>& window, const LayoutParams& attrs, int32_t visibility,
+                     int32_t displayId, int32_t userId, InputChannel* outInputChannel,
+                     int32_t* _aidl_return);
+    Status removeWindow(const sp<IWindow>& window);
+    Status relayout(const sp<IWindow>& window, const LayoutParams& attrs, int32_t requestedWidth,
+                    int32_t requestedHeight, int32_t visibility, SurfaceControl* outSurfaceControl,
+                    int32_t* _aidl_return);
+
+    Status isWindowToken(const sp<IBinder>& binder, bool* _aidl_return);
+    Status addWindowToken(const sp<IBinder>& token, int32_t type, int32_t displayId);
+    Status removeWindowToken(const sp<IBinder>& token, int32_t displayId);
+    Status updateWindowTokenVisibility(const sp<IBinder>& token, int32_t visibility);
+
+    Status applyTransaction(const vector<LayerState>& state);
+    Status requestVsync(const sp<IWindow>& window, VsyncRequest freq);
 
 private:
+    WindowTokenMap mTokenMap;
+    WindowStateMap mWindowMap;
 };
 
 } // namespace wm
