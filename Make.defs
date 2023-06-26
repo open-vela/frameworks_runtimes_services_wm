@@ -17,8 +17,16 @@
 ifneq ($(CONFIG_SYSTEM_SERVER),)
 CONFIGURED_APPS += $(APPDIR)/frameworks/base/wm
 
+# wm
 CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/base/wm/aidl
 CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/base/wm/include
-CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/base/include
+
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/base/wm/include
+
+# base
+CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/base/include
+# am
+CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/base/am/include
+# binder
+CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/android/system/libbase/include
 endif
