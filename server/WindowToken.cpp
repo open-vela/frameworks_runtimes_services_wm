@@ -14,6 +14,31 @@
  * limitations under the License.
  */
 
+#define LOG_TAG "WindowToken"
+
+#include "WindowToken.h"
+
+#include "WindowState.h"
+
 namespace os {
-namespace wm {} // namespace wm
+namespace wm {
+
+WindowToken::WindowToken(WindowManagerService* service, const sp<IBinder>& token, int32_t type,
+                         int32_t displayId)
+      : mService(service), mToken(token), mType(type) {}
+
+WindowToken::~WindowToken() {}
+
+void WindowToken::addWindow(WindowState* win) {
+    std::vector<WindowState*>::iterator it;
+    for (it = mChildren.begin(); it != mChildren.end(); it++) {
+        if ((*it) == win) {
+            ALOGW("already attach in the mChildren\n");
+            return;
+        }
+    }
+    mChildren.push_back(win);
+}
+
+} // namespace wm
 } // namespace os
