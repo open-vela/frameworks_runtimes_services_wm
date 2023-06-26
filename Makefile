@@ -40,6 +40,8 @@ ifneq ($(NOEXPORTSRCS),)
 BIN := $(APPDIR)/staging/libframework.a
 endif
 
+CSRCS += $(wildcard lvgl/*.c)
+
 EXPORT_FILES := include
 
 include $(APPDIR)/Application.mk
