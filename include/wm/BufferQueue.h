@@ -42,7 +42,7 @@ typedef struct {
     BufferKey mKey;
     int mFd;
     void* mBuffer;
-    int mSize;
+    uint32_t mSize;
     BufferState mState;
 } BufferItem;
 
@@ -67,6 +67,7 @@ protected:
 
 private:
     BufferItem* getBuffer(BufferKey bufKey);
+    void clearBuffers();
 
     std::weak_ptr<SurfaceControl> mSurfaceControl;
     std::unordered_map<BufferKey, BufferItem> mBuffers;
