@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <android-base/macros.h>
 #include <binder/IBinder.h>
 #include <binder/Parcel.h>
 #include <binder/Parcelable.h>
@@ -85,7 +86,11 @@ public:
     static bool isSameSurface(const std::shared_ptr<SurfaceControl>& lhs,
                               const std::shared_ptr<SurfaceControl>& rhs);
 
+    void copyFrom(SurfaceControl& other);
+
 private:
+    DISALLOW_COPY_AND_ASSIGN(SurfaceControl);
+
     // IWindow as token
     sp<IBinder> mToken;
 

@@ -16,6 +16,8 @@
 
 #include "wm/SurfaceControl.h"
 
+#include "ParcelUtils.h"
+
 namespace os {
 namespace wm {
 bool SurfaceControl::isSameSurface(const std::shared_ptr<SurfaceControl>& lhs,
@@ -36,17 +38,47 @@ SurfaceControl::~SurfaceControl() {
 }
 
 status_t SurfaceControl::writeToParcel(Parcel* out) const {
-    // TODO:
+    SAFE_PARCEL(out->writeStrongBinder, mToken);
+    SAFE_PARCEL(out->writeStrongBinder, mHandle);
+    SAFE_PARCEL(out->writeUint32, mWidth);
+    SAFE_PARCEL(out->writeUint32, mHeight);
+    SAFE_PARCEL(out->writeUint32, mFormat);
+
+    SAFE_PARCEL(out->writeInt32, mBufferIds.size());
+    for (const auto& entry : mBufferIds) {
+        SAFE_PARCEL(out->writeInt32, entry.first);
+        SAFE_PARCEL(out->writeInt32, entry.second.mKey);
+        SAFE_PARCEL(out->writeInt32, entry.second.mFd);
+    }
     return android::OK;
 }
 
 status_t SurfaceControl::readFromParcel(const Parcel* in) {
-    // TODO:
+    mToken = in->readStrongBinder();
+    mHandle = in->readStrongBinder();
+    SAFE_PARCEL(in->readUint32, &mWidth);
+    SAFE_PARCEL(in->readUint32, &mHeight);
+    SAFE_PARCEL(in->readUint32, &mFormat);
+
+    int32_t size;
+    SAFE_PARCEL(in->readInt32, &size);
+    for (int i = 0; i < size; i++) {
+        BufferKey buffKey;
+        SAFE_PARCEL(in->readInt32, &buffKey);
+
+        BufferId buffId;
+        SAFE_PARCEL(in->readInt32, &buffId.mKey);
+        SAFE_PARCEL(in->readInt32, &buffId.mFd);
+        mBufferIds[buffKey] = buffId;
+    }
     return android::OK;
 }
 
 void SurfaceControl::initBufferIds(std::vector<BufferId>& ids) {
-    // TODO:
+    mBufferIds.clear();
+    for (uint32_t i = 0; i < ids.size(); i++) {
+        mBufferIds.insert(std::make_pair(ids[i].mKey, ids[i]));
+    }
 }
 
 bool SurfaceControl::isValid() {
@@ -56,6 +88,15 @@ bool SurfaceControl::isValid() {
     }
 
     return !mBufferIds.empty();
+}
+
+void SurfaceControl::copyFrom(SurfaceControl& other) {
+    mToken = other.mToken;
+    mHandle = other.mHandle;
+    mWidth = other.mWidth;
+    mHeight = other.mHeight;
+    mFormat = other.mFormat;
+    mBufferIds = other.mBufferIds;
 }
 
 } // namespace wm
