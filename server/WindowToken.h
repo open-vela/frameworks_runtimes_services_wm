@@ -21,15 +21,33 @@
 #include <binder/Status.h>
 #include <utils/RefBase.h>
 
+#include <vector>
+
 namespace os {
 namespace wm {
 
+using android::IBinder;
+using android::sp;
+
+class WindowManagerService;
+class WindowState;
+
 class WindowToken {
 public:
-    WindowToken();
+    WindowToken(WindowManagerService* service, const sp<IBinder>& token, int32_t type,
+                int32_t displayId);
     ~WindowToken();
 
+    void addWindow(WindowState* win);
+    int32_t isClientVisible();
+    void setClientVisible(int32_t clientVisible);
+
 private:
+    WindowManagerService* mService;
+    sp<IBinder> mToken;
+    int32_t mType;
+    std::vector<WindowState*> mChildren;
+    int32_t mClientVisible;
 };
 
 } // namespace wm
