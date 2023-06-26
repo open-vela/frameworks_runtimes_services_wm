@@ -16,6 +16,8 @@
 
 #include "wm/BufferQueue.h"
 
+#include <sys/mman.h>
+
 #include "wm/SurfaceControl.h"
 
 namespace os {
@@ -26,7 +28,14 @@ BufferQueue::BufferQueue(const std::shared_ptr<SurfaceControl>& sc) {
 }
 
 BufferQueue::~BufferQueue() {
-    // TODO:
+    mSurfaceControl.reset();
+
+    if (!mBuffers.empty()) {
+        clearBuffers();
+    }
+
+    mDataSlot.clear();
+    mFreeSlot.clear();
 }
 
 BufferItem* BufferQueue::getBuffer(BufferKey bufKey) {
@@ -39,6 +48,19 @@ BufferItem* BufferQueue::getBuffer(BufferKey bufKey) {
 // after dequeue or acqure buffer, allow to cancel buffer
 bool BufferQueue::cancelBuffer(BufferItem* item) {
     return toState(item, BSTATE_FREE);
+}
+
+void BufferQueue::clearBuffers() {
+    for (auto it = mBuffers.begin(); it != mBuffers.end(); ++it) {
+        if (it->second.mBuffer && munmap(it->second.mBuffer, it->second.mSize) == -1) {
+            ALOGE("munmap");
+        }
+
+        if (close(it->second.mFd) == -1) {
+            ALOGE("close");
+        }
+    }
+    mBuffers.clear();
 }
 
 bool BufferQueue::syncState(BufferKey key, BufferState byState) {
@@ -56,13 +78,44 @@ bool BufferQueue::syncState(BufferKey key, BufferState byState) {
 }
 
 bool BufferQueue::update(const std::shared_ptr<SurfaceControl>& sc) {
-    // TODO: same SurfaceControl, should return directly
+    if (sc->isSameSurface(sc, mSurfaceControl.lock())) {
+        return false;
+    }
 
-    // TODO: clear buffers
+    if (!mBuffers.empty()) {
+        clearBuffers();
+    }
 
     mSurfaceControl = sc;
 
-    // TODO: update buffers and Slot
+    std::unordered_map<BufferKey, BufferId> bufferIds = sc->bufferIds();
+    uint32_t width = sc->getWidth();
+    uint32_t height = sc->getHeight();
+    // uint32_t format = sc->getFormat();
+    // TODO:parse mformat, temporary value is 4 bytes
+    uint32_t size = width * height * 4;
+
+    for (auto it = bufferIds.begin(); it != bufferIds.end(); ++it) {
+        BufferKey bufferkey = it->first;
+        int bufferFd = it->second.mFd;
+
+        if (bufferFd == -1) {
+            return false;
+        }
+
+        if (ftruncate(bufferFd, size) == -1) {
+            ALOGE("Failed to resize shared memory");
+            return false;
+        }
+
+        void* buffer = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, bufferFd, 0);
+        if (buffer == MAP_FAILED) {
+            ALOGE("Failed to map shared memory");
+            return false;
+        }
+        BufferItem buffItem = {bufferkey, bufferFd, buffer, size, BSTATE_FREE};
+        mBuffers[bufferkey] = buffItem;
+    }
     return true;
 }
 
@@ -74,14 +127,23 @@ bool BufferQueue::toState(BufferItem* item, BufferState state) {
     switch (item->mState) {
         case BSTATE_FREE:
             if (state == BSTATE_DEQUEUED) {
-                // TODO: check it in free slot
-
+                // check it in free slot
+                auto it = std::find(mFreeSlot.begin(), mFreeSlot.end(), item->mKey);
+                if (it == mFreeSlot.end()) {
+                    return false;
+                }
                 // remove from free slot and update state
                 mFreeSlot.remove(item->mKey);
                 item->mState = state;
                 return true;
             } else if (state == BSTATE_QUEUED) {
-                // TODO: move it from free slot to data slot
+                // move it from free slot to data slot
+                auto it = std::find(mFreeSlot.begin(), mFreeSlot.end(), item->mKey);
+                if (it == mFreeSlot.end()) {
+                    return false;
+                }
+                mFreeSlot.remove(item->mKey);
+                mDataSlot.push_back(item->mKey);
                 item->mState = state;
                 return true;
             }
@@ -89,11 +151,21 @@ bool BufferQueue::toState(BufferItem* item, BufferState state) {
 
         case BSTATE_DEQUEUED:
             if (state == BSTATE_QUEUED) {
-                // TODO: move to data slot and update state
+                // move to data slot and update state
+                auto it = std::find(mDataSlot.begin(), mDataSlot.end(), item->mKey);
+                if (it != mDataSlot.end()) {
+                    return false;
+                }
+                mDataSlot.push_back(item->mKey);
                 item->mState = state;
                 return true;
             } else if (state == BSTATE_FREE) {
-                // TODO: move to free slot and update state
+                // move to free slot and update state
+                auto it = std::find(mFreeSlot.begin(), mFreeSlot.end(), item->mKey);
+                if (it != mFreeSlot.end()) {
+                    return false;
+                }
+                mFreeSlot.push_back(item->mKey);
                 item->mState = state;
                 return true;
             }
@@ -105,7 +177,13 @@ bool BufferQueue::toState(BufferItem* item, BufferState state) {
                 item->mState = state;
                 return true;
             } else if (state == BSTATE_FREE) {
-                // TODO: move to free slot and update state
+                // move it from data slot to free slot and update state
+                auto it = std::find(mDataSlot.begin(), mDataSlot.end(), item->mKey);
+                if (it == mDataSlot.end()) {
+                    return false;
+                }
+                mDataSlot.remove(item->mKey);
+                mFreeSlot.push_back(item->mKey);
                 item->mState = state;
                 return true;
             }
@@ -113,7 +191,13 @@ bool BufferQueue::toState(BufferItem* item, BufferState state) {
 
         case BSTATE_ACQUIRED:
             if (state == BSTATE_FREE) {
-                // TODO: move it from data slot to free slot and update state
+                // move it from data slot to free slot and update state
+                auto it = std::find(mDataSlot.begin(), mDataSlot.end(), item->mKey);
+                if (it == mDataSlot.end()) {
+                    return false;
+                }
+                mDataSlot.remove(item->mKey);
+                mFreeSlot.push_back(item->mKey);
                 item->mState = state;
                 return true;
             }
