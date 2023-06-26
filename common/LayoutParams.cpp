@@ -26,6 +26,30 @@ namespace wm {
 LayoutParams::LayoutParams() {}
 LayoutParams::~LayoutParams() {}
 
+LayoutParams::LayoutParams(const LayoutParams& other)
+      : mWidth(other.mWidth),
+        mHeight(other.mHeight),
+        mX(other.mX),
+        mY(other.mY),
+        mType(other.mType),
+        mFlags(other.mFlags),
+        mFormat(other.mFormat),
+        mToken(other.mToken) {}
+
+LayoutParams& LayoutParams::operator=(const LayoutParams& other) {
+    if (this != &other) {
+        mWidth = other.mWidth;
+        mHeight = other.mHeight;
+        mX = other.mX;
+        mY = other.mY;
+        mType = other.mType;
+        mFlags = other.mFlags;
+        mFormat = other.mFormat;
+        mToken = other.mToken;
+    }
+    return *this;
+}
+
 status_t LayoutParams::writeToParcel(Parcel* out) const {
     SAFE_PARCEL(out->writeInt32, mWidth);
     SAFE_PARCEL(out->writeInt32, mHeight);
