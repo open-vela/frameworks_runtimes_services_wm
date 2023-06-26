@@ -21,23 +21,46 @@
 #include <binder/Status.h>
 #include <utils/RefBase.h>
 
+#include "wm/BufferQueue.h"
+#include "wm/Rect.h"
+
 namespace os {
 namespace wm {
 
-using namespace android;
-using namespace android::base;
-using namespace android::binder;
-using namespace std;
+using android::IBinder;
+using android::Parcelable;
+using android::sp;
+using android::status_t;
 
 class LayerState : public Parcelable {
 public:
-    LayerState();
-    ~LayerState();
+    LayerState() : mFlags(0), mToken(nullptr) {}
+    ~LayerState() {
+        mToken = nullptr;
+        mFlags = 0;
+    }
+
+    LayerState(sp<IBinder> token) : mFlags(0), mToken(token) {}
 
     status_t writeToParcel(Parcel* out) const override;
     status_t readFromParcel(const Parcel* in) override;
 
-private:
+    void merge(LayerState& state);
+
+    enum {
+        LAYER_POSITION_CHANGED = 0x01,
+        LAYER_ALPHA_CHANGED = 0x02,
+        LAYER_BUFFER_CHANGED = 0x04,
+        LAYER_BUFFER_CROP_CHANGED = 0x08,
+    };
+
+    int32_t mX;
+    int32_t mY;
+    int32_t mAlpha;
+    BufferKey mBufferKey;
+    Rect mBufferCrop;
+    int32_t mFlags;
+    sp<IBinder> mToken;
 };
 
 } // namespace wm
