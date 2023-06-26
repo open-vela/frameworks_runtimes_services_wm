@@ -22,6 +22,7 @@ import os.wm.IWindow;
 import os.wm.LayerState;
 import os.wm.LayoutParams;
 import os.wm.SurfaceControl;
+import os.wm.VsyncRequest;
 
 interface IWindowManager {
     int getPhysicalDisplayInfo(int displayId, out DisplayInfo info);
@@ -69,9 +70,9 @@ interface IWindowManager {
      * @param token Token to be changed
      * @param visibility Window root view's visibility.
      */
-    void updateWindowTokenVisibility(IBinder token, boolean visibility);
+    void updateWindowTokenVisibility(IBinder token, int visibility);
 
-    int applyTransaction(in LayerState[] state);
+    oneway void applyTransaction(in LayerState[] state);
 
-    void requestNextVsync(IWindow window);
+    oneway void requestVsync(IWindow window, VsyncRequest freq);
 }
