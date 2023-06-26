@@ -29,4 +29,7 @@ CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/base/include
 CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/base/am/include
 # binder
 CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/android/system/libbase/include
+# lvgl
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/graphics/lvgl
+
 endif
