@@ -34,6 +34,19 @@ public:
     LayoutParams();
     ~LayoutParams();
 
+    LayoutParams(int32_t width, int32_t height, int32_t x, int32_t y, int32_t type, int32_t flags,
+                 int32_t format)
+          : mWidth(width),
+            mHeight(height),
+            mX(x),
+            mY(y),
+            mType(type),
+            mFlags(flags),
+            mFormat(format) {}
+
+    LayoutParams(const LayoutParams& other);
+    LayoutParams& operator=(const LayoutParams& other);
+
     status_t writeToParcel(Parcel* out) const override;
     status_t readFromParcel(const Parcel* in) override;
 
