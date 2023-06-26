@@ -14,6 +14,49 @@
  * limitations under the License.
  */
 
+#include "wm/SurfaceControl.h"
+
 namespace os {
-namespace wm {} // namespace wm
+namespace wm {
+bool SurfaceControl::isSameSurface(const std::shared_ptr<SurfaceControl>& lhs,
+                                   const std::shared_ptr<SurfaceControl>& rhs) {
+    if (lhs == nullptr || rhs == nullptr) return false;
+
+    return lhs->mHandle == rhs->mHandle;
+}
+
+SurfaceControl::SurfaceControl(const sp<IBinder>& token, const sp<IBinder>& handle, uint32_t width,
+                               uint32_t height, uint8_t format)
+      : mToken(token), mHandle(handle), mWidth(width), mHeight(height), mFormat(format) {}
+
+SurfaceControl::~SurfaceControl() {
+    mToken.clear();
+    mHandle.clear();
+    // TODO:
+}
+
+status_t SurfaceControl::writeToParcel(Parcel* out) const {
+    // TODO:
+    return android::OK;
+}
+
+status_t SurfaceControl::readFromParcel(const Parcel* in) {
+    // TODO:
+    return android::OK;
+}
+
+void SurfaceControl::initBufferIds(std::vector<BufferId>& ids) {
+    // TODO:
+}
+
+bool SurfaceControl::isValid() {
+    if (mHandle == nullptr || mToken == nullptr) {
+        ALOGE("invalid handle (%p) or client (%p)", mHandle.get(), mToken.get());
+        return false;
+    }
+
+    return !mBufferIds.empty();
+}
+
+} // namespace wm
 } // namespace os
