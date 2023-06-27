@@ -16,20 +16,82 @@
 
 #pragma once
 
-#include <binder/Parcel.h>
-#include <binder/Parcelable.h>
+#include <android-base/macros.h>
 #include <binder/Status.h>
-#include <utils/RefBase.h>
+
+#include "os/wm/BnWindow.h"
+#include "os/wm/VsyncRequest.h"
+#include "wm/LayoutParams.h"
+#include "wm/WindowFrames.h"
 
 namespace os {
 namespace wm {
 
+class BufferQueue;
+class BufferProducer;
+class UIDriverProxy;
+class WindowManager;
+class InputChannel;
+class SurfaceControl;
+
+using android::sp;
+using android::binder::Status;
+
 class BaseWindow {
 public:
+    class W : public BnWindow {
+    public:
+        W(BaseWindow* win);
+        ~W();
+
+        Status moved(int32_t newX, int32_t newY) override;
+        Status resized(const WindowFrames& frames, int32_t displayId) override;
+        Status dispatchAppVisibility(bool visible) override;
+        Status onFrame(int32_t seq) override;
+        Status bufferReleased(int32_t bufKey) override;
+
+    private:
+        std::weak_ptr<BaseWindow> mBaseWindow;
+    };
+
+    // TODO: add context
     BaseWindow();
     ~BaseWindow();
 
+    DISALLOW_COPY_AND_ASSIGN(BaseWindow);
+
+    bool scheduleVsync(VsyncRequest freq);
+    sp<IWindow> getIWindow() {
+        return mIWindow;
+    }
+
+    void* getRoot();
+
+    void setUIProxy(const std::shared_ptr<UIDriverProxy>& proxy) {
+        mUIProxy = proxy;
+    }
+
+    void setLayoutParams(LayoutParams lp);
+    LayoutParams getLayoutParams() {
+        return mAttrs;
+    }
+
+    void setWindowManager(const std::shared_ptr<WindowManager>& wm) {
+        mWindowManager = wm;
+    }
+
+    std::shared_ptr<BufferProducer> getBufferProducer();
+
 private:
+    LayoutParams mAttrs;
+
+    sp<W> mIWindow;
+    std::weak_ptr<WindowManager> mWindowManager;
+    std::shared_ptr<SurfaceControl> mSurfaceControl;
+    std::shared_ptr<InputChannel> mInputChannel;
+    std::shared_ptr<UIDriverProxy> mUIProxy;
+
+    VsyncRequest mVsyncRequest;
 };
 
 } // namespace wm
