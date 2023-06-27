@@ -41,7 +41,61 @@ bool BufferQueue::update(const std::shared_ptr<SurfaceControl>& sc) {
 }
 
 bool BufferQueue::toState(BufferItem* item, BufferState state) {
-    // TODO: state machine
+    /*
+     * PRODUCER: FREE <-> DEQUEUED -> QUEUED -> FREE
+     * CONSUMER: FREE <-> QUEUED -> ACQUIRED -> FREE
+     */
+    switch (item->mState) {
+        case BSTATE_FREE:
+            if (state == BSTATE_DEQUEUED) {
+                // TODO: check it in free slot
+
+                // remove from free slot and update state
+                mFreeSlot.remove(item->mKey);
+                item->mState = state;
+                return true;
+            } else if (state == BSTATE_QUEUED) {
+                // TODO: move it from free slot to data slot
+                item->mState = state;
+                return true;
+            }
+            break;
+
+        case BSTATE_DEQUEUED:
+            if (state == BSTATE_QUEUED) {
+                // TODO: move to data slot and update state
+                item->mState = state;
+                return true;
+            } else if (state == BSTATE_FREE) {
+                // TODO: move to free slot and update state
+                item->mState = state;
+                return true;
+            }
+            break;
+
+        case BSTATE_QUEUED:
+            if (state == BSTATE_ACQUIRED) {
+                // update state, buffer in data slot
+                item->mState = state;
+                return true;
+            } else if (state == BSTATE_FREE) {
+                // TODO: move to free slot and update state
+                item->mState = state;
+                return true;
+            }
+            break;
+
+        case BSTATE_ACQUIRED:
+            if (state == BSTATE_FREE) {
+                // TODO: move it from data slot to free slot and update state
+                item->mState = state;
+                return true;
+            }
+            break;
+
+        default:
+            break;
+    }
     return false;
 }
 

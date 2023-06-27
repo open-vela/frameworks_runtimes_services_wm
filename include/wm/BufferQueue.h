@@ -16,14 +16,21 @@
 
 #pragma once
 
+#include <list>
 #include <memory>
-#include <queue>
 #include <unordered_map>
 
 namespace os {
 namespace wm {
 
 class SurfaceControl;
+
+typedef enum {
+    BSTATE_FREE = 0,
+    BSTATE_DEQUEUED,
+    BSTATE_QUEUED,
+    BSTATE_ACQUIRED,
+} BufferState;
 
 typedef int BufferKey;
 typedef struct {
@@ -36,14 +43,8 @@ typedef struct {
     int mFd;
     void* mBuffer;
     int mSize;
+    BufferState mState;
 } BufferItem;
-
-typedef enum {
-    BSTATE_FREE = 0,
-    BSTATE_DEQUEUED,
-    BSTATE_QUEUED,
-    BSTATE_ACQUIRED,
-} BufferState;
 
 typedef enum {
     BSLOT_FREE = 0,
@@ -65,8 +66,8 @@ private:
     std::weak_ptr<SurfaceControl> mSurfaceControl;
     std::unordered_map<BufferKey, BufferItem> mBuffers;
 
-    std::queue<BufferKey> mDataSlot;
-    std::queue<BufferKey> mFreeSlot;
+    std::list<BufferKey> mDataSlot;
+    std::list<BufferKey> mFreeSlot;
 
     uint32_t mWidth;
     uint32_t mHeight;
