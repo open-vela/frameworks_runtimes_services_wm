@@ -18,6 +18,7 @@
 
 #include <android-base/macros.h>
 #include <binder/Status.h>
+#include <utils/RefBase.h>
 
 #include "os/wm/BnWindow.h"
 #include "os/wm/VsyncRequest.h"
@@ -41,8 +42,8 @@ class BaseWindow {
 public:
     class W : public BnWindow {
     public:
-        W(BaseWindow* win);
-        ~W();
+        W(BaseWindow* win) : mBaseWindow(win) {}
+        ~W() {}
 
         Status moved(int32_t newX, int32_t newY) override;
         Status resized(const WindowFrames& frames, int32_t displayId) override;
@@ -51,7 +52,7 @@ public:
         Status bufferReleased(int32_t bufKey) override;
 
     private:
-        std::weak_ptr<BaseWindow> mBaseWindow;
+        BaseWindow* mBaseWindow;
     };
 
     // TODO: add context
@@ -71,13 +72,31 @@ public:
         mUIProxy = proxy;
     }
 
-    void setLayoutParams(LayoutParams lp);
+    void setLayoutParams(LayoutParams lp) {
+        mAttrs = lp;
+    }
+
     LayoutParams getLayoutParams() {
         return mAttrs;
     }
 
-    void setWindowManager(const std::shared_ptr<WindowManager>& wm) {
+    void setWindowManager(WindowManager* wm) {
         mWindowManager = wm;
+    }
+
+    const WindowManager* getWindowManager() {
+        return mWindowManager;
+    }
+
+    const sp<IWindow> createIWindow() {
+        if (mIWindow == nullptr) {
+            mIWindow = sp<W>::make(this);
+        }
+        return mIWindow;
+    }
+
+    const sp<IWindow> getWindow() {
+        return mIWindow;
     }
 
     std::shared_ptr<BufferProducer> getBufferProducer();
@@ -86,7 +105,7 @@ private:
     LayoutParams mAttrs;
 
     sp<W> mIWindow;
-    std::weak_ptr<WindowManager> mWindowManager;
+    WindowManager* mWindowManager;
     std::shared_ptr<SurfaceControl> mSurfaceControl;
     std::shared_ptr<InputChannel> mInputChannel;
     std::shared_ptr<UIDriverProxy> mUIProxy;
