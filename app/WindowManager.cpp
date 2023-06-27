@@ -14,6 +14,28 @@
  * limitations under the License.
  */
 
+#define LOG_TAG "WindowManager"
+
+#include "WindowManager.h"
+
+#include <binder/IInterface.h>
+#include <binder/IServiceManager.h>
+#include <utils/RefBase.h>
+
 namespace os {
-namespace wm {} // namespace wm
+namespace wm {
+WindowManager::WindowManager() {}
+
+sp<IWindowManager>& WindowManager::getService() {
+    std::lock_guard<std::mutex> scoped_lock(mLock);
+    if (mService == nullptr || !android::IInterface::asBinder(mService)->isBinderAlive()) {
+        if (android::getService<IWindowManager>(android::String16(WindowManager::name()),
+                                                &mService) != android::NO_ERROR) {
+            ALOGE("ServiceManager can't find the service:%s", WindowManager::name());
+        }
+    }
+    return mService;
+}
+
+} // namespace wm
 } // namespace os

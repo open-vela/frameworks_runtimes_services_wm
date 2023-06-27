@@ -16,25 +16,39 @@
 
 #pragma once
 
-#include <binder/Parcel.h>
-#include <binder/Parcelable.h>
-#include <binder/Status.h>
-#include <utils/RefBase.h>
+#include <mutex>
+
+#include "BaseWindow.h"
+#include "os/wm/BnWindowManager.h"
 
 namespace os {
 namespace wm {
 
-using namespace android;
-using namespace android::base;
-using namespace android::binder;
-using namespace std;
+using android::sp;
+
+class Context; // TODO:use am context
 
 class WindowManager {
 public:
     WindowManager();
     ~WindowManager();
 
+    static inline const char* name() {
+        return "window";
+    }
+
+    std::shared_ptr<BaseWindow> newWindow(Context context);
+    int attachIWindow(std::shared_ptr<BaseWindow> window);
+    void relayoutWindow(std::shared_ptr<BaseWindow> window);
+    bool removeWindow(std::shared_ptr<BaseWindow> window);
+    sp<IWindowManager>& getService();
+
+    static std::shared_ptr<WindowManager> getInstance();
+
 private:
+    std::mutex mLock;
+    vector<std::shared_ptr<BaseWindow>> mWindows;
+    sp<IWindowManager> mService;
 };
 
 } // namespace wm
