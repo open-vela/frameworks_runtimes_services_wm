@@ -15,7 +15,7 @@
 #
 config SYSTEM_SERVER_WM
 	tristate "Enable Window Manager Service"
-	default n
+	default y
 	depends on ANDROID_BINDER
 	depends on SYSTEM_SERVER
 
