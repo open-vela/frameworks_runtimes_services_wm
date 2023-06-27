@@ -14,6 +14,26 @@
  * limitations under the License.
  */
 
+#include "BaseWindow.h"
+
+#include "UIDriverProxy.h"
+#include "wm/InputChannel.h"
+#include "wm/SurfaceControl.h"
+
 namespace os {
-namespace wm {} // namespace wm
+namespace wm {
+
+BaseWindow::BaseWindow() {}
+
+BaseWindow::~BaseWindow() {}
+
+bool BaseWindow::scheduleVsync(VsyncRequest freq) {
+    // TODO:
+}
+
+void* BaseWindow::getRoot() {
+    return mUIProxy->getRoot();
+}
+
+} // namespace wm
 } // namespace os
