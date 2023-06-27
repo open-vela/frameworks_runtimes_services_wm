@@ -15,7 +15,7 @@
 #
 config SYSTEM_WINDOW_SERVICE
 	tristate "Enable Window Manager Service"
-	default y
+	default n
 	depends on ANDROID_BINDER
 	depends on SYSTEM_SERVER
 	depends on FS_SHMFS
