@@ -13,19 +13,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-config SYSTEM_SERVER_WM
+config SYSTEM_WINDOW_SERVICE
 	tristate "Enable Window Manager Service"
 	default y
 	depends on ANDROID_BINDER
 	depends on SYSTEM_SERVER
+	depends on FS_SHMFS
 
-if SYSTEM_SERVER_WM
+if SYSTEM_WINDOW_SERVICE
 
-config SYSTEM_SERVER_WM_STACKSIZE
+config SYSTEM_WINDOW_SERVICE_STACKSIZE
 	int "WMS stack size"
 	default DEFAULT_TASK_STACKSIZE
 
-config SYSTEM_SERVER_WM_PRIORITY
+config SYSTEM_WINDOW_SERVICE_PRIORITY
 	int "WMS priority"
 	default 100
 
