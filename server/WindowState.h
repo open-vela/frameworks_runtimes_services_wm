@@ -21,20 +21,50 @@
 #include <binder/Status.h>
 #include <utils/RefBase.h>
 
+#include "WindowManagerService.h"
+#include "WindowToken.h"
+#include "os/wm/IWindowManager.h"
+#include "wm/LayoutParams.h"
+
 namespace os {
 namespace wm {
 
-using namespace android;
-using namespace android::base;
-using namespace android::binder;
-using namespace std;
+using android::sp;
+
+class WindowManagerService;
+class SurfaceControl;
+class WindowToken;
+class LayoutParams;
 
 class WindowState {
 public:
     WindowState();
     ~WindowState();
+    WindowState(WindowManagerService* service, const sp<IWindow>& window, WindowToken* token,
+                const LayoutParams& params, int32_t visibility);
+
+    bool isVisible();
+    void sendAppVisibilityToClients();
+    void setViewVisibility(bool visibility);
+
+    std::shared_ptr<InputChannel> createInputChannel(const std::string name);
+    std::shared_ptr<SurfaceControl> createSurfaceLocked(vector<BufferId> ids);
+
+    void applyTransaction(LayerState layerState);
+    bool scheduleVsync(VsyncRequest vsyncReq);
+
+    std::shared_ptr<WindowToken> getToken() {
+        return mToken;
+    }
 
 private:
+    sp<IWindow> mClient;
+    std::shared_ptr<WindowToken> mToken;
+    WindowManagerService* mService;
+    std::shared_ptr<SurfaceControl> mSurfaceControl;
+    std::shared_ptr<InputChannel> mInputChannel;
+    LayoutParams mAttrs;
+    bool mVisibility;
 };
 
 } // namespace wm
