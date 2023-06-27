@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <android-base/macros.h>
 #include <binder/Parcel.h>
 #include <binder/Parcelable.h>
 #include <binder/Status.h>
@@ -38,6 +39,16 @@ public:
     status_t readFromParcel(const Parcel* in) override;
     int32_t getEventFd();
     void setEventFd(int32_t fd);
+
+    void copyFrom(InputChannel& other) {
+        mEventFd = other.mEventFd;
+    }
+
+    bool isValid() {
+        return mEventFd != -1 ? true : false;
+    }
+
+    DISALLOW_COPY_AND_ASSIGN(InputChannel);
 
 private:
     int32_t mEventFd;
