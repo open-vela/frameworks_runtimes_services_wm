@@ -29,6 +29,7 @@ BaseWindow::~BaseWindow() {}
 
 bool BaseWindow::scheduleVsync(VsyncRequest freq) {
     // TODO:
+    return false;
 }
 
 void* BaseWindow::getRoot() {
