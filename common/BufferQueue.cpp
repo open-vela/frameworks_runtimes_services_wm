@@ -29,6 +29,32 @@ BufferQueue::~BufferQueue() {
     // TODO:
 }
 
+BufferItem* BufferQueue::getBuffer(BufferKey bufKey) {
+    if (mBuffers.find(bufKey) != mBuffers.end()) {
+        return &mBuffers[bufKey];
+    }
+    return nullptr;
+}
+
+// after dequeue or acqure buffer, allow to cancel buffer
+bool BufferQueue::cancelBuffer(BufferItem* item) {
+    return toState(item, BSTATE_FREE);
+}
+
+bool BufferQueue::syncState(BufferKey key, BufferState byState) {
+    BufferItem* item = getBuffer(key);
+    if (!item) return false;
+
+    if (item->mState == BSTATE_QUEUED && byState == BSTATE_FREE) {
+        // sync consumer free byState to producer
+        return toState(item, BSTATE_FREE);
+    } else if (item->mState == BSTATE_FREE && byState == BSTATE_QUEUED) {
+        // sync producer queue byState to consumer
+        return toState(item, BSTATE_QUEUED);
+    }
+    return false;
+}
+
 bool BufferQueue::update(const std::shared_ptr<SurfaceControl>& sc) {
     // TODO: same SurfaceControl, should return directly
 
@@ -108,11 +134,7 @@ BufferItem* BufferQueue::getBuffer(BufferSlot slot) {
         key = mDataSlot.front();
     }
 
-    if (key != 0 && mBuffers.find(key) != mBuffers.end()) {
-        return &mBuffers[key];
-    }
-
-    return nullptr;
+    return getBuffer(key);
 }
 
 } // namespace wm
