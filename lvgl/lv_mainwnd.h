@@ -32,6 +32,17 @@ extern "C" {
 
 #include <lvgl/lvgl.h>
 
+/*********************
+ *      DEFINES
+ *********************/
+
+/**
+ * input event type*/
+enum {
+    LV_MAINWND_EVENT_TYPE_KEYPAD = 1 << 1,
+    LV_MAINWND_EVENT_TYPE_POINTER = 1 << 2,
+};
+
 /**********************
  *      TYPEDEFS
  **********************/
