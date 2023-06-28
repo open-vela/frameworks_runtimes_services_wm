@@ -42,6 +42,10 @@ endif
 
 CSRCS += $(wildcard lvgl/*.c)
 
+ifneq ($(CONFIG_SYSTEM_WINDOW_SERVICE_TEST),)
+CSRCS += $(wildcard test/*.c)
+endif
+
 EXPORT_FILES := include
 
 include $(APPDIR)/Application.mk

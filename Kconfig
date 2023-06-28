@@ -30,4 +30,8 @@ config SYSTEM_WINDOW_SERVICE_PRIORITY
 	int "WMS priority"
 	default 100
 
+config SYSTEM_WINDOW_SERVICE_TEST
+	tristate "Enable System Window Service Test"
+	default n
+
 endif
