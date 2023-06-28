@@ -41,6 +41,7 @@ static void lv_mainwnd_constructor(const lv_obj_class_t* class_p, lv_obj_t* obj)
 static void lv_mainwnd_destructor(const lv_obj_class_t* class_p, lv_obj_t* obj);
 static void lv_mainwnd_event(const lv_obj_class_t* class_p, lv_event_t* e);
 static void lv_draw_mainwnd(lv_event_t* e);
+static bool lv_mainwnd_input_event_handler(lv_event_t* e);
 static void lv_mainwnd_buf_dsc_reset(lv_obj_t* obj);
 static void lv_mainwnd_metainfo_reset(lv_obj_t* obj);
 
@@ -173,6 +174,11 @@ static void lv_mainwnd_event(const lv_obj_class_t* class_p, lv_event_t* e)
             }
             lv_draw_mainwnd(e);
         }
+    } else if (code == LV_EVENT_PRESSED || code == LV_EVENT_PRESSING ||
+               code == LV_EVENT_PRESS_LOST || code == LV_EVENT_LONG_PRESSED ||
+               code == LV_EVENT_LONG_PRESSED_REPEAT || code == LV_EVENT_RELEASED ||
+               code == LV_EVENT_KEY) {
+        lv_mainwnd_input_event_handler(e);
     }
 }
 
@@ -216,6 +222,54 @@ static void lv_draw_mainwnd(lv_event_t* e)
     img_dsc.antialias = 0;
 
     lv_draw_img(draw_ctx, &img_dsc, &win_coords, mainwnd->buf_dsc.data);
+}
+
+static bool lv_mainwnd_input_event_handler(lv_event_t* e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+
+    lv_obj_t* obj = lv_event_get_target(e);
+    lv_mainwnd_t* mainwnd = (lv_mainwnd_t*)obj;
+
+    if (!mainwnd->meta_info.send_input_event) {
+        LV_LOG_WARN("lv_mainwnd_input_event_handler: send_input_event is NULL");
+        return false;
+    }
+
+    lv_mainwnd_input_event_t input_event;
+    switch (code) {
+    case LV_EVENT_PRESSED:
+    case LV_EVENT_PRESSING:
+    case LV_EVENT_PRESS_LOST:
+    case LV_EVENT_LONG_PRESSED:
+    case LV_EVENT_LONG_PRESSED_REPEAT:
+        input_event.type = LV_MAINWND_EVENT_TYPE_POINTER;
+
+        lv_point_t point;
+        lv_indev_get_point(lv_indev_get_act(), &point);
+        input_event.pointer.x = point.x;
+        input_event.pointer.y = point.y;
+        input_event.state = code;
+
+        mainwnd->meta_info.send_input_event(&(mainwnd->meta_info), &input_event);
+        break;
+    case LV_EVENT_RELEASED:
+        input_event.type = LV_MAINWND_EVENT_TYPE_POINTER;
+        input_event.state = LV_EVENT_RELEASED;
+
+        mainwnd->meta_info.send_input_event(&(mainwnd->meta_info), &input_event);
+        break;
+    case LV_EVENT_KEY:
+        input_event.type = LV_MAINWND_EVENT_TYPE_KEYPAD;
+        input_event.keypad.key = lv_indev_get_key(lv_indev_get_act());
+
+        mainwnd->meta_info.send_input_event(&(mainwnd->meta_info), &input_event);
+        break;
+    default:
+        LV_LOG_WARN("lv_mainwnd_input_event_handler: unknown input event");
+        return false;
+    }
+    return true;
 }
 
 static void lv_mainwnd_buf_dsc_reset(lv_obj_t* obj)
