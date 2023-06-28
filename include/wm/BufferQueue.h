@@ -54,15 +54,20 @@ typedef enum {
 class BufferQueue {
 public:
     BufferQueue(const std::shared_ptr<SurfaceControl>& sc);
-    ~BufferQueue();
+    virtual ~BufferQueue();
 
     bool update(const std::shared_ptr<SurfaceControl>& sc);
 
 protected:
     BufferItem* getBuffer(BufferSlot slot);
+    bool cancelBuffer(BufferItem* item);
+
+    bool syncState(BufferKey key, BufferState state);
     bool toState(BufferItem* item, BufferState state);
 
 private:
+    BufferItem* getBuffer(BufferKey bufKey);
+
     std::weak_ptr<SurfaceControl> mSurfaceControl;
     std::unordered_map<BufferKey, BufferItem> mBuffers;
 
@@ -81,6 +86,10 @@ public:
 
     BufferItem* dequeueBuffer();
     int queueBuffer(BufferItem* buffer);
+
+    bool syncFreeState(BufferKey key) {
+        return syncState(key, BSTATE_FREE);
+    }
 };
 
 class BufferConsumer : public BufferQueue {
@@ -90,6 +99,10 @@ public:
 
     BufferItem* acquireBuffer();
     int releaseBuffer(BufferItem* buffer);
+
+    bool syncQueuedState(BufferKey key) {
+        return syncState(key, BSTATE_QUEUED);
+    }
 };
 
 } // namespace wm
