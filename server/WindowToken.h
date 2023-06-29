@@ -39,15 +39,15 @@ public:
     ~WindowToken();
 
     void addWindow(WindowState* win);
-    int32_t isClientVisible();
-    void setClientVisible(int32_t clientVisible);
+    bool isClientVisible();
+    void setClientVisible(bool clientVisible);
 
 private:
     WindowManagerService* mService;
     sp<IBinder> mToken;
     int32_t mType;
     std::vector<WindowState*> mChildren;
-    int32_t mClientVisible;
+    bool mClientVisible;
 };
 
 } // namespace wm
