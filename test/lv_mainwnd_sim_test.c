@@ -22,7 +22,7 @@
 /*********************
  *      INCLUDES
  *********************/
-#include "../lvgl/lv_mainwnd.h"
+#include "../server/lvgl/lv_mainwnd.h"
 
 /*********************
  *      DEFINES
