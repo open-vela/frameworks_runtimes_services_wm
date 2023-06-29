@@ -19,6 +19,7 @@
 #include <mutex>
 
 #include "BaseWindow.h"
+#include "app/Context.h"
 #include "os/wm/BnWindowManager.h"
 
 namespace os {
@@ -26,8 +27,7 @@ namespace wm {
 
 using android::sp;
 
-class Context; // TODO:use am context
-
+class BaseWindow;
 class WindowManager {
 public:
     WindowManager();
@@ -37,13 +37,11 @@ public:
         return "window";
     }
 
-    std::shared_ptr<BaseWindow> newWindow(Context context);
-    int attachIWindow(std::shared_ptr<BaseWindow> window);
+    std::shared_ptr<BaseWindow> newWindow(::os::app::Context* context);
+    int32_t attachIWindow(std::shared_ptr<BaseWindow> window);
     void relayoutWindow(std::shared_ptr<BaseWindow> window);
     bool removeWindow(std::shared_ptr<BaseWindow> window);
     sp<IWindowManager>& getService();
-
-    static std::shared_ptr<WindowManager> getInstance();
 
 private:
     std::mutex mLock;
