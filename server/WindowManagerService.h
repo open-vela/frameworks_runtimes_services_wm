@@ -16,9 +16,7 @@
 
 #pragma once
 
-#include <binder/Parcel.h>
-#include <binder/Parcelable.h>
-#include <utils/RefBase.h>
+#include <utils/Looper.h>
 
 #include <map>
 #include <vector>
@@ -28,13 +26,13 @@
 namespace os {
 namespace wm {
 
-using android::sp;
-
+class RootContainer;
 class WindowState;
 class WindowToken;
 
 typedef map<sp<IBinder>, WindowToken*> WindowTokenMap;
 typedef map<sp<IBinder>, WindowState*> WindowStateMap;
+
 class WindowManagerService : public BnWindowManager {
 public:
     WindowManagerService();
@@ -62,11 +60,20 @@ public:
     Status applyTransaction(const vector<LayerState>& state);
     Status requestVsync(const sp<IWindow>& window, VsyncRequest freq);
 
+    // public methods
+    RootContainer* getRootContainer() {
+        return mContainer;
+    }
+
 private:
     int32_t createSurfaceControl(SurfaceControl* outSurfaceControl, WindowState* win);
 
     WindowTokenMap mTokenMap;
     WindowStateMap mWindowMap;
+    RootContainer* mContainer;
+
+    sp<Looper> mLooper;
+    sp<MessageHandler> mFrameHandler;
 };
 
 } // namespace wm
