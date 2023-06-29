@@ -243,6 +243,7 @@ static bool lv_mainwnd_input_event_handler(lv_event_t* e)
     case LV_EVENT_PRESS_LOST:
     case LV_EVENT_LONG_PRESSED:
     case LV_EVENT_LONG_PRESSED_REPEAT:
+    case LV_EVENT_RELEASED:
         input_event.type = LV_MAINWND_EVENT_TYPE_POINTER;
 
         lv_point_t point;
@@ -250,12 +251,6 @@ static bool lv_mainwnd_input_event_handler(lv_event_t* e)
         input_event.pointer.x = point.x;
         input_event.pointer.y = point.y;
         input_event.state = code;
-
-        mainwnd->meta_info.send_input_event(&(mainwnd->meta_info), &input_event);
-        break;
-    case LV_EVENT_RELEASED:
-        input_event.type = LV_MAINWND_EVENT_TYPE_POINTER;
-        input_event.state = LV_EVENT_RELEASED;
 
         mainwnd->meta_info.send_input_event(&(mainwnd->meta_info), &input_event);
         break;
