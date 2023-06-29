@@ -35,7 +35,6 @@ class WindowToken;
 
 typedef map<sp<IBinder>, WindowToken*> WindowTokenMap;
 typedef map<sp<IBinder>, WindowState*> WindowStateMap;
-
 class WindowManagerService : public BnWindowManager {
 public:
     WindowManagerService();
@@ -64,6 +63,8 @@ public:
     Status requestVsync(const sp<IWindow>& window, VsyncRequest freq);
 
 private:
+    int32_t createSurfaceControl(SurfaceControl* outSurfaceControl, WindowState* win);
+
     WindowTokenMap mTokenMap;
     WindowStateMap mWindowMap;
 };
