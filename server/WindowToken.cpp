@@ -30,14 +30,28 @@ WindowToken::WindowToken(WindowManagerService* service, const sp<IBinder>& token
 WindowToken::~WindowToken() {}
 
 void WindowToken::addWindow(WindowState* win) {
-    std::vector<WindowState*>::iterator it;
-    for (it = mChildren.begin(); it != mChildren.end(); it++) {
+    for (auto it = mChildren.begin(); it != mChildren.end(); it++) {
         if ((*it) == win) {
             ALOGW("already attach in the mChildren\n");
             return;
         }
     }
     mChildren.push_back(win);
+}
+
+bool WindowToken::isClientVisible() {
+    return mClientVisible;
+}
+
+void WindowToken::setClientVisible(bool clientVisible) {
+    if (mClientVisible == clientVisible) {
+        return;
+    }
+    ALOGI("clientVisible=%d", clientVisible);
+    mClientVisible = clientVisible;
+    for (auto it = mChildren.begin(); it != mChildren.end(); it++) {
+        (*it)->sendAppVisibilityToClients();
+    }
 }
 
 } // namespace wm
