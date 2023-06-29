@@ -40,7 +40,7 @@ ifneq ($(NOEXPORTSRCS),)
 BIN := $(APPDIR)/staging/libframework.a
 endif
 
-CSRCS += $(wildcard lvgl/*.c)
+CSRCS += $(wildcard server/lvgl/*.c)
 
 ifneq ($(CONFIG_SYSTEM_WINDOW_SERVICE_TEST),)
 CSRCS += $(wildcard test/*.c)
