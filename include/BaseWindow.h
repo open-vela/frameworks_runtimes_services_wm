@@ -20,6 +20,9 @@
 #include <binder/Status.h>
 #include <utils/RefBase.h>
 
+#include "WindowManager.h"
+#include "app/Context.h"
+#include "app/UvLoop.h"
 #include "os/wm/BnWindow.h"
 #include "os/wm/VsyncRequest.h"
 #include "wm/LayoutParams.h"
@@ -59,10 +62,15 @@ public:
     BaseWindow();
     ~BaseWindow();
 
+    BaseWindow(::os::app::Context* context);
+
     DISALLOW_COPY_AND_ASSIGN(BaseWindow);
 
     bool scheduleVsync(VsyncRequest freq);
     sp<IWindow> getIWindow() {
+        if (mIWindow == nullptr) {
+            mIWindow = sp<W>::make(this);
+        }
         return mIWindow;
     }
 
@@ -88,29 +96,34 @@ public:
         return mWindowManager;
     }
 
-    const sp<IWindow> createIWindow() {
-        if (mIWindow == nullptr) {
-            mIWindow = sp<W>::make(this);
-        }
-        return mIWindow;
-    }
-
     const sp<IWindow> getWindow() {
         return mIWindow;
     }
 
     std::shared_ptr<BufferProducer> getBufferProducer();
 
-private:
-    LayoutParams mAttrs;
+    void dispatchAppVisibility(bool visible);
+    void handleAppVisibility(bool visible);
 
-    sp<W> mIWindow;
+    void setInputChannel(InputChannel* inputChannel) {
+        mInputChannel.reset(inputChannel);
+    }
+
+private:
+    int32_t relayoutWindow(LayoutParams& params, int32_t windowVisibility);
+    void updateOrCreateBufferQueue();
+
+    ::os::app::Context* mContext;
     WindowManager* mWindowManager;
+
+    LayoutParams mAttrs;
+    sp<W> mIWindow;
     std::shared_ptr<SurfaceControl> mSurfaceControl;
     std::shared_ptr<InputChannel> mInputChannel;
     std::shared_ptr<UIDriverProxy> mUIProxy;
 
     VsyncRequest mVsyncRequest;
+    bool mAppVisible;
 };
 
 } // namespace wm

@@ -25,6 +25,7 @@
 namespace os {
 namespace wm {
 WindowManager::WindowManager() {}
+WindowManager::~WindowManager() {}
 
 sp<IWindowManager>& WindowManager::getService() {
     std::lock_guard<std::mutex> scoped_lock(mLock);
@@ -35,6 +36,31 @@ sp<IWindowManager>& WindowManager::getService() {
         }
     }
     return mService;
+}
+
+std::shared_ptr<BaseWindow> WindowManager::newWindow(::os::app::Context* context) {
+    std::shared_ptr<BaseWindow> window = std::make_shared<BaseWindow>(context);
+    return window;
+}
+
+int32_t WindowManager::attachIWindow(std::shared_ptr<BaseWindow> window) {
+    sp<IWindow> w = window->getIWindow();
+    int32_t result = 0;
+    // TODO: create inputchannel if app need input event
+    InputChannel* outInputChannel = new InputChannel();
+    mService->addWindow(w, window->getLayoutParams(), 1, 0, 1, outInputChannel, &result);
+    window->setInputChannel(outInputChannel);
+
+    return result;
+}
+
+void WindowManager::relayoutWindow(std::shared_ptr<BaseWindow> window) {
+    // TODO
+}
+
+bool WindowManager::removeWindow(std::shared_ptr<BaseWindow> window) {
+    // TODO
+    return 0;
 }
 
 } // namespace wm
