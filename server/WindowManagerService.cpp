@@ -23,6 +23,7 @@
 #include <sys/stat.h>
 #include <utils/Log.h>
 
+#include "RootContainer.h"
 #include "WindowState.h"
 #include "WindowToken.h"
 #include "wm/SurfaceControl.h"
@@ -47,8 +48,52 @@ static inline BufferId createBufferId(int32_t pid) {
     return {bufferKey, fd};
 }
 
-WindowManagerService::WindowManagerService() {}
-WindowManagerService::~WindowManagerService() {}
+enum {
+    MSG_DO_FRAME = 1001,
+};
+
+// TODO: should config it
+static const int frameInNs = 16 * 1000000;
+
+class UIFrameHandler : public MessageHandler {
+public:
+    UIFrameHandler(RootContainer* container) {
+        mContainer = container;
+    }
+
+    virtual void handleMessage(const Message& message) {
+        if (message.what == MSG_DO_FRAME) {
+            Looper::getForThread()->sendMessageDelayed(frameInNs, this, Message(MSG_DO_FRAME));
+            mContainer->drawFrame();
+        }
+    }
+
+private:
+    RootContainer* mContainer;
+};
+
+WindowManagerService::WindowManagerService() {
+    mLooper = Looper::getForThread();
+
+    mContainer = new RootContainer();
+    if (mLooper) {
+        if (mContainer->getSyncMode() == DSM_TIMER) {
+            mFrameHandler = new UIFrameHandler(mContainer);
+            mLooper->sendMessageDelayed(16 * 1000000, mFrameHandler, Message(MSG_DO_FRAME));
+        } else {
+            int fd, events;
+            if (mContainer->getFdInfo(&fd, &events) == 0) {
+                mLooper->addFd(fd, android::Looper::POLL_CALLBACK, events,
+                               RootContainer::handleEvent, (void*)mContainer);
+            }
+        }
+    }
+}
+
+WindowManagerService::~WindowManagerService() {
+    mFrameHandler.clear();
+    delete mContainer;
+}
 
 // implement AIDL interfaces
 Status WindowManagerService::getPhysicalDisplayInfo(int32_t displayId, DisplayInfo* info,
