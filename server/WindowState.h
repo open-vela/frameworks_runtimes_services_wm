@@ -48,13 +48,17 @@ public:
     void setViewVisibility(bool visibility);
 
     std::shared_ptr<InputChannel> createInputChannel(const std::string name);
-    std::shared_ptr<SurfaceControl> createSurfaceLocked(vector<BufferId> ids);
+    std::shared_ptr<SurfaceControl> createSurfaceControl(vector<BufferId> ids);
 
     void applyTransaction(LayerState layerState);
     bool scheduleVsync(VsyncRequest vsyncReq);
 
     std::shared_ptr<WindowToken> getToken() {
         return mToken;
+    }
+
+    void setHasSurface(bool hasSurface) {
+        mHasSurface = hasSurface;
     }
 
 private:
@@ -65,6 +69,7 @@ private:
     std::shared_ptr<InputChannel> mInputChannel;
     LayoutParams mAttrs;
     bool mVisibility;
+    bool mHasSurface;
 };
 
 } // namespace wm

@@ -58,5 +58,32 @@ std::shared_ptr<InputChannel> WindowState::createInputChannel(const std::string 
     return mInputChannel;
 }
 
+void WindowState::setViewVisibility(bool visibility) {
+    mVisibility = visibility;
+    // TODO: NOTIFY WIN NODE
+}
+
+void WindowState::sendAppVisibilityToClients() {
+    mVisibility = mToken->isClientVisible();
+    mClient->dispatchAppVisibility(mVisibility);
+}
+
+std::shared_ptr<SurfaceControl> WindowState::createSurfaceControl(vector<BufferId> ids) {
+    setHasSurface(false);
+
+    sp<IBinder> handle = new BBinder();
+    mSurfaceControl = std::make_shared<SurfaceControl>(mAttrs.mToken, handle, mAttrs.mWidth,
+                                                       mAttrs.mHeight, mAttrs.mFormat);
+
+    mSurfaceControl->initBufferIds(ids);
+    std::shared_ptr<BufferConsumer> buffConsumer =
+            std::make_shared<BufferConsumer>(mSurfaceControl);
+    mSurfaceControl->setBufferQueue(buffConsumer);
+
+    setHasSurface(true);
+
+    return mSurfaceControl;
+}
+
 } // namespace wm
 } // namespace os
