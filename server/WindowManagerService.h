@@ -40,6 +40,11 @@ class WindowManagerService : public BnWindowManager {
 public:
     WindowManagerService();
     ~WindowManagerService();
+
+    static inline const char* name() {
+        return "window";
+    }
+
     // define AIDL interfaces
     Status getPhysicalDisplayInfo(int32_t displayId, DisplayInfo* info, int32_t* _aidl_return);
     Status addWindow(const sp<IWindow>& window, const LayoutParams& attrs, int32_t visibility,
