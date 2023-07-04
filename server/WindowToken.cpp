@@ -54,5 +54,15 @@ void WindowToken::setClientVisible(bool clientVisible) {
     }
 }
 
+void WindowToken::removeAllWindowsIfPossible() {
+    std::vector<WindowState*>::iterator iter = mChildren.begin();
+    while (iter != mChildren.end()) {
+        (*iter)->removeIfPossible();
+        mChildren.erase(iter);
+        ALOGW("removeAllWindows in the mChildren\n");
+        ++iter;
+    }
+}
+
 } // namespace wm
 } // namespace os
