@@ -31,7 +31,6 @@
 namespace os {
 namespace wm {
 
-class BufferQueue;
 class BufferProducer;
 class UIDriverProxy;
 class WindowManager;
@@ -41,7 +40,7 @@ class SurfaceControl;
 using android::sp;
 using android::binder::Status;
 
-class BaseWindow {
+class BaseWindow : public std::enable_shared_from_this<BaseWindow> {
 public:
     class W : public BnWindow {
     public:
@@ -67,10 +66,8 @@ public:
     DISALLOW_COPY_AND_ASSIGN(BaseWindow);
 
     bool scheduleVsync(VsyncRequest freq);
+
     sp<IWindow> getIWindow() {
-        if (mIWindow == nullptr) {
-            mIWindow = sp<W>::make(this);
-        }
         return mIWindow;
     }
 
@@ -88,29 +85,34 @@ public:
         return mAttrs;
     }
 
-    void setWindowManager(WindowManager* wm) {
-        mWindowManager = wm;
-    }
+    void setWindowManager(WindowManager* wm);
 
     const WindowManager* getWindowManager() {
         return mWindowManager;
     }
 
-    const sp<IWindow> getWindow() {
-        return mIWindow;
-    }
-
     std::shared_ptr<BufferProducer> getBufferProducer();
 
+    bool getAppVisible() {
+        return mAppVisible;
+    }
     void dispatchAppVisibility(bool visible);
     void handleAppVisibility(bool visible);
+
+    void onFrame(int32_t seq);
+    void handleOnFrame(int32_t seq);
+
+    void bufferReleased(int32_t bufKey);
+    void handleBufferRelease(int32_t bufKey);
 
     void setInputChannel(InputChannel* inputChannel) {
         mInputChannel.reset(inputChannel);
     }
+    void setSurfaceControl(SurfaceControl* surfaceControl) {
+        mSurfaceControl.reset(surfaceControl);
+    }
 
 private:
-    int32_t relayoutWindow(LayoutParams& params, int32_t windowVisibility);
     void updateOrCreateBufferQueue();
 
     ::os::app::Context* mContext;

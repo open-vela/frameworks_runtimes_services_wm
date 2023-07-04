@@ -19,6 +19,7 @@
 #include <mutex>
 
 #include "BaseWindow.h"
+#include "SurfaceTransaction.h"
 #include "app/Context.h"
 #include "os/wm/BnWindowManager.h"
 
@@ -28,6 +29,7 @@ namespace wm {
 using android::sp;
 
 class BaseWindow;
+class SurfaceTransaction;
 class WindowManager {
 public:
     WindowManager();
@@ -43,10 +45,15 @@ public:
     bool removeWindow(std::shared_ptr<BaseWindow> window);
     sp<IWindowManager>& getService();
 
+    std::shared_ptr<SurfaceTransaction>& getTransaction() {
+        return mTransaction;
+    }
+
 private:
     std::mutex mLock;
     vector<std::shared_ptr<BaseWindow>> mWindows;
     sp<IWindowManager> mService;
+    std::shared_ptr<SurfaceTransaction> mTransaction;
 };
 
 } // namespace wm

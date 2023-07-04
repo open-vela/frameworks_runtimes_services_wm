@@ -34,6 +34,13 @@ WindowState::WindowState(WindowManagerService* service, const sp<IWindow>& windo
     mVisibility = visibility != 0 ? true : false;
 }
 
+std::shared_ptr<BufferConsumer> WindowState::getBufferConsumer() {
+    if (mSurfaceControl != nullptr && mSurfaceControl->isValid()) {
+        return std::static_pointer_cast<BufferConsumer>(mSurfaceControl->bufferQueue());
+    }
+    return nullptr;
+}
+
 std::shared_ptr<InputChannel> WindowState::createInputChannel(const std::string name) {
     if (mInputChannel != nullptr) {
         ALOGE("mInputChannel is existed,create failed");
@@ -83,6 +90,29 @@ std::shared_ptr<SurfaceControl> WindowState::createSurfaceControl(vector<BufferI
     setHasSurface(true);
 
     return mSurfaceControl;
+}
+
+void WindowState::applyTransaction(LayerState layerState) {
+    ALOGI("applyTransaction");
+    // 1.acquireBuffer
+    std::shared_ptr<BufferConsumer> buffQueue = getBufferConsumer();
+
+    buffQueue->syncQueuedState(layerState.mBufferKey);
+
+    BufferItem* buffItem = buffQueue->acquireBuffer();
+    // 2.draw Buffer
+
+    // 3.releaseBuffer
+    buffQueue->releaseBuffer(buffItem);
+    // 4.notify client buffer released
+
+    // release befored buffer
+    mClient->bufferReleased(layerState.mBufferKey);
+}
+
+bool WindowState::scheduleVsync(VsyncRequest vsyncReq) {
+    // TODO: scheduleVsync
+    return true;
 }
 
 } // namespace wm

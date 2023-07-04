@@ -49,9 +49,11 @@ public:
 
     std::shared_ptr<InputChannel> createInputChannel(const std::string name);
     std::shared_ptr<SurfaceControl> createSurfaceControl(vector<BufferId> ids);
+    std::shared_ptr<BufferConsumer> getBufferConsumer();
 
     void applyTransaction(LayerState layerState);
     bool scheduleVsync(VsyncRequest vsyncReq);
+    bool onVsync();
 
     std::shared_ptr<WindowToken> getToken() {
         return mToken;
@@ -68,6 +70,7 @@ private:
     std::shared_ptr<SurfaceControl> mSurfaceControl;
     std::shared_ptr<InputChannel> mInputChannel;
     LayoutParams mAttrs;
+    VsyncRequest mVsyncRequest;
     bool mVisibility;
     bool mHasSurface;
 };

@@ -24,7 +24,11 @@
 
 namespace os {
 namespace wm {
-WindowManager::WindowManager() {}
+WindowManager::WindowManager() {
+    mTransaction = std::make_shared<SurfaceTransaction>();
+    mTransaction->setWindowManager(this);
+    getService();
+}
 WindowManager::~WindowManager() {}
 
 sp<IWindowManager>& WindowManager::getService() {
@@ -55,11 +59,19 @@ int32_t WindowManager::attachIWindow(std::shared_ptr<BaseWindow> window) {
 }
 
 void WindowManager::relayoutWindow(std::shared_ptr<BaseWindow> window) {
-    // TODO
+    LayoutParams params = window->getLayoutParams();
+    sp<IBinder> handle = new BBinder();
+    SurfaceControl* surfaceControl = new SurfaceControl(params.mToken, handle, params.mWidth,
+                                                        params.mHeight, params.mFormat);
+    int32_t result = 0;
+    mService->relayout(window->getIWindow(), params, params.mWidth, params.mHeight,
+                       window->getAppVisible(), surfaceControl, &result);
+    window->setSurfaceControl(surfaceControl);
 }
 
 bool WindowManager::removeWindow(std::shared_ptr<BaseWindow> window) {
-    // TODO
+    mService->removeWindow(window->getIWindow());
+    // TODO window die
     return 0;
 }
 

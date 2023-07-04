@@ -21,6 +21,7 @@
 
 #include <unordered_map>
 
+#include "WindowManager.h"
 #include "wm/BufferQueue.h"
 
 namespace os {
@@ -29,6 +30,7 @@ namespace wm {
 class LayerState;
 class Rect;
 class SurfaceControl;
+class WindowManager;
 
 using android::IBinder;
 using android::sp;
@@ -54,12 +56,17 @@ public:
 
     SurfaceTransaction& apply();
 
+    void setWindowManager(WindowManager* wm) {
+        mWindowManager = wm;
+    }
+
     void clean();
 
 private:
     LayerState* getLayerState(const std::shared_ptr<SurfaceControl>& sc);
 
     std::unordered_map<sp<IBinder>, LayerState, IBinderHash> mLayerStates;
+    WindowManager* mWindowManager;
 };
 
 } // namespace wm
