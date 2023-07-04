@@ -41,12 +41,16 @@ Status BaseWindow::W::dispatchAppVisibility(bool visible) {
 }
 
 Status BaseWindow::W::onFrame(int32_t seq) {
-    // TODO
+    if (mBaseWindow != nullptr) {
+        mBaseWindow->onFrame(seq);
+    }
     return Status::ok();
 }
 
 Status BaseWindow::W::bufferReleased(int32_t bufKey) {
-    // TODO
+    if (mBaseWindow != nullptr) {
+        mBaseWindow->bufferReleased(bufKey);
+    }
     return Status::ok();
 }
 
@@ -54,15 +58,29 @@ BaseWindow::BaseWindow() {}
 
 BaseWindow::~BaseWindow() {}
 
-BaseWindow::BaseWindow(::os::app::Context* context) : mContext(context) {}
+BaseWindow::BaseWindow(::os::app::Context* context) : mContext(context) {
+    mIWindow = sp<W>::make(this);
+    // TODO init lvgl instance
+}
+
+void BaseWindow::setWindowManager(WindowManager* wm) {
+    mWindowManager = wm;
+}
 
 bool BaseWindow::scheduleVsync(VsyncRequest freq) {
-    // TODO:
-    return false;
+    mWindowManager->getService()->requestVsync(getIWindow(), freq);
+    return true;
 }
 
 void* BaseWindow::getRoot() {
     return mUIProxy->getRoot();
+}
+
+std::shared_ptr<BufferProducer> BaseWindow::getBufferProducer() {
+    if (mSurfaceControl != nullptr && mSurfaceControl->isValid()) {
+        return std::static_pointer_cast<BufferProducer>(mSurfaceControl->bufferQueue());
+    }
+    return nullptr;
 }
 
 void BaseWindow::dispatchAppVisibility(bool visible) {
@@ -70,34 +88,49 @@ void BaseWindow::dispatchAppVisibility(bool visible) {
             [this, visible](void*) { this->handleAppVisibility(visible); });
 }
 
+void BaseWindow::onFrame(int32_t seq) {
+    mContext->getMainLoop()->postTask([this, seq](void*) { this->handleOnFrame(seq); });
+}
+
+void BaseWindow::bufferReleased(int32_t bufKey) {
+    mContext->getMainLoop()->postTask([this, bufKey](void*) { this->handleBufferRelease(bufKey); });
+}
+
 void BaseWindow::handleAppVisibility(bool visible) {
     if (mAppVisible == visible) {
         return;
     }
     mAppVisible = visible;
-    relayoutWindow(mAttrs, mAppVisible);
-}
-
-int32_t BaseWindow::relayoutWindow(LayoutParams& params, int32_t windowVisibility) {
-    int32_t result = -1;
-
-    if (mSurfaceControl == nullptr) {
-        sp<IBinder> handle = new BBinder();
-        mSurfaceControl = std::make_shared<SurfaceControl>(params.mToken, handle, params.mWidth,
-                                                           params.mHeight, params.mFormat);
-    }
-
-    mWindowManager->getService()->relayout(mIWindow, params, params.mWidth, params.mHeight,
-                                           windowVisibility, mSurfaceControl.get(), &result);
-
+    mWindowManager->relayoutWindow(shared_from_this());
     if (mSurfaceControl->isValid()) {
         updateOrCreateBufferQueue();
     } else {
         // TODO release mSurfaceControl
     }
+}
 
-    return result;
-} // namespace wm
+void BaseWindow::handleOnFrame(int32_t seq) {
+    if (!mSurfaceControl->isValid()) {
+        mWindowManager->relayoutWindow(shared_from_this());
+    } else {
+        // 1. dequeue a buffer
+        std::shared_ptr<BufferProducer> buffProducer = getBufferProducer();
+
+        BufferItem* buffItem = buffProducer->dequeueBuffer();
+
+        // TODO:2.lv display draw fill buffer
+
+        // 3. queue the buffer to display
+        buffProducer->queueBuffer(buffItem);
+
+        mWindowManager->getTransaction()->setBuffer(mSurfaceControl, *buffItem).apply();
+    }
+}
+
+void BaseWindow::handleBufferRelease(int32_t bufKey) {
+    std::shared_ptr<BufferProducer> buffProducer = getBufferProducer();
+    buffProducer->syncFreeState(bufKey);
+}
 
 void BaseWindow::updateOrCreateBufferQueue() {
     if (mSurfaceControl->bufferQueue() != nullptr) {
