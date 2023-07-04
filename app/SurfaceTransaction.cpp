@@ -75,6 +75,13 @@ SurfaceTransaction& SurfaceTransaction::setAlpha(const std::shared_ptr<SurfaceCo
 
 SurfaceTransaction& SurfaceTransaction::apply() {
     // TODO:
+    std::vector<LayerState> layerStates;
+    for (std::unordered_map<sp<IBinder>, LayerState, IBinderHash>::iterator it =
+                 mLayerStates.begin();
+         it != mLayerStates.end(); ++it) {
+        layerStates.push_back(it->second);
+    }
+    mWindowManager->getService()->applyTransaction(layerStates);
     return *this;
 }
 
