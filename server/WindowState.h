@@ -46,6 +46,7 @@ public:
     bool isVisible();
     void sendAppVisibilityToClients();
     void setViewVisibility(bool visibility);
+    void removeIfPossible();
 
     std::shared_ptr<InputChannel> createInputChannel(const std::string name);
     std::shared_ptr<SurfaceControl> createSurfaceControl(vector<BufferId> ids);

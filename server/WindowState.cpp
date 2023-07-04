@@ -115,5 +115,16 @@ bool WindowState::scheduleVsync(VsyncRequest vsyncReq) {
     return true;
 }
 
+void WindowState::removeIfPossible() {
+    // mSurfaceController.hide
+
+    // destroySurfaceLocked
+    // windowRemovedLocked
+    // win node
+    // unlinkToDeath
+
+    ALOGI("called");
+}
+
 } // namespace wm
 } // namespace os

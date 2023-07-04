@@ -41,6 +41,7 @@ public:
     void addWindow(WindowState* win);
     bool isClientVisible();
     void setClientVisible(bool clientVisible);
+    void removeAllWindowsIfPossible();
 
 private:
     WindowManagerService* mService;
