@@ -107,7 +107,7 @@ Status WindowManagerService::addWindow(const sp<IWindow>& window, const LayoutPa
                                        int32_t visibility, int32_t displayId, int32_t userId,
                                        InputChannel* outInputChannel, int32_t* _aidl_return) {
     sp<IBinder> client = IInterface::asBinder(window);
-    WindowStateMap::iterator itState = mWindowMap.find(client);
+    auto itState = mWindowMap.find(client);
     if (itState != mWindowMap.end()) {
         ALOGI("window is already existed");
         *_aidl_return = -1; // ERROR
@@ -140,6 +140,12 @@ Status WindowManagerService::addWindow(const sp<IWindow>& window, const LayoutPa
 
 Status WindowManagerService::removeWindow(const sp<IWindow>& window) {
     // TODO
+    sp<IBinder> client = IInterface::asBinder(window);
+    auto itState = mWindowMap.find(client);
+    if (itState != mWindowMap.end()) {
+        itState->second->removeIfPossible();
+    }
+    mWindowMap.erase(client);
     return Status::ok();
 }
 
@@ -194,7 +200,12 @@ Status WindowManagerService::addWindowToken(const sp<IBinder>& token, int32_t ty
 }
 
 Status WindowManagerService::removeWindowToken(const sp<IBinder>& token, int32_t displayId) {
-    // TODO
+    auto it = mTokenMap.find(token);
+    if (it != mTokenMap.end()) {
+        ALOGI("removeAllWindowsIfPossible ");
+        it->second->removeAllWindowsIfPossible();
+    }
+    mTokenMap.erase(token);
     return Status::ok();
 }
 
