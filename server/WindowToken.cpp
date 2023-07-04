@@ -25,7 +25,7 @@ namespace wm {
 
 WindowToken::WindowToken(WindowManagerService* service, const sp<IBinder>& token, int32_t type,
                          int32_t displayId)
-      : mService(service), mToken(token), mType(type) {}
+      : mService(service), mToken(token), mType(type), mClientVisible(0) {}
 
 WindowToken::~WindowToken() {}
 

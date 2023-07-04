@@ -170,8 +170,13 @@ Status WindowManagerService::relayout(const sp<IWindow>& window, const LayoutPar
 }
 
 Status WindowManagerService::isWindowToken(const sp<IBinder>& binder, bool* _aidl_return) {
-    // TODO
-    *_aidl_return = 0;
+    auto it = mTokenMap.find(binder);
+    if (it != mTokenMap.end()) {
+        *_aidl_return = true;
+
+    } else {
+        *_aidl_return = false;
+    }
     return Status::ok();
 }
 
@@ -203,12 +208,22 @@ Status WindowManagerService::updateWindowTokenVisibility(const sp<IBinder>& toke
 }
 
 Status WindowManagerService::applyTransaction(const vector<LayerState>& state) {
-    // TODO
+    for (const auto& layerState : state) {
+        if (mWindowMap.find(layerState.mToken) != mWindowMap.end()) {
+            mWindowMap[layerState.mToken]->applyTransaction(layerState);
+        }
+    }
+
     return Status::ok();
 }
 
 Status WindowManagerService::requestVsync(const sp<IWindow>& window, VsyncRequest freq) {
-    // TODO
+    // TODO listener vsync list
+    sp<IBinder> client = IInterface::asBinder(window);
+    auto it = mWindowMap.find(client);
+    if (it != mWindowMap.end()) {
+        it->second->scheduleVsync(freq);
+    }
     return Status::ok();
 }
 
