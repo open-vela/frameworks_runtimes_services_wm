@@ -32,7 +32,7 @@ BufferItem* BufferConsumer::acquireBuffer() {
     return nullptr;
 }
 
-int BufferConsumer::releaseBuffer(BufferItem* buffer) {
+bool BufferConsumer::releaseBuffer(BufferItem* buffer) {
     if (buffer == nullptr) {
         return false;
     }

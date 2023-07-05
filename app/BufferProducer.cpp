@@ -32,7 +32,7 @@ BufferItem* BufferProducer::dequeueBuffer() {
     return nullptr;
 }
 
-int BufferProducer::queueBuffer(BufferItem* buffer) {
+bool BufferProducer::queueBuffer(BufferItem* buffer) {
     if (buffer == nullptr) {
         return false;
     }

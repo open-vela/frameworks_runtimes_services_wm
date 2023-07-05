@@ -22,10 +22,10 @@
 #include <utils/RefBase.h>
 
 #include "WindowManagerService.h"
+#include "WindowNode.h"
 #include "WindowToken.h"
 #include "os/wm/IWindowManager.h"
 #include "wm/LayoutParams.h"
-
 namespace os {
 namespace wm {
 
@@ -33,6 +33,7 @@ using android::sp;
 
 class WindowManagerService;
 class SurfaceControl;
+class WindowNode;
 class WindowToken;
 class LayoutParams;
 
@@ -64,6 +65,11 @@ public:
         mHasSurface = hasSurface;
     }
 
+    BufferItem* acquireBuffer();
+    bool releaseBuffer(BufferItem* buffer);
+
+    DISALLOW_COPY_AND_ASSIGN(WindowState);
+
 private:
     sp<IWindow> mClient;
     std::shared_ptr<WindowToken> mToken;
@@ -74,6 +80,8 @@ private:
     VsyncRequest mVsyncRequest;
     bool mVisibility;
     bool mHasSurface;
+
+    WindowNode* mNode;
 };
 
 } // namespace wm
