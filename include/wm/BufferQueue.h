@@ -86,7 +86,7 @@ public:
     ~BufferProducer();
 
     BufferItem* dequeueBuffer();
-    int queueBuffer(BufferItem* buffer);
+    bool queueBuffer(BufferItem* buffer);
 
     bool syncFreeState(BufferKey key) {
         return syncState(key, BSTATE_FREE);
@@ -99,7 +99,7 @@ public:
     ~BufferConsumer();
 
     BufferItem* acquireBuffer();
-    int releaseBuffer(BufferItem* buffer);
+    bool releaseBuffer(BufferItem* buffer);
 
     bool syncQueuedState(BufferKey key) {
         return syncState(key, BSTATE_QUEUED);
