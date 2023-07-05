@@ -70,6 +70,14 @@ public:
         bottom = other.bottom;
     }
 
+    int32_t getWidth() {
+        return right - left;
+    }
+
+    int32_t getHeight() {
+        return bottom - top;
+    }
+
     Rect& operator=(const Rect& other) {
         if (this != &other) {
             left = other.left;

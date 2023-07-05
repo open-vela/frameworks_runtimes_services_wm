@@ -22,6 +22,8 @@
 #include <sys/mman.h>
 #include <utils/RefBase.h>
 
+#include "RootContainer.h"
+#include "WindowManagerService.h"
 #include "wm/InputMessage.h"
 
 namespace os {
@@ -32,6 +34,16 @@ WindowState::WindowState(WindowManagerService* service, const sp<IWindow>& windo
       : mClient(window), mToken(token), mService(service), mInputChannel(nullptr) {
     mAttrs = params;
     mVisibility = visibility != 0 ? true : false;
+
+    Rect rect(params.mX, params.mY, params.mX + params.mWidth, params.mY + params.mHeight);
+    // TODO: config layer by type
+    mNode = new WindowNode(this, mService->getRootContainer()->getDefLayer(), rect);
+}
+
+WindowState::~WindowState() {
+    // TODO: clear members
+
+    delete mNode;
 }
 
 std::shared_ptr<BufferConsumer> WindowState::getBufferConsumer() {
@@ -124,6 +136,24 @@ void WindowState::removeIfPossible() {
     // unlinkToDeath
 
     ALOGI("called");
+}
+
+BufferItem* WindowState::acquireBuffer() {
+    std::shared_ptr<BufferConsumer> consumer = getBufferConsumer();
+    if (consumer == nullptr) {
+        return nullptr;
+    }
+    return consumer->acquireBuffer();
+}
+
+bool WindowState::releaseBuffer(BufferItem* buffer) {
+    std::shared_ptr<BufferConsumer> consumer = getBufferConsumer();
+    if (consumer && consumer->releaseBuffer(buffer) && mClient) {
+        mClient->bufferReleased(buffer->mKey);
+        return true;
+    }
+
+    return false;
 }
 
 } // namespace wm
