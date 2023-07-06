@@ -16,8 +16,12 @@
 
 #include "BaseWindow.h"
 
+#include <mqueue.h>
+
 #include "UIDriverProxy.h"
+#include "uv.h"
 #include "wm/InputChannel.h"
+#include "wm/InputMessage.h"
 #include "wm/SurfaceControl.h"
 
 namespace os {
@@ -54,6 +58,19 @@ Status BaseWindow::W::bufferReleased(int32_t bufKey) {
     return Status::ok();
 }
 
+static void eventCallback(int fd, int status, int events, void* data) {
+    if (status < 0) {
+        ALOGE("Poll error: %s ", uv_strerror(status));
+        return;
+    }
+
+    if (events & UV_READABLE) {
+        InputMessage message;
+        mq_receive(fd, (char*)&message, sizeof(InputMessage), NULL);
+        // TODO: send event to lvgl
+    }
+}
+
 BaseWindow::BaseWindow() {}
 
 BaseWindow::~BaseWindow() {}
@@ -83,6 +100,21 @@ std::shared_ptr<BufferProducer> BaseWindow::getBufferProducer() {
     return nullptr;
 }
 
+void BaseWindow::doDie() {
+    // TODO destory lvglDriver
+    mInputChannel = nullptr;
+    mSurfaceControl = nullptr;
+    delete mPoll;
+}
+
+void BaseWindow::setInputChannel(InputChannel* inputChannel) {
+    if (inputChannel != nullptr && inputChannel->isValid()) {
+        mInputChannel.reset(inputChannel);
+        mPoll = new ::os::app::UvPoll(mContext->getMainLoop(), mInputChannel->getEventFd());
+        mPoll->start(UV_READABLE, eventCallback, this);
+    }
+}
+
 void BaseWindow::dispatchAppVisibility(bool visible) {
     mContext->getMainLoop()->postTask(
             [this, visible](void*) { this->handleAppVisibility(visible); });
@@ -105,7 +137,8 @@ void BaseWindow::handleAppVisibility(bool visible) {
     if (mSurfaceControl->isValid()) {
         updateOrCreateBufferQueue();
     } else {
-        // TODO release mSurfaceControl
+        // release mSurfaceControl
+        mSurfaceControl = nullptr;
     }
 }
 
@@ -134,7 +167,7 @@ void BaseWindow::handleBufferRelease(int32_t bufKey) {
 
 void BaseWindow::updateOrCreateBufferQueue() {
     if (mSurfaceControl->bufferQueue() != nullptr) {
-        // TODO: updateBuffer
+        mSurfaceControl->bufferQueue()->update(mSurfaceControl);
     } else {
         std::shared_ptr<BufferProducer> buffProducer =
                 std::make_shared<BufferProducer>(mSurfaceControl);

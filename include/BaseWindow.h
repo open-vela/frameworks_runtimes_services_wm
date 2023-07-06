@@ -93,6 +93,7 @@ public:
 
     std::shared_ptr<BufferProducer> getBufferProducer();
 
+    void doDie();
     bool getAppVisible() {
         return mAppVisible;
     }
@@ -105,9 +106,7 @@ public:
     void bufferReleased(int32_t bufKey);
     void handleBufferRelease(int32_t bufKey);
 
-    void setInputChannel(InputChannel* inputChannel) {
-        mInputChannel.reset(inputChannel);
-    }
+    void setInputChannel(InputChannel* inputChannel);
     void setSurfaceControl(SurfaceControl* surfaceControl) {
         mSurfaceControl.reset(surfaceControl);
     }
@@ -123,7 +122,7 @@ private:
     std::shared_ptr<SurfaceControl> mSurfaceControl;
     std::shared_ptr<InputChannel> mInputChannel;
     std::shared_ptr<UIDriverProxy> mUIProxy;
-
+    ::os::app::UvPoll* mPoll;
     VsyncRequest mVsyncRequest;
     bool mAppVisible;
 };
