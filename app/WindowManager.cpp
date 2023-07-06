@@ -44,6 +44,7 @@ sp<IWindowManager>& WindowManager::getService() {
 
 std::shared_ptr<BaseWindow> WindowManager::newWindow(::os::app::Context* context) {
     std::shared_ptr<BaseWindow> window = std::make_shared<BaseWindow>(context);
+    mWindows.push_back(window);
     return window;
 }
 
@@ -71,7 +72,13 @@ void WindowManager::relayoutWindow(std::shared_ptr<BaseWindow> window) {
 
 bool WindowManager::removeWindow(std::shared_ptr<BaseWindow> window) {
     mService->removeWindow(window->getIWindow());
-    // TODO window die
+
+    window->doDie();
+    auto it = std::find(mWindows.begin(), mWindows.end(), window);
+    if (it != mWindows.end()) {
+        mWindows.erase(it);
+    }
+
     return 0;
 }
 
