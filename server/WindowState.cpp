@@ -18,13 +18,12 @@
 
 #include "WindowState.h"
 
-#include <mqueue.h>
 #include <sys/mman.h>
 #include <utils/RefBase.h>
 
 #include "RootContainer.h"
 #include "WindowManagerService.h"
-#include "wm/InputMessage.h"
+#include "wm/LayerState.h"
 
 namespace os {
 namespace wm {
@@ -48,7 +47,8 @@ WindowState::WindowState(WindowManagerService* service, const sp<IWindow>& windo
 
 WindowState::~WindowState() {
     // TODO: clear members
-
+    mClient = nullptr;
+    mToken = nullptr;
     delete mNode;
 }
 
@@ -64,23 +64,12 @@ std::shared_ptr<InputChannel> WindowState::createInputChannel(const std::string 
         ALOGE("mInputChannel is existed,create failed");
         return nullptr;
     }
-    struct mq_attr mqstat;
-    int oflag = O_CREAT | O_RDWR | O_NONBLOCK;
-    mqd_t messageQueue = 0;
-
-    memset(&mqstat, 0, sizeof(mqstat));
-    mqstat.mq_maxmsg = MAX_MSG;
-    mqstat.mq_msgsize = sizeof(InputMessage);
-    mqstat.mq_flags = 0;
-
-    if (((mqd_t)-1) == (messageQueue = mq_open(name.c_str(), oflag, 0777, &mqstat))) {
-        ALOGI("mq_open doesn't return success ");
+    mInputChannel = std::make_shared<InputChannel>();
+    if (mInputChannel->create(name)) {
+        return mInputChannel;
+    } else {
         return nullptr;
     }
-
-    mInputChannel = std::make_shared<InputChannel>();
-    mInputChannel->setEventFd(messageQueue);
-    return mInputChannel;
 }
 
 void WindowState::setViewVisibility(bool visibility) {
@@ -111,21 +100,26 @@ std::shared_ptr<SurfaceControl> WindowState::createSurfaceControl(vector<BufferI
 }
 
 void WindowState::applyTransaction(LayerState layerState) {
-    ALOGI("applyTransaction");
-    // 1.acquireBuffer
-    std::shared_ptr<BufferConsumer> buffQueue = getBufferConsumer();
+    BufferItem* buffItem = nullptr;
+    Rect* rect = nullptr;
+    if (layerState.mFlags & LayerState::LAYER_POSITION_CHANGED) {
+        // TODO
+    }
 
-    buffQueue->syncQueuedState(layerState.mBufferKey);
+    if (layerState.mFlags & LayerState::LAYER_ALPHA_CHANGED) {
+        // TODO
+    }
 
-    BufferItem* buffItem = buffQueue->acquireBuffer();
-    // 2.draw Buffer
+    if (layerState.mFlags & LayerState::LAYER_BUFFER_CHANGED) {
+        std::shared_ptr<BufferConsumer> consumer = getBufferConsumer();
+        buffItem = consumer->syncQueuedState(layerState.mBufferKey);
+    }
 
-    // 3.releaseBuffer
-    buffQueue->releaseBuffer(buffItem);
-    // 4.notify client buffer released
+    if (layerState.mFlags & LayerState::LAYER_BUFFER_CROP_CHANGED) {
+        rect = &layerState.mBufferCrop;
+    }
 
-    // release befored buffer
-    mClient->bufferReleased(layerState.mBufferKey);
+    mNode->updateBuffer(buffItem, rect);
 }
 
 bool WindowState::scheduleVsync(VsyncRequest vsyncReq) {
@@ -160,12 +154,13 @@ bool WindowState::onVsync() {
 }
 
 void WindowState::removeIfPossible() {
-    // mSurfaceController.hide
+    mSurfaceControl = nullptr;
 
-    // destroySurfaceLocked
-    // windowRemovedLocked
+    mInputChannel->release();
+    mInputChannel = nullptr;
+
     // win node
-    // unlinkToDeath
+    mNode = nullptr;
 
     ALOGI("called");
 }

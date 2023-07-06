@@ -18,6 +18,10 @@
 
 #include "wm/InputChannel.h"
 
+#include <mqueue.h>
+
+#include "wm/InputMessage.h"
+
 namespace os {
 namespace wm {
 
@@ -40,6 +44,30 @@ int32_t InputChannel::getEventFd() {
 
 void InputChannel::setEventFd(int32_t fd) {
     mEventFd = fd;
+}
+
+bool InputChannel::create(const std::string name) {
+    struct mq_attr mqstat;
+    int oflag = O_CREAT | O_RDWR | O_NONBLOCK;
+
+    memset(&mqstat, 0, sizeof(mqstat));
+    mqstat.mq_maxmsg = MAX_MSG;
+    mqstat.mq_msgsize = sizeof(InputMessage);
+    mqstat.mq_flags = 0;
+
+    if (((mqd_t)-1) == (mEventFd = mq_open(name.c_str(), oflag, 0777, &mqstat))) {
+        ALOGI("mq_open doesn't return success ");
+        return false;
+    }
+
+    return true;
+}
+
+void InputChannel::release() {
+    if (isValid()) {
+        mq_close(mEventFd);
+        mEventFd = -1;
+    }
 }
 
 } // namespace wm
