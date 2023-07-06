@@ -110,14 +110,14 @@ Status WindowManagerService::addWindow(const sp<IWindow>& window, const LayoutPa
     auto itState = mWindowMap.find(client);
     if (itState != mWindowMap.end()) {
         ALOGI("window is already existed");
-        *_aidl_return = -1; // ERROR
+        *_aidl_return = -1;
         return Status::ok();
     }
 
     sp<IBinder> token = attrs.mToken; // get token from attrs
     auto itToken = mTokenMap.find(token);
     if (itToken == mTokenMap.end()) {
-        *_aidl_return = -1; // ERROR
+        *_aidl_return = -1;
         return Status::ok();
     }
     WindowToken* winToken = itToken->second;
@@ -170,6 +170,9 @@ Status WindowManagerService::relayout(const sp<IWindow>& window, const LayoutPar
         *_aidl_return = createSurfaceControl(outSurfaceControl, win);
     } else {
         // TODO:destorySurfaceControl
+        if (outSurfaceControl != nullptr) {
+            outSurfaceControl = nullptr;
+        }
     }
 
     return Status::ok();
