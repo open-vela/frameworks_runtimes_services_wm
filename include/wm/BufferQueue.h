@@ -62,7 +62,7 @@ protected:
     BufferItem* getBuffer(BufferSlot slot);
     bool cancelBuffer(BufferItem* item);
 
-    bool syncState(BufferKey key, BufferState state);
+    BufferItem* syncState(BufferKey key, BufferState state);
     bool toState(BufferItem* item, BufferState state);
 
 private:
@@ -88,7 +88,7 @@ public:
     BufferItem* dequeueBuffer();
     bool queueBuffer(BufferItem* buffer);
 
-    bool syncFreeState(BufferKey key) {
+    BufferItem* syncFreeState(BufferKey key) {
         return syncState(key, BSTATE_FREE);
     }
 };
@@ -101,7 +101,7 @@ public:
     BufferItem* acquireBuffer();
     bool releaseBuffer(BufferItem* buffer);
 
-    bool syncQueuedState(BufferKey key) {
+    BufferItem* syncQueuedState(BufferKey key) {
         return syncState(key, BSTATE_QUEUED);
     }
 };
