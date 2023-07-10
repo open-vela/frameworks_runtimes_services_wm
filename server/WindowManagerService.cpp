@@ -48,6 +48,13 @@ static inline BufferId createBufferId(int32_t pid) {
     return {bufferKey, fd};
 }
 
+static inline int handleUIEvent(int /*fd*/, int /*events*/, void* data) {
+    WindowManagerService* service = static_cast<WindowManagerService*>(data);
+    service->getRootContainer()->drawFrame();
+    service->responseVsync();
+    return 1;
+}
+
 enum {
     MSG_DO_FRAME = 1001,
 };
@@ -57,34 +64,33 @@ static const int frameInNs = 16 * 1000000;
 
 class UIFrameHandler : public MessageHandler {
 public:
-    UIFrameHandler(RootContainer* container) {
-        mContainer = container;
+    UIFrameHandler(WindowManagerService* service) {
+        mService = service;
     }
 
     virtual void handleMessage(const Message& message) {
         if (message.what == MSG_DO_FRAME) {
             Looper::getForThread()->sendMessageDelayed(frameInNs, this, Message(MSG_DO_FRAME));
-            mContainer->drawFrame();
+            handleUIEvent(0, 0, mService);
         }
     }
 
 private:
-    RootContainer* mContainer;
+    WindowManagerService* mService;
 };
 
 WindowManagerService::WindowManagerService() {
     mLooper = Looper::getForThread();
-
     mContainer = new RootContainer();
     if (mLooper) {
         if (mContainer->getSyncMode() == DSM_TIMER) {
-            mFrameHandler = new UIFrameHandler(mContainer);
+            mFrameHandler = new UIFrameHandler(this);
             mLooper->sendMessageDelayed(16 * 1000000, mFrameHandler, Message(MSG_DO_FRAME));
         } else {
             int fd, events;
             if (mContainer->getFdInfo(&fd, &events) == 0) {
-                mLooper->addFd(fd, android::Looper::POLL_CALLBACK, events,
-                               RootContainer::handleEvent, (void*)mContainer);
+                mLooper->addFd(fd, android::Looper::POLL_CALLBACK, events, handleUIEvent,
+                               (void*)this);
             }
         }
     }
@@ -232,13 +238,18 @@ Status WindowManagerService::applyTransaction(const vector<LayerState>& state) {
 }
 
 Status WindowManagerService::requestVsync(const sp<IWindow>& window, VsyncRequest freq) {
-    // TODO listener vsync list
     sp<IBinder> client = IInterface::asBinder(window);
     auto it = mWindowMap.find(client);
     if (it != mWindowMap.end()) {
         it->second->scheduleVsync(freq);
     }
     return Status::ok();
+}
+
+void WindowManagerService::responseVsync() {
+    for (const auto& [key, state] : mWindowMap) {
+        state->onVsync();
+    }
 }
 
 int32_t WindowManagerService::createSurfaceControl(SurfaceControl* outSurfaceControl,
