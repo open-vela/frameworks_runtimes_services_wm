@@ -56,26 +56,25 @@ lv_obj_t* RootContainer::getTopLayer() {
 
 bool RootContainer::init() {
     lv_init();
-
     // TODO: custom init for porting
+
     lv_porting_init();
 
     mDisp = lv_disp_get_default();
     return mDisp ? true : false;
 }
 
-int RootContainer::drawFrame() {
+bool RootContainer::drawFrame() {
     lv_refr_now(mDisp);
-    return 0;
+    return true;
 }
 
-int RootContainer::handleEvent(int fd, int events, void* data) {
-    RootContainer* container = static_cast<RootContainer*>(data);
-    if (events == container->mVsyncEvent) {
+bool RootContainer::handleEvent(int fd, int events) {
+    if (events == mVsyncEvent) {
         _lv_disp_refr_timer(NULL);
-        return 0;
+        return true;
     }
-    return -1;
+    return false;
 }
 
 int RootContainer::getFdInfo(int* fd, int* events) {
