@@ -78,6 +78,7 @@ private:
     std::shared_ptr<InputChannel> mInputChannel;
     LayoutParams mAttrs;
     VsyncRequest mVsyncRequest;
+    int mFrameReq;
     bool mVisibility;
     bool mHasSurface;
 
