@@ -31,7 +31,13 @@ namespace wm {
 
 WindowState::WindowState(WindowManagerService* service, const sp<IWindow>& window,
                          WindowToken* token, const LayoutParams& params, int32_t visibility)
-      : mClient(window), mToken(token), mService(service), mInputChannel(nullptr) {
+      : mClient(window),
+        mToken(token),
+        mService(service),
+        mInputChannel(nullptr),
+        mVsyncRequest(VsyncRequest::VSYNC_REQ_NONE),
+        mFrameReq(0),
+        mHasSurface(false) {
     mAttrs = params;
     mVisibility = visibility != 0 ? true : false;
 
@@ -123,7 +129,33 @@ void WindowState::applyTransaction(LayerState layerState) {
 }
 
 bool WindowState::scheduleVsync(VsyncRequest vsyncReq) {
-    // TODO: scheduleVsync
+    if (mVsyncRequest == vsyncReq) return false;
+
+    mVsyncRequest = vsyncReq;
+    return true;
+}
+
+bool WindowState::onVsync() {
+    switch (mVsyncRequest) {
+        case VsyncRequest::VSYNC_REQ_NONE:
+            return false;
+
+        case VsyncRequest::VSYNC_REQ_SINGLE:
+            mVsyncRequest = VsyncRequest::VSYNC_REQ_NONE;
+            break;
+
+        case VsyncRequest::VSYNC_REQ_SINGLESUPPRESS:
+            mVsyncRequest = VsyncRequest::VSYNC_REQ_SINGLE;
+            break;
+
+        case VsyncRequest::VSYNC_REQ_PERIODIC:
+            break;
+
+        default:
+            return false;
+    }
+
+    mClient->onFrame(++mFrameReq);
     return true;
 }
 
