@@ -36,12 +36,12 @@ public:
     lv_obj_t* getSysLayer();
     lv_obj_t* getTopLayer();
 
-    int drawFrame();
+    bool drawFrame();
     DispSyncMode getSyncMode() {
         return mSyncMode;
     }
     int getFdInfo(int* fd, int* events);
-    static int handleEvent(int fd, int events, void* data);
+    bool handleEvent(int fd, int events);
 
 private:
     bool init();

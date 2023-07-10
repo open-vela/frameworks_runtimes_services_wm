@@ -59,6 +59,7 @@ public:
 
     Status applyTransaction(const vector<LayerState>& state);
     Status requestVsync(const sp<IWindow>& window, VsyncRequest freq);
+    void responseVsync();
 
     // public methods
     RootContainer* getRootContainer() {
