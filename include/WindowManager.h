@@ -32,12 +32,12 @@ class BaseWindow;
 class SurfaceTransaction;
 class WindowManager {
 public:
-    WindowManager();
     ~WindowManager();
 
     static inline const char* name() {
         return "window";
     }
+    static WindowManager* getInstance();
 
     std::shared_ptr<BaseWindow> newWindow(::os::app::Context* context);
     int32_t attachIWindow(std::shared_ptr<BaseWindow> window);
@@ -50,10 +50,13 @@ public:
     }
 
 private:
+    WindowManager();
+
     std::mutex mLock;
     vector<std::shared_ptr<BaseWindow>> mWindows;
     sp<IWindowManager> mService;
     std::shared_ptr<SurfaceTransaction> mTransaction;
+    static WindowManager* mInstance;
 };
 
 } // namespace wm

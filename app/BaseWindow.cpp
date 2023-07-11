@@ -174,8 +174,11 @@ void BaseWindow::handleAppVisibility(bool visible) {
 void BaseWindow::handleOnFrame(int32_t seq) {
     mVsyncRequest = nextVsyncState(mVsyncRequest);
 
-    if (!mSurfaceControl->isValid()) {
+    if (mSurfaceControl.get() == nullptr) {
         mWindowManager->relayoutWindow(shared_from_this());
+        if (mSurfaceControl->isValid()) {
+            updateOrCreateBufferQueue();
+        }
     } else {
         if (mUIProxy.get() == nullptr) return;
 

@@ -37,15 +37,25 @@ static inline std::string getUniqueId() {
     return std::to_string(std::rand());
 }
 
-static inline BufferId createBufferId(int32_t pid) {
+static inline bool createSharedBuffer(int32_t size, BufferId* id) {
+    int32_t pid = IPCThreadState::self()->getCallingPid();
+
     std::string bufferPath = graphicsPath + std::to_string(pid) + "/bq/" + getUniqueId();
     int32_t fd = shm_open(bufferPath.c_str(), O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
     if (fd == -1) {
         ALOGE("Failed to create shared memory,%s", strerror(errno));
+        return false;
     }
-    std::hash<std::string> hasher;
-    int32_t bufferKey = hasher(bufferPath);
-    return {bufferKey, fd};
+
+    if (ftruncate(fd, size) == -1) {
+        ALOGE("Failed to resize shared memory");
+        close(fd);
+        return false;
+    }
+
+    int32_t bufferKey = std::rand();
+    *id = {bufferKey, fd};
+    return true;
 }
 
 static inline int handleUIEvent(int /*fd*/, int /*events*/, void* data) {
@@ -176,11 +186,11 @@ Status WindowManagerService::relayout(const sp<IWindow>& window, const LayoutPar
         return Status::fromExceptionCode(1, "can't find winstate in map");
     }
 
+    win->setRequestedSize(requestedWidth, requestedHeight);
+
     if (visibility) {
-        ALOGI("createSurfaceControl() called");
         *_aidl_return = createSurfaceControl(outSurfaceControl, win);
     } else {
-        // destorySurfaceControl
         win->destorySurfaceControl();
     }
 
@@ -264,11 +274,20 @@ int32_t WindowManagerService::createSurfaceControl(SurfaceControl* outSurfaceCon
     int32_t result = 0;
 
     // double buffer: Create shared memory
-    int32_t pid = IPCThreadState::self()->getCallingPid();
 
+    // TODO:parse mformat, temporary value is 4 bytes
+    int32_t size = (win->mRequestedWidth) * (win->mRequestedHeight) * 4;
     vector<BufferId> ids;
     for (int i = 0; i < 2; i++) {
-        ids.push_back(createBufferId(pid));
+        BufferId id;
+        if (!createSharedBuffer(size, &id)) {
+            for (int j = 0; j < (int)ids.size(); j++) {
+                close(ids[j].mFd);
+            }
+            ids.clear();
+            return -1;
+        }
+        ids.push_back(id);
     }
     std::shared_ptr<SurfaceControl> surfaceControl = win->createSurfaceControl(ids);
 
