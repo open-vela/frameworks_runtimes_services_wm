@@ -103,18 +103,17 @@ bool BufferQueue::update(const std::shared_ptr<SurfaceControl>& sc) {
             return false;
         }
 
-        if (ftruncate(bufferFd, size) == -1) {
-            ALOGE("Failed to resize shared memory");
-            return false;
-        }
+        void* buffer =
+                mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON, bufferFd, 0);
 
-        void* buffer = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, bufferFd, 0);
         if (buffer == MAP_FAILED) {
             ALOGE("Failed to map shared memory");
             return false;
         }
+
         BufferItem buffItem = {bufferkey, bufferFd, buffer, size, BSTATE_FREE};
         mBuffers[bufferkey] = buffItem;
+        mFreeSlot.push_back(bufferkey);
     }
     return true;
 }
@@ -217,7 +216,6 @@ BufferItem* BufferQueue::getBuffer(BufferSlot slot) {
     } else if (slot == BSLOT_DATA && !mDataSlot.empty()) {
         key = mDataSlot.front();
     }
-
     return getBuffer(key);
 }
 

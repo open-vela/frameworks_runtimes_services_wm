@@ -69,6 +69,10 @@ public:
 
     BufferItem* acquireBuffer();
     bool releaseBuffer(BufferItem* buffer);
+    void setRequestedSize(int32_t requestedWidth, int32_t requestedHeight);
+
+    int32_t mRequestedWidth;
+    int32_t mRequestedHeight;
 
     DISALLOW_COPY_AND_ASSIGN(WindowState);
 
