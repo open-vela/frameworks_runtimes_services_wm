@@ -27,7 +27,10 @@ WindowToken::WindowToken(WindowManagerService* service, const sp<IBinder>& token
                          int32_t displayId)
       : mService(service), mToken(token), mType(type), mClientVisible(0) {}
 
-WindowToken::~WindowToken() {}
+WindowToken::~WindowToken() {
+    mToken = nullptr;
+    mChildren.clear();
+}
 
 void WindowToken::addWindow(WindowState* win) {
     for (auto it = mChildren.begin(); it != mChildren.end(); it++) {
