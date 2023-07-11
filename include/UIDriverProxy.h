@@ -33,8 +33,8 @@ public:
     virtual void* getRoot() = 0;
     virtual void* getWindow() = 0;
     virtual bool initUIInstance() = 0;
+    virtual void handleEvent(InputMessage& message) = 0;
 
-    virtual void handleEvent(InputMessage& message);
     // window request ui proxy, update buffer data
     virtual void drawFrame(BufferItem* item);
     bool finishDrawing();
