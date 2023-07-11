@@ -17,25 +17,20 @@
 #pragma once
 
 #include "UIDriverProxy.h"
-#include "lvgl/lvgl.h"
 
 namespace os {
 namespace wm {
 
-class LVGLDriverProxy : public UIDriverProxy {
+class DummyDriverProxy : public UIDriverProxy {
 public:
-    LVGLDriverProxy(std::shared_ptr<BaseWindow> win);
-    ~LVGLDriverProxy();
+    DummyDriverProxy(std::shared_ptr<BaseWindow> win);
+    ~DummyDriverProxy();
 
     void* getRoot() override;
     void* getWindow() override;
     bool initUIInstance() override;
     void handleEvent(InputMessage& message) override;
     void drawFrame(BufferItem* bufItem) override;
-
-private:
-    lv_disp_t* mDisp;
-    lv_indev_t* mIndev;
 };
 
 } // namespace wm

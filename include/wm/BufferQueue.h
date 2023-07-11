@@ -57,11 +57,10 @@ public:
     virtual ~BufferQueue();
 
     bool update(const std::shared_ptr<SurfaceControl>& sc);
+    bool cancelBuffer(BufferItem* item);
 
 protected:
     BufferItem* getBuffer(BufferSlot slot);
-    bool cancelBuffer(BufferItem* item);
-
     BufferItem* syncState(BufferKey key, BufferState state);
     bool toState(BufferItem* item, BufferState state);
 
