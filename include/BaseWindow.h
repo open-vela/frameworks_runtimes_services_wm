@@ -77,6 +77,10 @@ public:
         mUIProxy = proxy;
     }
 
+    std::shared_ptr<UIDriverProxy>& getUIProxy() {
+        return mUIProxy;
+    }
+
     void setLayoutParams(LayoutParams lp) {
         mAttrs = lp;
     }

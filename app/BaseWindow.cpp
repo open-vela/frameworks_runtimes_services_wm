@@ -65,19 +65,35 @@ static void eventCallback(int fd, int status, int events, void* data) {
     }
 
     if (events & UV_READABLE) {
-        InputMessage message;
-        mq_receive(fd, (char*)&message, sizeof(InputMessage), NULL);
-        // TODO: send event to lvgl
+        InputMessage msg;
+        ssize_t size = mq_receive(fd, (char*)&msg, sizeof(InputMessage), NULL);
+        if (size != sizeof(InputMessage)) {
+            return;
+        }
+
+        BaseWindow* win = reinterpret_cast<BaseWindow*>(data);
+        if (win) {
+            auto proxy = win->getUIProxy();
+            if (proxy.get() != nullptr) proxy->handleEvent(msg);
+        }
     }
 }
 
-BaseWindow::BaseWindow() {}
+BaseWindow::BaseWindow() {
+    BaseWindow(nullptr);
+}
 
-BaseWindow::~BaseWindow() {}
+BaseWindow::~BaseWindow() {
+    if (mPoll) delete mPoll;
+}
 
-BaseWindow::BaseWindow(::os::app::Context* context) : mContext(context) {
+BaseWindow::BaseWindow(::os::app::Context* context)
+      : mContext(context),
+        mWindowManager(nullptr),
+        mPoll(nullptr),
+        mVsyncRequest(VsyncRequest::VSYNC_REQ_NONE),
+        mAppVisible(false) {
     mIWindow = sp<W>::make(this);
-    // TODO init lvgl instance
 }
 
 void BaseWindow::setWindowManager(WindowManager* wm) {
@@ -85,12 +101,13 @@ void BaseWindow::setWindowManager(WindowManager* wm) {
 }
 
 bool BaseWindow::scheduleVsync(VsyncRequest freq) {
+    mVsyncRequest = freq;
     mWindowManager->getService()->requestVsync(getIWindow(), freq);
     return true;
 }
 
 void* BaseWindow::getRoot() {
-    return mUIProxy->getRoot();
+    return mUIProxy.get() != nullptr ? mUIProxy->getWindow() : nullptr;
 }
 
 std::shared_ptr<BufferProducer> BaseWindow::getBufferProducer() {
@@ -146,17 +163,24 @@ void BaseWindow::handleOnFrame(int32_t seq) {
     if (!mSurfaceControl->isValid()) {
         mWindowManager->relayoutWindow(shared_from_this());
     } else {
-        // 1. dequeue a buffer
+        if (mUIProxy.get() == nullptr) return;
+
         std::shared_ptr<BufferProducer> buffProducer = getBufferProducer();
+        BufferItem* item = buffProducer->dequeueBuffer();
 
-        BufferItem* buffItem = buffProducer->dequeueBuffer();
+        mUIProxy->drawFrame(item);
+        if (!mUIProxy->finishDrawing()) {
+            buffProducer->cancelBuffer(item);
+            return;
+        }
 
-        // TODO:2.lv display draw fill buffer
+        buffProducer->queueBuffer(item);
 
-        // 3. queue the buffer to display
-        buffProducer->queueBuffer(buffItem);
-
-        mWindowManager->getTransaction()->setBuffer(mSurfaceControl, *buffItem).apply();
+        auto transaction = mWindowManager->getTransaction();
+        transaction->setBuffer(mSurfaceControl, *item);
+        auto rect = mUIProxy->rectCrop();
+        if (rect) transaction->setBufferCrop(mSurfaceControl, *rect);
+        transaction->apply();
     }
 }
 
