@@ -40,6 +40,8 @@ WindowState::WindowState(WindowManagerService* service, const sp<IWindow>& windo
         mHasSurface(false) {
     mAttrs = params;
     mVisibility = visibility != 0 ? true : false;
+    mRequestedWidth = 0;
+    mRequestedHeight = 0;
 
     Rect rect(params.mX, params.mY, params.mX + params.mWidth, params.mY + params.mHeight);
     // TODO: config layer by type
@@ -87,8 +89,9 @@ std::shared_ptr<SurfaceControl> WindowState::createSurfaceControl(vector<BufferI
     setHasSurface(false);
 
     sp<IBinder> handle = new BBinder();
-    mSurfaceControl = std::make_shared<SurfaceControl>(mAttrs.mToken, handle, mAttrs.mWidth,
-                                                       mAttrs.mHeight, mAttrs.mFormat);
+    mSurfaceControl =
+            std::make_shared<SurfaceControl>(IInterface::asBinder(mClient), handle, mAttrs.mWidth,
+                                             mAttrs.mHeight, mAttrs.mFormat);
 
     mSurfaceControl->initBufferIds(ids);
     std::shared_ptr<BufferConsumer> buffConsumer =
@@ -173,6 +176,13 @@ bool WindowState::releaseBuffer(BufferItem* buffer) {
     }
 
     return false;
+}
+
+void WindowState::setRequestedSize(int32_t requestedWidth, int32_t requestedHeight) {
+    if ((mRequestedWidth != requestedWidth || mRequestedHeight != requestedHeight)) {
+        mRequestedWidth = requestedWidth;
+        mRequestedHeight = requestedHeight;
+    }
 }
 
 } // namespace wm

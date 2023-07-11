@@ -22,16 +22,27 @@
 #include <binder/IServiceManager.h>
 #include <utils/RefBase.h>
 
+#include "DummyDriverProxy.h"
+
 namespace os {
 namespace wm {
+
 WindowManager::WindowManager() {
     mTransaction = std::make_shared<SurfaceTransaction>();
     mTransaction->setWindowManager(this);
-    getService();
 }
 WindowManager::~WindowManager() {
     mService = nullptr;
     mWindows.clear();
+    delete mInstance;
+}
+
+WindowManager* WindowManager::mInstance = nullptr;
+WindowManager* WindowManager::getInstance() {
+    if (mInstance == nullptr) {
+        mInstance = new WindowManager();
+    }
+    return mInstance;
 }
 
 sp<IWindowManager>& WindowManager::getService() {
@@ -47,6 +58,8 @@ sp<IWindowManager>& WindowManager::getService() {
 
 std::shared_ptr<BaseWindow> WindowManager::newWindow(::os::app::Context* context) {
     std::shared_ptr<BaseWindow> window = std::make_shared<BaseWindow>(context);
+
+    window->setWindowManager(this);
     mWindows.push_back(window);
     return window;
 }
