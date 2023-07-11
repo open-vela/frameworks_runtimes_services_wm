@@ -111,7 +111,7 @@ void* BaseWindow::getRoot() {
 }
 
 std::shared_ptr<BufferProducer> BaseWindow::getBufferProducer() {
-    if (mSurfaceControl != nullptr && mSurfaceControl->isValid()) {
+    if (mSurfaceControl->isValid()) {
         return std::static_pointer_cast<BufferProducer>(mSurfaceControl->bufferQueue());
     }
     return nullptr;
@@ -119,8 +119,8 @@ std::shared_ptr<BufferProducer> BaseWindow::getBufferProducer() {
 
 void BaseWindow::doDie() {
     // TODO destory lvglDriver
-    mInputChannel = nullptr;
-    mSurfaceControl = nullptr;
+    mInputChannel.reset();
+    mSurfaceControl.reset();
     delete mPoll;
 }
 
@@ -129,7 +129,13 @@ void BaseWindow::setInputChannel(InputChannel* inputChannel) {
         mInputChannel.reset(inputChannel);
         mPoll = new ::os::app::UvPoll(mContext->getMainLoop(), mInputChannel->getEventFd());
         mPoll->start(UV_READABLE, eventCallback, this);
+    } else {
+        mInputChannel.reset();
     }
+}
+
+void BaseWindow::setSurfaceControl(SurfaceControl* surfaceControl) {
+    mSurfaceControl.reset(surfaceControl);
 }
 
 void BaseWindow::dispatchAppVisibility(bool visible) {
@@ -155,7 +161,7 @@ void BaseWindow::handleAppVisibility(bool visible) {
         updateOrCreateBufferQueue();
     } else {
         // release mSurfaceControl
-        mSurfaceControl = nullptr;
+        mSurfaceControl.reset();
     }
 }
 

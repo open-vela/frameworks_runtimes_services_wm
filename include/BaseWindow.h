@@ -111,9 +111,7 @@ public:
     void handleBufferRelease(int32_t bufKey);
 
     void setInputChannel(InputChannel* inputChannel);
-    void setSurfaceControl(SurfaceControl* surfaceControl) {
-        mSurfaceControl.reset(surfaceControl);
-    }
+    void setSurfaceControl(SurfaceControl* surfaceControl);
 
 private:
     void updateOrCreateBufferQueue();
