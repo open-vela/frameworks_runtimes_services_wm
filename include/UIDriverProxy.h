@@ -17,6 +17,7 @@
 #pragma once
 
 #include "wm/BufferQueue.h"
+#include "wm/InputMessage.h"
 #include "wm/Rect.h"
 
 namespace os {
@@ -26,39 +27,41 @@ class BaseWindow;
 
 class UIDriverProxy {
 public:
-    UIDriverProxy(std::shared_ptr<BaseWindow> win) : mBaseWindow(win) {}
-    virtual ~UIDriverProxy() = 0;
-
-    virtual bool initUIInstance() = 0;
-
-    // ui proxy response window
-    virtual void onInvalidate() = 0;
-    virtual void* onDequeueBuffer() = 0;
-    virtual int onQueueBuffer() = 0;
-    virtual void* onCancelBuffer() = 0;
+    UIDriverProxy(std::shared_ptr<BaseWindow> win);
+    virtual ~UIDriverProxy();
 
     virtual void* getRoot() = 0;
+    virtual void* getWindow() = 0;
+    virtual bool initUIInstance() = 0;
 
+    virtual void handleEvent(InputMessage& message);
     // window request ui proxy, update buffer data
-    virtual bool drawFrame(std::shared_ptr<BufferItem> bufItem);
+    virtual void drawFrame(BufferItem* item);
+    bool finishDrawing();
 
-    void onRectCrop(Rect& rect) {
-        mRectCrop = rect;
-    }
+    // ui proxy response window
+    void onInvalidate(bool periodic);
+    void* onDequeueBuffer();
+    bool onQueueBuffer();
+    void onCancelBuffer();
 
-    std::weak_ptr<BaseWindow> getBaseWindow() {
-        return mBaseWindow;
-    }
+    void onRectCrop(Rect& rect);
+    Rect* rectCrop();
 
-    std::shared_ptr<BufferItem> getBufferItem() {
+    BufferItem* getBufferItem() {
         return mBufferItem;
     }
 
+    enum {
+        UIP_BUFFER_UPDATE = 1,
+        UIP_BUFFER_RECT_UPDATE = 2,
+    };
+
 private:
-    static Rect NullRect;
     std::weak_ptr<BaseWindow> mBaseWindow;
-    std::shared_ptr<BufferItem> mBufferItem;
+    BufferItem* mBufferItem;
     Rect mRectCrop;
+    int8_t mFlags;
 };
 
 } // namespace wm
