@@ -29,7 +29,10 @@ WindowManager::WindowManager() {
     mTransaction->setWindowManager(this);
     getService();
 }
-WindowManager::~WindowManager() {}
+WindowManager::~WindowManager() {
+    mService = nullptr;
+    mWindows.clear();
+}
 
 sp<IWindowManager>& WindowManager::getService() {
     std::lock_guard<std::mutex> scoped_lock(mLock);
@@ -72,7 +75,6 @@ void WindowManager::relayoutWindow(std::shared_ptr<BaseWindow> window) {
 
 bool WindowManager::removeWindow(std::shared_ptr<BaseWindow> window) {
     mService->removeWindow(window->getIWindow());
-
     window->doDie();
     auto it = std::find(mWindows.begin(), mWindows.end(), window);
     if (it != mWindows.end()) {
