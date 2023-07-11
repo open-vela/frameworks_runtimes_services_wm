@@ -52,6 +52,8 @@ public:
     std::shared_ptr<InputChannel> createInputChannel(const std::string name);
     std::shared_ptr<SurfaceControl> createSurfaceControl(vector<BufferId> ids);
     std::shared_ptr<BufferConsumer> getBufferConsumer();
+    void destorySurfaceControl();
+    void destoryInputChannel();
 
     void applyTransaction(LayerState layerState);
     bool scheduleVsync(VsyncRequest vsyncReq);

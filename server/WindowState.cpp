@@ -99,6 +99,15 @@ std::shared_ptr<SurfaceControl> WindowState::createSurfaceControl(vector<BufferI
     return mSurfaceControl;
 }
 
+void WindowState::destorySurfaceControl() {
+    mSurfaceControl.reset();
+}
+
+void WindowState::destoryInputChannel() {
+    mInputChannel->release();
+    mInputChannel.reset();
+}
+
 void WindowState::applyTransaction(LayerState layerState) {
     BufferItem* buffItem = nullptr;
     Rect* rect = nullptr;
@@ -154,11 +163,9 @@ bool WindowState::onVsync() {
 }
 
 void WindowState::removeIfPossible() {
-    mSurfaceControl = nullptr;
-
-    mInputChannel->release();
-    mInputChannel = nullptr;
-
+    destorySurfaceControl();
+    destoryInputChannel();
+    mToken.reset();
     // win node
     mNode = nullptr;
 
