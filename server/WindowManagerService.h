@@ -71,9 +71,11 @@ private:
 
     WindowTokenMap mTokenMap;
     WindowStateMap mWindowMap;
-    RootContainer* mContainer;
 
+    RootContainer* mContainer;
+    int32_t mRootFd;
     sp<Looper> mLooper;
+
     sp<MessageHandler> mFrameHandler;
 };
 
