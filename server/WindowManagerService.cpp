@@ -79,7 +79,7 @@ private:
     WindowManagerService* mService;
 };
 
-WindowManagerService::WindowManagerService() {
+WindowManagerService::WindowManagerService() : mRootFd(-1) {
     mLooper = Looper::getForThread();
     mContainer = new RootContainer();
     if (mLooper) {
@@ -87,9 +87,9 @@ WindowManagerService::WindowManagerService() {
             mFrameHandler = new UIFrameHandler(this);
             mLooper->sendMessageDelayed(16 * 1000000, mFrameHandler, Message(MSG_DO_FRAME));
         } else {
-            int fd, events;
-            if (mContainer->getFdInfo(&fd, &events) == 0) {
-                mLooper->addFd(fd, android::Looper::POLL_CALLBACK, events, handleUIEvent,
+            int events;
+            if (mContainer->getFdInfo(&mRootFd, &events) == 0) {
+                mLooper->addFd(mRootFd, android::Looper::POLL_CALLBACK, events, handleUIEvent,
                                (void*)this);
             }
         }
@@ -97,11 +97,15 @@ WindowManagerService::WindowManagerService() {
 }
 
 WindowManagerService::~WindowManagerService() {
-    mFrameHandler.clear();
+    if (mRootFd != -1) {
+        mLooper->removeFd(mRootFd);
+    } else {
+        mFrameHandler.clear();
+    }
+
     delete mContainer;
 }
 
-// implement AIDL interfaces
 Status WindowManagerService::getPhysicalDisplayInfo(int32_t displayId, DisplayInfo* info,
                                                     int32_t* _aidl_return) {
     // TODO
