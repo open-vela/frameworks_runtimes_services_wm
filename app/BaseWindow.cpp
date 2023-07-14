@@ -23,6 +23,7 @@
 #include "wm/InputChannel.h"
 #include "wm/InputMessage.h"
 #include "wm/SurfaceControl.h"
+#include "wm/VsyncRequestOps.h"
 
 namespace os {
 namespace wm {
@@ -101,6 +102,11 @@ void BaseWindow::setWindowManager(WindowManager* wm) {
 }
 
 bool BaseWindow::scheduleVsync(VsyncRequest freq) {
+    if (mVsyncRequest == freq) {
+        ALOGI("Warning: It's waiting previous vsync response.");
+        return false;
+    }
+
     mVsyncRequest = freq;
     mWindowManager->getService()->requestVsync(getIWindow(), freq);
     return true;
@@ -166,6 +172,8 @@ void BaseWindow::handleAppVisibility(bool visible) {
 }
 
 void BaseWindow::handleOnFrame(int32_t seq) {
+    mVsyncRequest = nextVsyncState(mVsyncRequest);
+
     if (!mSurfaceControl->isValid()) {
         mWindowManager->relayoutWindow(shared_from_this());
     } else {
