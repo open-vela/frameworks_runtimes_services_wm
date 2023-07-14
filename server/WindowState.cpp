@@ -24,6 +24,7 @@
 #include "RootContainer.h"
 #include "WindowManagerService.h"
 #include "wm/LayerState.h"
+#include "wm/VsyncRequestOps.h"
 
 namespace os {
 namespace wm {
@@ -139,25 +140,9 @@ bool WindowState::scheduleVsync(VsyncRequest vsyncReq) {
 }
 
 bool WindowState::onVsync() {
-    switch (mVsyncRequest) {
-        case VsyncRequest::VSYNC_REQ_NONE:
-            return false;
+    if (mVsyncRequest == VsyncRequest::VSYNC_REQ_NONE) return false;
 
-        case VsyncRequest::VSYNC_REQ_SINGLE:
-            mVsyncRequest = VsyncRequest::VSYNC_REQ_NONE;
-            break;
-
-        case VsyncRequest::VSYNC_REQ_SINGLESUPPRESS:
-            mVsyncRequest = VsyncRequest::VSYNC_REQ_SINGLE;
-            break;
-
-        case VsyncRequest::VSYNC_REQ_PERIODIC:
-            break;
-
-        default:
-            return false;
-    }
-
+    mVsyncRequest = nextVsyncState(mVsyncRequest);
     mClient->onFrame(++mFrameReq);
     return true;
 }
