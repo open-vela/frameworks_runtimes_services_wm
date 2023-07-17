@@ -69,7 +69,7 @@ status_t SurfaceControl::readFromParcel(const Parcel* in) {
 
         BufferId buffId;
         SAFE_PARCEL(in->readInt32, &buffId.mKey);
-        buffId.mFd = in->readFileDescriptor();
+        buffId.mFd = dup(in->readFileDescriptor());
         mBufferIds[buffKey] = buffId;
     }
     return android::OK;
