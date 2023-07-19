@@ -108,7 +108,7 @@ public:
     void handleOnFrame(int32_t seq);
 
     void bufferReleased(int32_t bufKey);
-    void handleBufferRelease(int32_t bufKey);
+    void handleBufferReleased(int32_t bufKey);
 
     void setInputChannel(InputChannel* inputChannel);
     void setSurfaceControl(SurfaceControl* surfaceControl);
