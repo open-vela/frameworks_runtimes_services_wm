@@ -79,6 +79,8 @@ void lv_mainwnd_update_buffer(lv_obj_t* obj, lv_mainwnd_buf_dsc_t* buf_dsc, cons
     LV_ASSERT_OBJ(obj, MY_CLASS);
 
     if (!buf_dsc) {
+        lv_obj_invalidate(obj);
+
         lv_obj_add_flag(obj, LV_OBJ_FLAG_HIDDEN);
         lv_mainwnd_buf_dsc_reset(obj);
         return;
