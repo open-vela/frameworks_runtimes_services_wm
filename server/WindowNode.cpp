@@ -112,6 +112,8 @@ bool WindowNode::updateBuffer(BufferItem* item, Rect* rect) {
     lv_mainwnd_buf_dsc_t dsc;
     lv_area_t area;
 
+    BufferItem* oldBuffer = mBuffer;
+
     mBuffer = item;
     if (rect) {
         area.x1 = rect->left;
@@ -126,6 +128,10 @@ bool WindowNode::updateBuffer(BufferItem* item, Rect* rect) {
         lv_mainwnd_update_buffer(mWidget, &dsc, rect ? &area : nullptr);
     } else {
         lv_mainwnd_update_buffer(mWidget, NULL, NULL);
+    }
+
+    if (oldBuffer) {
+        return mState->releaseBuffer(oldBuffer);
     }
     return true;
 }
