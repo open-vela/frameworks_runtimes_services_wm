@@ -154,7 +154,8 @@ void BaseWindow::onFrame(int32_t seq) {
 }
 
 void BaseWindow::bufferReleased(int32_t bufKey) {
-    mContext->getMainLoop()->postTask([this, bufKey](void*) { this->handleBufferRelease(bufKey); });
+    mContext->getMainLoop()->postTask(
+            [this, bufKey](void*) { this->handleBufferReleased(bufKey); });
 }
 
 void BaseWindow::handleAppVisibility(bool visible) {
@@ -184,6 +185,10 @@ void BaseWindow::handleOnFrame(int32_t seq) {
 
         std::shared_ptr<BufferProducer> buffProducer = getBufferProducer();
         BufferItem* item = buffProducer->dequeueBuffer();
+        if (!item) {
+            ALOGE("onFrame, no valid buffer!");
+            return;
+        }
 
         mUIProxy->drawFrame(item);
         if (!mUIProxy->finishDrawing()) {
@@ -201,9 +206,12 @@ void BaseWindow::handleOnFrame(int32_t seq) {
     }
 }
 
-void BaseWindow::handleBufferRelease(int32_t bufKey) {
+void BaseWindow::handleBufferReleased(int32_t bufKey) {
     std::shared_ptr<BufferProducer> buffProducer = getBufferProducer();
-    buffProducer->syncFreeState(bufKey);
+    auto buffer = buffProducer->syncFreeState(bufKey);
+    if (!buffer) {
+        ALOGE("bufferReleased, release %d failure!", bufKey);
+    }
 }
 
 void BaseWindow::updateOrCreateBufferQueue() {
