@@ -104,6 +104,7 @@ std::shared_ptr<SurfaceControl> WindowState::createSurfaceControl(vector<BufferI
 }
 
 void WindowState::destorySurfaceControl() {
+    mNode->updateBuffer(nullptr, nullptr);
     mSurfaceControl.reset();
 }
 

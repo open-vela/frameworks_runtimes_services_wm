@@ -117,9 +117,10 @@ void* BaseWindow::getRoot() {
 }
 
 std::shared_ptr<BufferProducer> BaseWindow::getBufferProducer() {
-    if (mSurfaceControl->isValid()) {
+    if (mSurfaceControl.get() != nullptr && mSurfaceControl->isValid()) {
         return std::static_pointer_cast<BufferProducer>(mSurfaceControl->bufferQueue());
     }
+    ALOGW("mSurfaceControl is not existed");
     return nullptr;
 }
 
@@ -164,7 +165,7 @@ void BaseWindow::handleAppVisibility(bool visible) {
     }
     mAppVisible = visible;
     mWindowManager->relayoutWindow(shared_from_this());
-    if (mSurfaceControl->isValid()) {
+    if (mSurfaceControl.get() != nullptr && mSurfaceControl->isValid()) {
         updateOrCreateBufferQueue();
     } else {
         // release mSurfaceControl
@@ -184,6 +185,10 @@ void BaseWindow::handleOnFrame(int32_t seq) {
         if (mUIProxy.get() == nullptr) return;
 
         std::shared_ptr<BufferProducer> buffProducer = getBufferProducer();
+        if (buffProducer.get() == nullptr) {
+            ALOGW("buffProducer is not existed!");
+            return;
+        }
         BufferItem* item = buffProducer->dequeueBuffer();
         if (!item) {
             ALOGE("onFrame, no valid buffer!");
@@ -208,6 +213,10 @@ void BaseWindow::handleOnFrame(int32_t seq) {
 
 void BaseWindow::handleBufferReleased(int32_t bufKey) {
     std::shared_ptr<BufferProducer> buffProducer = getBufferProducer();
+    if (buffProducer.get() == nullptr) {
+        ALOGW("buffProducer is not existed!");
+        return;
+    }
     auto buffer = buffProducer->syncFreeState(bufKey);
     if (!buffer) {
         ALOGE("bufferReleased, release %d failure!", bufKey);
