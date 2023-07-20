@@ -48,15 +48,13 @@ static void lv_mainwnd_metainfo_reset(lv_obj_t* obj);
 /**********************
  *  STATIC VARIABLES
  **********************/
-const lv_obj_class_t lv_mainwnd_class = {
-    .constructor_cb = lv_mainwnd_constructor,
-    .destructor_cb = lv_mainwnd_destructor,
-    .event_cb = lv_mainwnd_event,
-    .width_def = LV_PCT(100),
-    .height_def = LV_PCT(100),
-    .instance_size = sizeof(lv_mainwnd_t),
-    .base_class = &lv_obj_class
-};
+const lv_obj_class_t lv_mainwnd_class = {.constructor_cb = lv_mainwnd_constructor,
+                                         .destructor_cb = lv_mainwnd_destructor,
+                                         .event_cb = lv_mainwnd_event,
+                                         .width_def = LV_PCT(100),
+                                         .height_def = LV_PCT(100),
+                                         .instance_size = sizeof(lv_mainwnd_t),
+                                         .base_class = &lv_obj_class};
 
 /**********************
  *      MACROS
@@ -66,16 +64,14 @@ const lv_obj_class_t lv_mainwnd_class = {
  *   GLOBAL FUNCTIONS
  **********************/
 
-lv_obj_t* lv_mainwnd_create(lv_obj_t* parent)
-{
+lv_obj_t* lv_mainwnd_create(lv_obj_t* parent) {
     LV_LOG_INFO("begin");
     lv_obj_t* obj = lv_obj_class_create_obj(MY_CLASS, parent);
     lv_obj_class_init_obj(obj);
     return obj;
 }
 
-void lv_mainwnd_update_buffer(lv_obj_t* obj, lv_mainwnd_buf_dsc_t* buf_dsc, const lv_area_t* area)
-{
+void lv_mainwnd_update_buffer(lv_obj_t* obj, lv_mainwnd_buf_dsc_t* buf_dsc, const lv_area_t* area) {
     LV_ASSERT_OBJ(obj, MY_CLASS);
 
     if (!buf_dsc) {
@@ -103,8 +99,7 @@ void lv_mainwnd_update_buffer(lv_obj_t* obj, lv_mainwnd_buf_dsc_t* buf_dsc, cons
     lv_obj_get_coords(obj, &win_coords);
 
     lv_area_t common_area;
-    if (!_lv_area_intersect(&common_area, &win_coords, area))
-        return;
+    if (!_lv_area_intersect(&common_area, &win_coords, area)) return;
     lv_obj_invalidate_area(obj, &common_area);
 }
 
@@ -112,8 +107,7 @@ void lv_mainwnd_update_buffer(lv_obj_t* obj, lv_mainwnd_buf_dsc_t* buf_dsc, cons
  * Setter functions
  *====================*/
 
-void lv_mainwnd_set_metainfo(lv_obj_t* obj, lv_mainwnd_metainfo_t* metainfo)
-{
+void lv_mainwnd_set_metainfo(lv_obj_t* obj, lv_mainwnd_metainfo_t* metainfo) {
     if (!metainfo) {
         LV_LOG_WARN("lv_mainwnd_set_metainfo: metainfo is NULL");
         lv_mainwnd_metainfo_reset(obj);
@@ -130,8 +124,7 @@ void lv_mainwnd_set_metainfo(lv_obj_t* obj, lv_mainwnd_metainfo_t* metainfo)
  *   STATIC FUNCTIONS
  **********************/
 
-static void lv_mainwnd_constructor(const lv_obj_class_t* class_p, lv_obj_t* obj)
-{
+static void lv_mainwnd_constructor(const lv_obj_class_t* class_p, lv_obj_t* obj) {
     LV_UNUSED(class_p);
     LV_TRACE_OBJ_CREATE("begin");
 
@@ -142,8 +135,7 @@ static void lv_mainwnd_constructor(const lv_obj_class_t* class_p, lv_obj_t* obj)
     LV_TRACE_OBJ_CREATE("finished");
 }
 
-static void lv_mainwnd_destructor(const lv_obj_class_t* class_p, lv_obj_t* obj)
-{
+static void lv_mainwnd_destructor(const lv_obj_class_t* class_p, lv_obj_t* obj) {
     LV_UNUSED(class_p);
 
     lv_mainwnd_t* mainwnd = (lv_mainwnd_t*)obj;
@@ -152,16 +144,14 @@ static void lv_mainwnd_destructor(const lv_obj_class_t* class_p, lv_obj_t* obj)
     }
 }
 
-static void lv_mainwnd_event(const lv_obj_class_t* class_p, lv_event_t* e)
-{
+static void lv_mainwnd_event(const lv_obj_class_t* class_p, lv_event_t* e) {
     LV_UNUSED(class_p);
 
     lv_res_t res;
 
     /*Call the ancestor's event handler*/
     res = lv_obj_event_base(MY_CLASS, e);
-    if (res != LV_RES_OK)
-        return;
+    if (res != LV_RES_OK) return;
 
     lv_event_code_t code = lv_event_get_code(e);
 
@@ -184,14 +174,12 @@ static void lv_mainwnd_event(const lv_obj_class_t* class_p, lv_event_t* e)
     }
 }
 
-static void lv_draw_mainwnd(lv_event_t* e)
-{
+static void lv_draw_mainwnd(lv_event_t* e) {
     lv_obj_t* obj = lv_event_get_target(e);
     lv_mainwnd_t* mainwnd = (lv_mainwnd_t*)obj;
 
     lv_res_t res = lv_obj_event_base(MY_CLASS, e);
-    if (res != LV_RES_OK)
-        return;
+    if (res != LV_RES_OK) return;
 
     if (mainwnd->buf_dsc.data == NULL) {
         LV_LOG_WARN("lv_draw_mainwnd: buffer source is NULL");
@@ -226,8 +214,7 @@ static void lv_draw_mainwnd(lv_event_t* e)
     lv_draw_img(draw_ctx, &img_dsc, &win_coords, mainwnd->buf_dsc.data);
 }
 
-static bool lv_mainwnd_input_event_handler(lv_event_t* e)
-{
+static bool lv_mainwnd_input_event_handler(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);
 
     lv_obj_t* obj = lv_event_get_target(e);
@@ -240,37 +227,36 @@ static bool lv_mainwnd_input_event_handler(lv_event_t* e)
 
     lv_mainwnd_input_event_t input_event;
     switch (code) {
-    case LV_EVENT_PRESSED:
-    case LV_EVENT_PRESSING:
-    case LV_EVENT_PRESS_LOST:
-    case LV_EVENT_LONG_PRESSED:
-    case LV_EVENT_LONG_PRESSED_REPEAT:
-    case LV_EVENT_RELEASED:
-        input_event.type = LV_MAINWND_EVENT_TYPE_POINTER;
+        case LV_EVENT_PRESSED:
+        case LV_EVENT_PRESSING:
+        case LV_EVENT_PRESS_LOST:
+        case LV_EVENT_LONG_PRESSED:
+        case LV_EVENT_LONG_PRESSED_REPEAT:
+        case LV_EVENT_RELEASED:
+            input_event.type = LV_MAINWND_EVENT_TYPE_POINTER;
 
-        lv_point_t point;
-        lv_indev_get_point(lv_indev_get_act(), &point);
-        input_event.pointer.x = point.x;
-        input_event.pointer.y = point.y;
-        input_event.state = code;
+            lv_point_t point;
+            lv_indev_get_point(lv_indev_get_act(), &point);
+            input_event.pointer.x = point.x;
+            input_event.pointer.y = point.y;
+            input_event.state = code;
 
-        mainwnd->meta_info.send_input_event(&(mainwnd->meta_info), &input_event);
-        break;
-    case LV_EVENT_KEY:
-        input_event.type = LV_MAINWND_EVENT_TYPE_KEYPAD;
-        input_event.keypad.key = lv_indev_get_key(lv_indev_get_act());
+            mainwnd->meta_info.send_input_event(&(mainwnd->meta_info), &input_event);
+            break;
+        case LV_EVENT_KEY:
+            input_event.type = LV_MAINWND_EVENT_TYPE_KEYPAD;
+            input_event.keypad.key = lv_indev_get_key(lv_indev_get_act());
 
-        mainwnd->meta_info.send_input_event(&(mainwnd->meta_info), &input_event);
-        break;
-    default:
-        LV_LOG_WARN("lv_mainwnd_input_event_handler: unknown input event");
-        return false;
+            mainwnd->meta_info.send_input_event(&(mainwnd->meta_info), &input_event);
+            break;
+        default:
+            LV_LOG_WARN("lv_mainwnd_input_event_handler: unknown input event");
+            return false;
     }
     return true;
 }
 
-static void lv_mainwnd_buf_dsc_reset(lv_obj_t* obj)
-{
+static void lv_mainwnd_buf_dsc_reset(lv_obj_t* obj) {
     LV_ASSERT_OBJ(obj, MY_CLASS);
 
     LV_LOG_INFO("Reset mainwnd buffer descriptor");
@@ -284,8 +270,7 @@ static void lv_mainwnd_buf_dsc_reset(lv_obj_t* obj)
     mainwnd->buf_dsc.h = lv_obj_get_height(obj);
 }
 
-static void lv_mainwnd_metainfo_reset(lv_obj_t* obj)
-{
+static void lv_mainwnd_metainfo_reset(lv_obj_t* obj) {
     LV_ASSERT_OBJ(obj, MY_CLASS);
 
     LV_LOG_INFO("Reset mainwnd metainfo");
