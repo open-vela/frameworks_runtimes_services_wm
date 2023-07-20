@@ -109,9 +109,9 @@ WindowNode::~WindowNode() {
 }
 
 bool WindowNode::updateBuffer(BufferItem* item, Rect* rect) {
-    lv_mainwnd_buf_dsc_t dsc;
+    bool result = false;
     lv_area_t area;
-
+    lv_mainwnd_buf_dsc_t dsc;
     BufferItem* oldBuffer = mBuffer;
 
     mBuffer = item;
@@ -125,15 +125,19 @@ bool WindowNode::updateBuffer(BufferItem* item, Rect* rect) {
     if (mBuffer) {
         initBufDsc(&dsc, mBuffer->mKey, mRect.getWidth(), mRect.getHeight(), mBuffer->mSize,
                    mBuffer->mBuffer);
-        lv_mainwnd_update_buffer(mWidget, &dsc, rect ? &area : nullptr);
+        result = lv_mainwnd_update_buffer(mWidget, &dsc, rect ? &area : nullptr);
     } else {
-        lv_mainwnd_update_buffer(mWidget, NULL, NULL);
+        result = lv_mainwnd_update_buffer(mWidget, NULL, NULL);
     }
 
-    if (oldBuffer) {
-        return mState->releaseBuffer(oldBuffer);
+    // need to reset buffer
+    if (!result) {
+        mBuffer = oldBuffer;
+    } else if (oldBuffer && !mState->releaseBuffer(oldBuffer)) {
+        ALOGE("WMS releaseBuffer(%d) exception\n", oldBuffer->mKey);
+        return false;
     }
-    return true;
+    return result;
 }
 
 BufferItem* WindowNode::acquireBuffer() {
