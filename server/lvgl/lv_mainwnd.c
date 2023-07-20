@@ -29,6 +29,7 @@
  *      DEFINES
  *********************/
 #define MY_CLASS &lv_mainwnd_class
+#define INVALID_BUFID -1
 
 /**********************
  *      TYPEDEFS
@@ -40,10 +41,8 @@
 static void lv_mainwnd_constructor(const lv_obj_class_t* class_p, lv_obj_t* obj);
 static void lv_mainwnd_destructor(const lv_obj_class_t* class_p, lv_obj_t* obj);
 static void lv_mainwnd_event(const lv_obj_class_t* class_p, lv_event_t* e);
-static void lv_draw_mainwnd(lv_event_t* e);
+
 static bool lv_mainwnd_input_event_handler(lv_event_t* e);
-static void lv_mainwnd_buf_dsc_reset(lv_obj_t* obj);
-static void lv_mainwnd_metainfo_reset(lv_obj_t* obj);
 
 /**********************
  *  STATIC VARIABLES
@@ -55,6 +54,36 @@ const lv_obj_class_t lv_mainwnd_class = {.constructor_cb = lv_mainwnd_constructo
                                          .height_def = LV_PCT(100),
                                          .instance_size = sizeof(lv_mainwnd_t),
                                          .base_class = &lv_obj_class};
+
+/**********************
+ *  STATIC PROTOTYPES
+ **********************/
+static inline void lv_mainwnd_buf_dsc_reset(lv_obj_t* obj) {
+    LV_ASSERT_OBJ(obj, MY_CLASS);
+
+    LV_LOG_INFO("Reset mainwnd buffer descriptor");
+    lv_mainwnd_t* mainwnd = (lv_mainwnd_t*)obj;
+
+    mainwnd->buf_dsc.id = INVALID_BUFID;
+    mainwnd->buf_dsc.data = NULL;
+    mainwnd->buf_dsc.data_size = 0;
+    mainwnd->buf_dsc.cf = LV_IMG_CF_UNKNOWN;
+    mainwnd->buf_dsc.w = 0;
+    mainwnd->buf_dsc.h = 0;
+}
+
+static inline void lv_mainwnd_metainfo_reset(lv_obj_t* obj) {
+    LV_ASSERT_OBJ(obj, MY_CLASS);
+
+    LV_LOG_INFO("Reset mainwnd metainfo");
+    lv_mainwnd_t* mainwnd = (lv_mainwnd_t*)obj;
+
+    mainwnd->meta_info.acquire_buffer = NULL;
+    mainwnd->meta_info.release_buffer = NULL;
+    mainwnd->meta_info.send_input_event = NULL;
+    mainwnd->meta_info.on_destroy = NULL;
+    mainwnd->meta_info.info = NULL;
+}
 
 /**********************
  *      MACROS
@@ -71,7 +100,7 @@ lv_obj_t* lv_mainwnd_create(lv_obj_t* parent) {
     return obj;
 }
 
-void lv_mainwnd_update_buffer(lv_obj_t* obj, lv_mainwnd_buf_dsc_t* buf_dsc, const lv_area_t* area) {
+bool lv_mainwnd_update_buffer(lv_obj_t* obj, lv_mainwnd_buf_dsc_t* buf_dsc, const lv_area_t* area) {
     LV_ASSERT_OBJ(obj, MY_CLASS);
 
     if (!buf_dsc) {
@@ -79,11 +108,14 @@ void lv_mainwnd_update_buffer(lv_obj_t* obj, lv_mainwnd_buf_dsc_t* buf_dsc, cons
 
         lv_obj_add_flag(obj, LV_OBJ_FLAG_HIDDEN);
         lv_mainwnd_buf_dsc_reset(obj);
-        return;
+        return true;
+    }
+
+    if (!buf_dsc->data || buf_dsc->w == 0 || buf_dsc->h == 0) {
+        return false;
     }
 
     lv_mainwnd_t* mainwnd = (lv_mainwnd_t*)obj;
-
     mainwnd->buf_dsc.id = buf_dsc->id;
     mainwnd->buf_dsc.data = buf_dsc->data;
     mainwnd->buf_dsc.data_size = buf_dsc->data_size;
@@ -93,14 +125,17 @@ void lv_mainwnd_update_buffer(lv_obj_t* obj, lv_mainwnd_buf_dsc_t* buf_dsc, cons
 
     if (!area) {
         lv_obj_invalidate(obj);
-        return;
+        return true;
     }
     lv_area_t win_coords;
     lv_obj_get_coords(obj, &win_coords);
 
-    lv_area_t common_area;
-    if (!_lv_area_intersect(&common_area, &win_coords, area)) return;
-    lv_obj_invalidate_area(obj, &common_area);
+    lv_area_t inv_area;
+    if (_lv_area_intersect(&inv_area, &win_coords, area)) {
+        lv_obj_invalidate_area(obj, &inv_area);
+    }
+
+    return true;
 }
 
 /*=====================
@@ -129,7 +164,6 @@ static void lv_mainwnd_constructor(const lv_obj_class_t* class_p, lv_obj_t* obj)
     LV_TRACE_OBJ_CREATE("begin");
 
     lv_mainwnd_metainfo_reset(obj);
-
     lv_mainwnd_buf_dsc_reset(obj);
 
     LV_TRACE_OBJ_CREATE("finished");
@@ -139,9 +173,50 @@ static void lv_mainwnd_destructor(const lv_obj_class_t* class_p, lv_obj_t* obj) 
     LV_UNUSED(class_p);
 
     lv_mainwnd_t* mainwnd = (lv_mainwnd_t*)obj;
+
+    if (mainwnd->buf_dsc.id == INVALID_BUFID) {
+        return;
+    }
+
+    if (mainwnd->meta_info.release_buffer) {
+        mainwnd->meta_info.release_buffer(&mainwnd->meta_info, &mainwnd->buf_dsc);
+    }
+
     if (mainwnd->meta_info.on_destroy) {
         mainwnd->meta_info.on_destroy(&mainwnd->meta_info, &mainwnd->buf_dsc);
     }
+    lv_mainwnd_metainfo_reset(obj);
+    lv_mainwnd_buf_dsc_reset(obj);
+}
+
+static inline void draw_buffer(lv_obj_t* obj, lv_draw_ctx_t* draw_ctx) {
+    if (!draw_ctx) return;
+
+    lv_mainwnd_t* mainwnd = (lv_mainwnd_t*)obj;
+    if (!mainwnd->buf_dsc.data) return;
+
+    lv_area_t win_coords;
+    lv_draw_img_dsc_t img_dsc;
+
+    lv_area_copy(&win_coords, &obj->coords);
+    win_coords.y2 = win_coords.y1 + mainwnd->buf_dsc.h - 1;
+    win_coords.x2 = win_coords.x1 + mainwnd->buf_dsc.w - 1;
+
+    lv_draw_img_dsc_init(&img_dsc);
+    lv_obj_init_draw_img_dsc(obj, LV_PART_MAIN, &img_dsc);
+
+    img_dsc.zoom = LV_IMG_ZOOM_NONE;
+    img_dsc.angle = 0;
+    img_dsc.pivot.x = mainwnd->buf_dsc.w / 2;
+    img_dsc.pivot.y = mainwnd->buf_dsc.h / 2;
+    img_dsc.antialias = 0;
+
+#if LVGL_VERSION_MAJOR >= 9
+    img_dsc.src = mainwnd->buf_dsc.data;
+    lv_draw_img(draw_ctx, &img_dsc, &win_coords);
+#else
+    lv_draw_img(draw_ctx, &img_dsc, &win_coords, mainwnd->buf_dsc.data);
+#endif
 }
 
 static void lv_mainwnd_event(const lv_obj_class_t* class_p, lv_event_t* e) {
@@ -159,59 +234,28 @@ static void lv_mainwnd_event(const lv_obj_class_t* class_p, lv_event_t* e) {
     lv_mainwnd_t* mainwnd = (lv_mainwnd_t*)obj;
 
     if (code == LV_EVENT_DRAW_MAIN) {
-        if (mainwnd->meta_info.acquire_buffer && mainwnd->buf_dsc.id == -1) {
-            if (!mainwnd->meta_info.acquire_buffer(&mainwnd->meta_info, &mainwnd->buf_dsc)) {
-                LV_LOG_WARN("lv_mainwnd acquire_buffer FAILED");
-                return;
-            }
-            lv_draw_mainwnd(e);
+        if (mainwnd->buf_dsc.id != INVALID_BUFID) {
+            draw_buffer(obj, lv_event_get_draw_ctx(e));
+            return;
         }
+
+        if (!mainwnd->meta_info.acquire_buffer) {
+            LV_LOG_WARN("lv_mainwnd no valid 'acquire_buffer'");
+            return;
+        }
+
+        if (!mainwnd->meta_info.acquire_buffer(&mainwnd->meta_info, &mainwnd->buf_dsc)) {
+            LV_LOG_WARN("lv_mainwnd acquire_buffer FAILED");
+            return;
+        }
+        draw_buffer(obj, lv_event_get_draw_ctx(e));
+
     } else if (code == LV_EVENT_PRESSED || code == LV_EVENT_PRESSING ||
                code == LV_EVENT_PRESS_LOST || code == LV_EVENT_LONG_PRESSED ||
                code == LV_EVENT_LONG_PRESSED_REPEAT || code == LV_EVENT_RELEASED ||
                code == LV_EVENT_KEY) {
         lv_mainwnd_input_event_handler(e);
     }
-}
-
-static void lv_draw_mainwnd(lv_event_t* e) {
-    lv_obj_t* obj = lv_event_get_target(e);
-    lv_mainwnd_t* mainwnd = (lv_mainwnd_t*)obj;
-
-    lv_res_t res = lv_obj_event_base(MY_CLASS, e);
-    if (res != LV_RES_OK) return;
-
-    if (mainwnd->buf_dsc.data == NULL) {
-        LV_LOG_WARN("lv_draw_mainwnd: buffer source is NULL");
-        return;
-    }
-
-    if (mainwnd->buf_dsc.h == 0 || mainwnd->buf_dsc.w == 0) {
-        LV_LOG_WARN("lv_draw_mainwnd: buffer size is 0");
-        return;
-    }
-
-    lv_draw_ctx_t* draw_ctx = lv_event_get_draw_ctx(e);
-
-    lv_area_t win_coords;
-    lv_area_copy(&win_coords, &obj->coords);
-
-    win_coords.y1 = win_coords.y1;
-    win_coords.y2 = win_coords.y1 + mainwnd->buf_dsc.h - 1;
-    win_coords.x1 = win_coords.x1;
-    win_coords.x2 = win_coords.x1 + mainwnd->buf_dsc.w - 1;
-
-    lv_draw_img_dsc_t img_dsc;
-    lv_draw_img_dsc_init(&img_dsc);
-    lv_obj_init_draw_img_dsc(obj, LV_PART_MAIN, &img_dsc);
-
-    img_dsc.zoom = LV_IMG_ZOOM_NONE;
-    img_dsc.angle = 0;
-    img_dsc.pivot.x = mainwnd->buf_dsc.w / 2;
-    img_dsc.pivot.y = mainwnd->buf_dsc.h / 2;
-    img_dsc.antialias = 0;
-
-    lv_draw_img(draw_ctx, &img_dsc, &win_coords, mainwnd->buf_dsc.data);
 }
 
 static bool lv_mainwnd_input_event_handler(lv_event_t* e) {
@@ -254,31 +298,4 @@ static bool lv_mainwnd_input_event_handler(lv_event_t* e) {
             return false;
     }
     return true;
-}
-
-static void lv_mainwnd_buf_dsc_reset(lv_obj_t* obj) {
-    LV_ASSERT_OBJ(obj, MY_CLASS);
-
-    LV_LOG_INFO("Reset mainwnd buffer descriptor");
-    lv_mainwnd_t* mainwnd = (lv_mainwnd_t*)obj;
-
-    mainwnd->buf_dsc.id = -1;
-    mainwnd->buf_dsc.data = NULL;
-    mainwnd->buf_dsc.data_size = 0;
-    mainwnd->buf_dsc.cf = LV_IMG_CF_UNKNOWN;
-    mainwnd->buf_dsc.w = lv_obj_get_width(obj);
-    mainwnd->buf_dsc.h = lv_obj_get_height(obj);
-}
-
-static void lv_mainwnd_metainfo_reset(lv_obj_t* obj) {
-    LV_ASSERT_OBJ(obj, MY_CLASS);
-
-    LV_LOG_INFO("Reset mainwnd metainfo");
-    lv_mainwnd_t* mainwnd = (lv_mainwnd_t*)obj;
-
-    mainwnd->meta_info.acquire_buffer = NULL;
-    mainwnd->meta_info.release_buffer = NULL;
-    mainwnd->meta_info.send_input_event = NULL;
-    mainwnd->meta_info.on_destroy = NULL;
-    mainwnd->meta_info.info = NULL;
 }
