@@ -111,8 +111,9 @@ lv_obj_t* lv_mainwnd_create(lv_obj_t* parent);
  * @param obj           pointer to a main window object
  * @param buf_dsc       pointer to the buffer descriptor
  * @param area          pointer to an area to update
+ * @return true on success, false on failure
  */
-void lv_mainwnd_update_buffer(lv_obj_t* obj, lv_mainwnd_buf_dsc_t* buf_dsc, const lv_area_t* area);
+bool lv_mainwnd_update_buffer(lv_obj_t* obj, lv_mainwnd_buf_dsc_t* buf_dsc, const lv_area_t* area);
 
 /*=====================
  * Setter functions
