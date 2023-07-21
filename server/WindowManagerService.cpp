@@ -118,8 +118,10 @@ WindowManagerService::~WindowManagerService() {
 
 Status WindowManagerService::getPhysicalDisplayInfo(int32_t displayId, DisplayInfo* info,
                                                     int32_t* _aidl_return) {
-    // TODO
     *_aidl_return = 0;
+    if (mContainer) {
+        mContainer->getDisplayInfo(info);
+    }
     return Status::ok();
 }
 
