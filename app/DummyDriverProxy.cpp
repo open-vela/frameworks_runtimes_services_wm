@@ -33,10 +33,13 @@ void DummyDriverProxy::drawFrame(BufferItem* bufItem) {
     UIDriverProxy::drawFrame(bufItem);
     ALOGI("draw frame for dummy proxy.");
 
-    onDequeueBuffer();
+    if (!bufItem)
+        return;
 
-    // TODO: update buffer randomly
-
+    void* buffer = onDequeueBuffer();
+    if (buffer && mDrawCallback) {
+        mDrawCallback(buffer, bufItem->mSize);
+    }
     onQueueBuffer();
 }
 

@@ -22,8 +22,6 @@
 #include <binder/IServiceManager.h>
 #include <utils/RefBase.h>
 
-#include "DummyDriverProxy.h"
-
 namespace os {
 namespace wm {
 
