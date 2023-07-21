@@ -90,5 +90,15 @@ int RootContainer::getFdInfo(int* fd, int* events) {
     return -1;
 }
 
+bool RootContainer::getDisplayInfo(DisplayInfo* info) {
+    if (info) {
+        info->width = lv_disp_get_hor_res(mDisp);
+        info->height = lv_disp_get_ver_res(mDisp);
+        return true;
+    }
+
+    return false;
+}
+
 } // namespace wm
 } // namespace os
