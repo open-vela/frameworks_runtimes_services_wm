@@ -17,6 +17,7 @@
 #pragma once
 
 #include <lvgl/lvgl.h>
+#include <os/wm/DisplayInfo.h>
 
 namespace os {
 namespace wm {
@@ -40,6 +41,8 @@ public:
     DispSyncMode getSyncMode() {
         return mSyncMode;
     }
+    bool getDisplayInfo(DisplayInfo* info);
+
     int getFdInfo(int* fd, int* events);
     bool handleEvent(int fd, int events);
 
