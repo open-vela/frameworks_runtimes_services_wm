@@ -54,7 +54,12 @@ static inline bool createSharedBuffer(int32_t size, BufferId* id) {
     }
 
     int32_t bufferKey = std::rand();
+#ifdef CONFIG_ENABLE_BUFFER_QUEUE_BY_NAME
+    *id = {bufferPath, bufferKey, fd};
+#else
     *id = {bufferKey, fd};
+#endif
+
     return true;
 }
 
