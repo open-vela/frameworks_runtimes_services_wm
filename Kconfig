@@ -34,4 +34,8 @@ config SYSTEM_WINDOW_SERVICE_TEST
 	tristate "Enable System Window Service Test"
 	default n
 
+config ENABLE_BUFFER_QUEUE_BY_NAME
+	tristate "Enable buffer queue by name"
+	default y
+
 endif
