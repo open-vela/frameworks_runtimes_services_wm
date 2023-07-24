@@ -23,7 +23,17 @@
 namespace os {
 namespace wm {
 
-LayoutParams::LayoutParams() {}
+LayoutParams::LayoutParams() {
+    mWidth = MATCH_PARENT;
+    mHeight = MATCH_PARENT;
+    mX = 0;
+    mY = 0;
+    mType = TYPE_APPLICATION;
+    mFlags = 0;
+    mFormat = FORMAT_OPAQUE;
+    mToken = NULL;
+}
+
 LayoutParams::~LayoutParams() {}
 
 LayoutParams::LayoutParams(const LayoutParams& other)

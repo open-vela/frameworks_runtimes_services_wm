@@ -31,18 +31,29 @@ using namespace std;
 
 class LayoutParams : public Parcelable {
 public:
+    // for type
+    static const int TYPE_APPLICATION = 1;
+    static const int TYPE_SYSTEM_WINDOW = 1000;
+    static const int TYPE_TOAST = TYPE_SYSTEM_WINDOW + 1;
+    static const int TYPE_DIALOG = TYPE_SYSTEM_WINDOW + 2;
+    static const int INVALID_WINDOW_TYPE = -1;
+
+    // for width/height
+    static const int MATCH_PARENT = -1;
+    static const int WRAP_CONTENT = -2;
+
+    // for format
+    static const int FORMAT_UNKNOWN = 0;
+    static const int FORMAT_TRANSPARENT = -2;
+    static const int FORMAT_OPAQUE = -1;
+    static const int FORMAT_RGB_565 = 0x12;
+    static const int FORMAT_RGB_565A8 = 0x14;
+    static const int FORMAT_RGB_888 = 0x0F;
+    static const int FORMAT_ARGB_8888 = 0x10;
+    static const int FORMAT_XRGB_8888 = 0x11;
+
     LayoutParams();
     ~LayoutParams();
-
-    LayoutParams(int32_t width, int32_t height, int32_t x, int32_t y, int32_t type, int32_t flags,
-                 int32_t format)
-          : mWidth(width),
-            mHeight(height),
-            mX(x),
-            mY(y),
-            mType(type),
-            mFlags(flags),
-            mFormat(format) {}
 
     LayoutParams(const LayoutParams& other);
     LayoutParams& operator=(const LayoutParams& other);
