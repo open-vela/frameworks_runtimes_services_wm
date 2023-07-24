@@ -17,7 +17,10 @@
 #include "BaseWindow.h"
 
 #include <mqueue.h>
-
+#ifdef CONFIG_ENABLE_BUFFER_QUEUE_BY_NAME
+#include <sys/mman.h>
+#include <sys/stat.h>
+#endif
 #include "UIDriverProxy.h"
 #include "uv.h"
 #include "wm/InputChannel.h"
@@ -143,6 +146,17 @@ void BaseWindow::setInputChannel(InputChannel* inputChannel) {
 
 void BaseWindow::setSurfaceControl(SurfaceControl* surfaceControl) {
     mSurfaceControl.reset(surfaceControl);
+
+#ifdef CONFIG_ENABLE_BUFFER_QUEUE_BY_NAME
+    vector<BufferId> ids;
+    std::unordered_map<BufferKey, BufferId> bufferIds = mSurfaceControl->bufferIds();
+    for (auto it = bufferIds.begin(); it != bufferIds.end(); ++it) {
+        ALOGI("reset SurfaceControl bufferId:%s,%d", it->second.mName.c_str(), it->second.mKey);
+        int32_t fd = shm_open(it->second.mName.c_str(), O_RDWR, S_IRUSR | S_IWUSR);
+        ids.push_back({it->second.mName, it->second.mKey, fd});
+    }
+    mSurfaceControl->initBufferIds(ids);
+#endif
 }
 
 void BaseWindow::dispatchAppVisibility(bool visible) {

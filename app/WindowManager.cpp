@@ -31,6 +31,7 @@ namespace wm {
 WindowManager::WindowManager() {
     mTransaction = std::make_shared<SurfaceTransaction>();
     mTransaction->setWindowManager(this);
+    getService();
 }
 WindowManager::~WindowManager() {
     mService = nullptr;

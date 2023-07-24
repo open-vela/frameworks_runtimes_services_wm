@@ -48,8 +48,12 @@ status_t SurfaceControl::writeToParcel(Parcel* out) const {
     SAFE_PARCEL(out->writeInt32, mBufferIds.size());
     for (const auto& entry : mBufferIds) {
         SAFE_PARCEL(out->writeInt32, entry.first);
-        SAFE_PARCEL(out->writeInt32, entry.second.mKey);
+#ifdef CONFIG_ENABLE_BUFFER_QUEUE_BY_NAME
+        SAFE_PARCEL(out->writeCString, entry.second.mName.c_str());
+#else
         SAFE_PARCEL(out->writeDupFileDescriptor, entry.second.mFd);
+#endif
+        SAFE_PARCEL(out->writeInt32, entry.second.mKey);
     }
     return android::OK;
 }
@@ -68,8 +72,12 @@ status_t SurfaceControl::readFromParcel(const Parcel* in) {
         SAFE_PARCEL(in->readInt32, &buffKey);
 
         BufferId buffId;
-        SAFE_PARCEL(in->readInt32, &buffId.mKey);
+#ifdef CONFIG_ENABLE_BUFFER_QUEUE_BY_NAME
+        buffId.mName = in->readCString();
+#else
         buffId.mFd = dup(in->readFileDescriptor());
+#endif
+        SAFE_PARCEL(in->readInt32, &buffId.mKey);
         mBufferIds[buffKey] = buffId;
     }
     return android::OK;

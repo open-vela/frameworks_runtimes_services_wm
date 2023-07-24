@@ -103,8 +103,7 @@ bool BufferQueue::update(const std::shared_ptr<SurfaceControl>& sc) {
             return false;
         }
 
-        void* buffer =
-                mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON, bufferFd, 0);
+        void* buffer = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, bufferFd, 0);
 
         if (buffer == MAP_FAILED) {
             ALOGE("Failed to map shared memory");
