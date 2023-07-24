@@ -98,6 +98,8 @@ BaseWindow::BaseWindow(::os::app::Context* context)
         mVsyncRequest(VsyncRequest::VSYNC_REQ_NONE),
         mAppVisible(false) {
     mIWindow = sp<W>::make(this);
+    mAttrs = LayoutParams();
+    mAttrs.mToken = context->getToken();
 }
 
 void BaseWindow::setWindowManager(WindowManager* wm) {
