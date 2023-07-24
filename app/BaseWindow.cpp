@@ -233,5 +233,10 @@ void BaseWindow::updateOrCreateBufferQueue() {
     }
 }
 
+void BaseWindow::setCustomDrawCallback(const CUSTOM_DRAW_CALLBACK& cb) {
+    if (mUIProxy.get() == nullptr) return;
+    mUIProxy->setDrawCallback(cb);
+}
+
 } // namespace wm
 } // namespace os

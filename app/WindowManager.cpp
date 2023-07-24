@@ -22,6 +22,9 @@
 #include <binder/IServiceManager.h>
 #include <utils/RefBase.h>
 
+#include "DummyDriverProxy.h"
+#include "LVGLDriverProxy.h"
+
 namespace os {
 namespace wm {
 
@@ -59,6 +62,17 @@ std::shared_ptr<BaseWindow> WindowManager::newWindow(::os::app::Context* context
 
     window->setWindowManager(this);
     mWindows.push_back(window);
+
+#ifndef CONFIG_WM_USE_LVGL
+    // for dummy driver
+    auto proxy = std::make_shared<::os::wm::DummyDriverProxy>(window);
+    window->setUIProxy(std::dynamic_pointer_cast<::os::wm::UIDriverProxy>(proxy));
+#else
+    // for lvgl driver
+    auto proxy = std::make_shared<::os::wm::LVGLDriverProxy>(window);
+    window->setUIProxy(std::dynamic_pointer_cast<::os::wm::UIDriverProxy>(proxy));
+#endif
+
     return window;
 }
 
