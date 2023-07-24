@@ -105,6 +105,7 @@ std::shared_ptr<SurfaceControl> WindowState::createSurfaceControl(vector<BufferI
 
 void WindowState::destorySurfaceControl() {
     mNode->updateBuffer(nullptr, nullptr);
+    scheduleVsync(VsyncRequest::VSYNC_REQ_NONE);
     mSurfaceControl.reset();
 }
 
@@ -126,6 +127,9 @@ void WindowState::applyTransaction(LayerState layerState) {
 
     if (layerState.mFlags & LayerState::LAYER_BUFFER_CHANGED) {
         std::shared_ptr<BufferConsumer> consumer = getBufferConsumer();
+        if (consumer == nullptr) {
+            return;
+        }
         buffItem = consumer->syncQueuedState(layerState.mBufferKey);
     }
 
@@ -171,6 +175,9 @@ BufferItem* WindowState::acquireBuffer() {
 
 bool WindowState::releaseBuffer(BufferItem* buffer) {
     std::shared_ptr<BufferConsumer> consumer = getBufferConsumer();
+    if (consumer == nullptr) {
+        return false;
+    }
     if (consumer && consumer->releaseBuffer(buffer) && mClient) {
         mClient->bufferReleased(buffer->mKey);
         return true;
