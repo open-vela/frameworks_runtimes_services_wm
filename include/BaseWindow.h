@@ -20,6 +20,7 @@
 #include <binder/Status.h>
 #include <utils/RefBase.h>
 
+#include "UIDriverProxy.h"
 #include "WindowManager.h"
 #include "app/Context.h"
 #include "app/UvLoop.h"
@@ -80,6 +81,8 @@ public:
     std::shared_ptr<UIDriverProxy>& getUIProxy() {
         return mUIProxy;
     }
+
+    void setCustomDrawCallback(const CUSTOM_DRAW_CALLBACK& cb);
 
     void setLayoutParams(LayoutParams lp) {
         mAttrs = lp;

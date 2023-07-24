@@ -20,7 +20,6 @@
 
 namespace os {
 namespace wm {
-using DUMMY_DRAW_CALLBACK = std::function<void(void*, uint32_t)>;
 
 class DummyDriverProxy : public UIDriverProxy {
 public:
@@ -33,12 +32,12 @@ public:
     void handleEvent(InputMessage& message) override;
     void drawFrame(BufferItem* bufItem) override;
 
-    void setDrawCallback(const DUMMY_DRAW_CALLBACK& cb) {
+    void setDrawCallback(const CUSTOM_DRAW_CALLBACK& cb) override {
         mDrawCallback = cb;
     }
 
 private:
-    DUMMY_DRAW_CALLBACK mDrawCallback;
+    CUSTOM_DRAW_CALLBACK mDrawCallback;
 };
 
 } // namespace wm

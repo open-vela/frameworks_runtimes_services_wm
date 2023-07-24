@@ -23,6 +23,8 @@
 namespace os {
 namespace wm {
 
+using CUSTOM_DRAW_CALLBACK = std::function<void(void*, uint32_t)>;
+
 class BaseWindow;
 
 class UIDriverProxy {
@@ -51,6 +53,8 @@ public:
     BufferItem* getBufferItem() {
         return mBufferItem;
     }
+
+    virtual void setDrawCallback(const CUSTOM_DRAW_CALLBACK& cb);
 
     enum {
         UIP_BUFFER_UPDATE = 1,
