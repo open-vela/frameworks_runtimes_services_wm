@@ -49,7 +49,7 @@ typedef struct {
 
 static bool lv_mainwnd_acquire_buffer(lv_mainwnd_metainfo_t *meta, lv_mainwnd_buf_dsc_t *buf_dsc);
 static bool lv_mainwnd_release_buffer(lv_mainwnd_metainfo_t *meta, lv_mainwnd_buf_dsc_t *buf_dsc);
-static int lv_mainwnd_send_input_event(lv_mainwnd_metainfo_t *meta,
+static bool lv_mainwnd_send_input_event(lv_mainwnd_metainfo_t *meta,
                                        lv_mainwnd_input_event_t *event);
 static bool lv_mainwnd_on_destroy(lv_mainwnd_metainfo_t *meta, lv_mainwnd_buf_dsc_t* buf_dsc);
 
@@ -142,7 +142,7 @@ static bool lv_mainwnd_release_buffer(lv_mainwnd_metainfo_t *meta, lv_mainwnd_bu
     return true;
 }
 
-static int lv_mainwnd_send_input_event(lv_mainwnd_metainfo_t *meta,
+static bool lv_mainwnd_send_input_event(lv_mainwnd_metainfo_t *meta,
                                        lv_mainwnd_input_event_t *event) {
     // TODO
     return true;
