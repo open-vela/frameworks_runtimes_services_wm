@@ -42,7 +42,7 @@ public:
     WindowState();
     ~WindowState();
     WindowState(WindowManagerService* service, const sp<IWindow>& window, WindowToken* token,
-                const LayoutParams& params, int32_t visibility);
+                const LayoutParams& params, int32_t visibility, bool enableInput);
 
     bool isVisible();
     void sendAppVisibilityToClients();
@@ -58,6 +58,7 @@ public:
     void applyTransaction(LayerState layerState);
     bool scheduleVsync(VsyncRequest vsyncReq);
     bool onVsync();
+    bool sendInputMessage(const InputMessage* ie);
 
     std::shared_ptr<WindowToken> getToken() {
         return mToken;

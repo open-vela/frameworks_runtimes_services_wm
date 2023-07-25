@@ -26,7 +26,7 @@ namespace wm {
 
 class WindowNode {
 public:
-    WindowNode(WindowState* state, lv_obj_t* parent, const Rect& rect);
+    WindowNode(WindowState* state, lv_obj_t* parent, const Rect& rect, bool enableInput);
     ~WindowNode();
 
     bool updateBuffer(BufferItem* item, Rect* rect);
@@ -42,7 +42,7 @@ public:
         return mState;
     }
 
-    int sendInputMessage(InputMessage ie);
+    void enableInput(bool enable);
 
     DISALLOW_COPY_AND_ASSIGN(WindowNode);
 
