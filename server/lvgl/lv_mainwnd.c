@@ -42,8 +42,6 @@ static void lv_mainwnd_constructor(const lv_obj_class_t* class_p, lv_obj_t* obj)
 static void lv_mainwnd_destructor(const lv_obj_class_t* class_p, lv_obj_t* obj);
 static void lv_mainwnd_event(const lv_obj_class_t* class_p, lv_event_t* e);
 
-static bool lv_mainwnd_input_event_handler(lv_event_t* e);
-
 /**********************
  *  STATIC VARIABLES
  **********************/
@@ -58,12 +56,10 @@ const lv_obj_class_t lv_mainwnd_class = {.constructor_cb = lv_mainwnd_constructo
 /**********************
  *  STATIC PROTOTYPES
  **********************/
-static inline void lv_mainwnd_buf_dsc_reset(lv_obj_t* obj) {
+static inline void reset_buf_dsc(lv_obj_t* obj) {
     LV_ASSERT_OBJ(obj, MY_CLASS);
 
-    LV_LOG_INFO("Reset mainwnd buffer descriptor");
     lv_mainwnd_t* mainwnd = (lv_mainwnd_t*)obj;
-
     mainwnd->buf_dsc.id = INVALID_BUFID;
     mainwnd->buf_dsc.data = NULL;
     mainwnd->buf_dsc.data_size = 0;
@@ -72,12 +68,10 @@ static inline void lv_mainwnd_buf_dsc_reset(lv_obj_t* obj) {
     mainwnd->buf_dsc.h = 0;
 }
 
-static inline void lv_mainwnd_metainfo_reset(lv_obj_t* obj) {
+static inline void reset_meta_info(lv_obj_t* obj) {
     LV_ASSERT_OBJ(obj, MY_CLASS);
 
-    LV_LOG_INFO("Reset mainwnd metainfo");
     lv_mainwnd_t* mainwnd = (lv_mainwnd_t*)obj;
-
     mainwnd->meta_info.acquire_buffer = NULL;
     mainwnd->meta_info.release_buffer = NULL;
     mainwnd->meta_info.send_input_event = NULL;
@@ -104,10 +98,8 @@ bool lv_mainwnd_update_buffer(lv_obj_t* obj, lv_mainwnd_buf_dsc_t* buf_dsc, cons
     LV_ASSERT_OBJ(obj, MY_CLASS);
 
     if (!buf_dsc) {
-        lv_obj_invalidate(obj);
-
         lv_obj_add_flag(obj, LV_OBJ_FLAG_HIDDEN);
-        lv_mainwnd_buf_dsc_reset(obj);
+        reset_buf_dsc(obj);
         return true;
     }
 
@@ -144,8 +136,7 @@ bool lv_mainwnd_update_buffer(lv_obj_t* obj, lv_mainwnd_buf_dsc_t* buf_dsc, cons
 
 void lv_mainwnd_set_metainfo(lv_obj_t* obj, lv_mainwnd_metainfo_t* metainfo) {
     if (!metainfo) {
-        LV_LOG_WARN("lv_mainwnd_set_metainfo: metainfo is NULL");
-        lv_mainwnd_metainfo_reset(obj);
+        reset_meta_info(obj);
         return;
     }
 
@@ -163,8 +154,8 @@ static void lv_mainwnd_constructor(const lv_obj_class_t* class_p, lv_obj_t* obj)
     LV_UNUSED(class_p);
     LV_TRACE_OBJ_CREATE("begin");
 
-    lv_mainwnd_metainfo_reset(obj);
-    lv_mainwnd_buf_dsc_reset(obj);
+    reset_meta_info(obj);
+    reset_buf_dsc(obj);
 
     LV_TRACE_OBJ_CREATE("finished");
 }
@@ -185,8 +176,8 @@ static void lv_mainwnd_destructor(const lv_obj_class_t* class_p, lv_obj_t* obj) 
     if (mainwnd->meta_info.on_destroy) {
         mainwnd->meta_info.on_destroy(&mainwnd->meta_info, &mainwnd->buf_dsc);
     }
-    lv_mainwnd_metainfo_reset(obj);
-    lv_mainwnd_buf_dsc_reset(obj);
+    reset_meta_info(obj);
+    reset_buf_dsc(obj);
 }
 
 static inline void draw_buffer(lv_obj_t* obj, lv_draw_ctx_t* draw_ctx) {
@@ -219,83 +210,100 @@ static inline void draw_buffer(lv_obj_t* obj, lv_draw_ctx_t* draw_ctx) {
 #endif
 }
 
+static inline void dump_input_event(lv_mainwnd_input_event_t* ie) {
+    if (!ie) return;
+
+    LV_LOG_TRACE("input event dump: type(%d), state(%d)\n", ie->type, ie->state);
+    if (ie->type == LV_INDEV_TYPE_POINTER) {
+        LV_LOG_TRACE("\t\traw pos(%d, %d), pos(%d, %d)\n", ie->pointer.raw_x, ie->pointer.raw_y,
+                     ie->pointer.x, ie->pointer.y);
+
+    } else if (ie->type == LV_INDEV_TYPE_KEYPAD) {
+        LV_LOG_TRACE("\t\tkeycode(%d)", ie->keypad.key_code);
+    }
+}
+
+static inline void send_input_event(lv_mainwnd_t* mainwnd, lv_event_code_t code,
+                                    lv_indev_t* indev) {
+    lv_mainwnd_input_event_t ie;
+#if LVGL_VERSION_MAJOR >= 9
+    ie.type = lv_indev_get_type(indev);
+    ie.state = lv_indev_get_state(indev);
+#else
+    ie.type = lv_indev_get_type(indev);
+    ie.state = indev->proc.state;
+#endif
+
+    if (code == LV_EVENT_KEY) {
+        ie.type = LV_MAINWND_EVENT_TYPE_KEYPAD;
+        ie.keypad.key_code = lv_indev_get_key(indev);
+        dump_input_event(&ie);
+        mainwnd->meta_info.send_input_event(&(mainwnd->meta_info), &ie);
+    } else {
+        lv_point_t point;
+        lv_indev_get_point(indev, &point);
+
+        ie.pointer.raw_x = point.x;
+        ie.pointer.raw_y = point.y;
+        // raw x, y
+#if LVGL_VERSION_MAJOR >= 9
+        ie.pointer.x = point.x - lv_obj_get_x((lv_obj_t*)mainwnd);
+        ie.pointer.y = point.y - lv_obj_get_y((lv_obj_t*)mainwnd);
+#else
+        ie.pointer.x = point.x - ((lv_obj_t*)mainwnd)->coords.x1;
+        ie.pointer.y = point.y - ((lv_obj_t*)mainwnd)->coords.y1;
+#endif
+        dump_input_event(&ie);
+        mainwnd->meta_info.send_input_event(&(mainwnd->meta_info), &ie);
+    }
+}
+
 static void lv_mainwnd_event(const lv_obj_class_t* class_p, lv_event_t* e) {
     LV_UNUSED(class_p);
 
     lv_res_t res;
-
     /*Call the ancestor's event handler*/
     res = lv_obj_event_base(MY_CLASS, e);
     if (res != LV_RES_OK) return;
 
-    lv_event_code_t code = lv_event_get_code(e);
-
     lv_obj_t* obj = lv_event_get_target(e);
     lv_mainwnd_t* mainwnd = (lv_mainwnd_t*)obj;
-
-    if (code == LV_EVENT_DRAW_MAIN) {
-        if (mainwnd->buf_dsc.id != INVALID_BUFID) {
-            draw_buffer(obj, lv_event_get_draw_ctx(e));
-            return;
-        }
-
-        if (!mainwnd->meta_info.acquire_buffer) {
-            LV_LOG_WARN("lv_mainwnd no valid 'acquire_buffer'");
-            return;
-        }
-
-        if (!mainwnd->meta_info.acquire_buffer(&mainwnd->meta_info, &mainwnd->buf_dsc)) {
-            LV_LOG_WARN("lv_mainwnd acquire_buffer FAILED");
-            return;
-        }
-        draw_buffer(obj, lv_event_get_draw_ctx(e));
-
-    } else if (code == LV_EVENT_PRESSED || code == LV_EVENT_PRESSING ||
-               code == LV_EVENT_PRESS_LOST || code == LV_EVENT_LONG_PRESSED ||
-               code == LV_EVENT_LONG_PRESSED_REPEAT || code == LV_EVENT_RELEASED ||
-               code == LV_EVENT_KEY) {
-        lv_mainwnd_input_event_handler(e);
-    }
-}
-
-static bool lv_mainwnd_input_event_handler(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);
-
-    lv_obj_t* obj = lv_event_get_target(e);
-    lv_mainwnd_t* mainwnd = (lv_mainwnd_t*)obj;
-
-    if (!mainwnd->meta_info.send_input_event) {
-        LV_LOG_WARN("lv_mainwnd_input_event_handler: send_input_event is NULL");
-        return false;
-    }
-
-    lv_mainwnd_input_event_t input_event;
     switch (code) {
-        case LV_EVENT_PRESSED:
-        case LV_EVENT_PRESSING:
-        case LV_EVENT_PRESS_LOST:
-        case LV_EVENT_LONG_PRESSED:
-        case LV_EVENT_LONG_PRESSED_REPEAT:
-        case LV_EVENT_RELEASED:
-            input_event.type = LV_MAINWND_EVENT_TYPE_POINTER;
+        case LV_EVENT_DRAW_MAIN: {
+            if (mainwnd->buf_dsc.id != INVALID_BUFID) {
+                draw_buffer(obj, lv_event_get_draw_ctx(e));
+                return;
+            }
 
-            lv_point_t point;
-            lv_indev_get_point(lv_indev_get_act(), &point);
-            input_event.pointer.x = point.x;
-            input_event.pointer.y = point.y;
-            input_event.state = code;
+            if (!mainwnd->meta_info.acquire_buffer) {
+                LV_LOG_WARN("no 'acquire_buffer' callback!");
+                return;
+            }
 
-            mainwnd->meta_info.send_input_event(&(mainwnd->meta_info), &input_event);
+            if (!mainwnd->meta_info.acquire_buffer(&mainwnd->meta_info, &mainwnd->buf_dsc)) {
+                LV_LOG_WARN("acquire_buffer failure!");
+                return;
+            }
+            draw_buffer(obj, lv_event_get_draw_ctx(e));
             break;
-        case LV_EVENT_KEY:
-            input_event.type = LV_MAINWND_EVENT_TYPE_KEYPAD;
-            input_event.keypad.key = lv_indev_get_key(lv_indev_get_act());
+        }
 
-            mainwnd->meta_info.send_input_event(&(mainwnd->meta_info), &input_event);
+        case LV_EVENT_PRESSED ... LV_EVENT_LEAVE: {
+            if (!mainwnd->meta_info.send_input_event) {
+                LV_LOG_WARN("no 'send_input_event' callback!");
+                return;
+            }
+            lv_indev_t* indev = lv_event_get_indev(e);
+            if (!indev) {
+                LV_LOG_WARN("no valid input device!");
+                return;
+            }
+            send_input_event(mainwnd, code, indev);
             break;
+        }
+
         default:
-            LV_LOG_WARN("lv_mainwnd_input_event_handler: unknown input event");
-            return false;
+            break;
     }
-    return true;
 }
