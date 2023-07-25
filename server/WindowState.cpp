@@ -30,7 +30,8 @@ namespace os {
 namespace wm {
 
 WindowState::WindowState(WindowManagerService* service, const sp<IWindow>& window,
-                         WindowToken* token, const LayoutParams& params, int32_t visibility)
+                         WindowToken* token, const LayoutParams& params, int32_t visibility,
+                         bool enableInput)
       : mClient(window),
         mToken(token),
         mService(service),
@@ -45,7 +46,7 @@ WindowState::WindowState(WindowManagerService* service, const sp<IWindow>& windo
 
     Rect rect(params.mX, params.mY, params.mX + params.mWidth, params.mY + params.mHeight);
     // TODO: config layer by type
-    mNode = new WindowNode(this, mService->getRootContainer()->getDefLayer(), rect);
+    mNode = new WindowNode(this, mService->getRootContainer()->getDefLayer(), rect, enableInput);
 }
 
 WindowState::~WindowState() {
@@ -68,11 +69,15 @@ std::shared_ptr<InputChannel> WindowState::createInputChannel(const std::string 
         return nullptr;
     }
     mInputChannel = std::make_shared<InputChannel>();
-    if (mInputChannel->create(name)) {
-        return mInputChannel;
-    } else {
-        return nullptr;
+    if (!mInputChannel->create(name)) {
+        mInputChannel = nullptr;
     }
+    return mInputChannel;
+}
+
+bool WindowState::sendInputMessage(const InputMessage* ie) {
+    if (mInputChannel != nullptr) return mInputChannel->sendMessage(ie);
+    return false;
 }
 
 void WindowState::setViewVisibility(bool visibility) {

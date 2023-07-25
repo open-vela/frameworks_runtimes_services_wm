@@ -71,20 +71,34 @@ bool releaseDrawBuffer(struct _lv_mainwnd_metainfo_t* meta, lv_mainwnd_buf_dsc_t
     return false;
 }
 
-static int sendInputEvent(struct _lv_mainwnd_metainfo_t* meta, lv_mainwnd_input_event_t* event) {
+static bool sendInputEvent(struct _lv_mainwnd_metainfo_t* meta, lv_mainwnd_input_event_t* event) {
     if (event == nullptr) {
-        return 1;
+        return false;
     }
     WindowNode* node = toWindowNode(meta);
-    ASSERT_NOT_NULLPTR(node);
+    if (node == nullptr) return false;
 
-    // InputMessage ie;
-    // //TODO: translate mainwnd input event
-    // return node->sendInputMessage(&ie);
-    return 0;
+    const InputMessage* ie = (const InputMessage*)event;
+    return node->getState()->sendInputMessage(ie);
 }
 
-WindowNode::WindowNode(WindowState* state, lv_obj_t* parent, const Rect& rect)
+static inline void setWidgetMetaInfo(lv_obj_t* obj, void* data, bool enableInput) {
+    lv_mainwnd_metainfo_t meta;
+    meta.acquire_buffer = acquireDrawBuffer;
+    meta.release_buffer = releaseDrawBuffer;
+    if (enableInput) {
+        lv_obj_add_flag(obj, LV_OBJ_FLAG_CLICKABLE);
+        meta.send_input_event = sendInputEvent;
+    } else {
+        meta.send_input_event = nullptr;
+        lv_obj_clear_flag(obj, LV_OBJ_FLAG_CLICKABLE);
+    }
+    meta.on_destroy = nullptr;
+    meta.info = data;
+    lv_mainwnd_set_metainfo(obj, &meta);
+}
+
+WindowNode::WindowNode(WindowState* state, lv_obj_t* parent, const Rect& rect, bool enableInput)
       : mState(state), mBuffer(nullptr), mRect(rect) {
     mWidget = lv_mainwnd_create(parent);
 
@@ -93,13 +107,7 @@ WindowNode::WindowNode(WindowState* state, lv_obj_t* parent, const Rect& rect)
     lv_obj_set_size(mWidget, mRect.right, mRect.bottom);
 
     // init window meta information
-    lv_mainwnd_metainfo_t meta;
-    meta.acquire_buffer = acquireDrawBuffer;
-    meta.release_buffer = releaseDrawBuffer;
-    meta.send_input_event = sendInputEvent;
-    meta.on_destroy = nullptr;
-    meta.info = this;
-    lv_mainwnd_set_metainfo(mWidget, &meta);
+    setWidgetMetaInfo(mWidget, this, enableInput);
 }
 
 WindowNode::~WindowNode() {
@@ -154,5 +162,10 @@ bool WindowNode::releaseBuffer() {
     return false;
 }
 
+void WindowNode::enableInput(bool enable) {
+    setWidgetMetaInfo(mWidget, this, enable);
+}
+
 } // namespace wm
+
 } // namespace os

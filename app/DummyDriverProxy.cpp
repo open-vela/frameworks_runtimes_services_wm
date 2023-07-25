@@ -44,6 +44,7 @@ void DummyDriverProxy::drawFrame(BufferItem* bufItem) {
 
 void DummyDriverProxy::handleEvent(InputMessage& message) {
     ALOGI("handle event for dummy proxy.");
+    dumpInputMessage(&message);
 }
 
 void* DummyDriverProxy::getRoot() {
