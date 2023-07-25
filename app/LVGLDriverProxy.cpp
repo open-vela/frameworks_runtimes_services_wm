@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
+#include "LVGLDriverProxy.h"
+
 #include <lv_porting/lv_porting.h>
 #include <lvgl/lvgl.h>
-
-#include "LVGLDriverProxy.h"
 
 namespace os {
 namespace wm {
@@ -60,6 +60,7 @@ void LVGLDriverProxy::drawFrame(BufferItem* bufItem) {
 
 void LVGLDriverProxy::handleEvent(InputMessage& message) {
     // TODO: switch message to indev event
+    dumpInputMessage(&message);
 }
 
 void* LVGLDriverProxy::getRoot() {

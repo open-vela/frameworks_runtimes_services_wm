@@ -70,5 +70,16 @@ void InputChannel::release() {
     }
 }
 
+bool InputChannel::sendMessage(const InputMessage* ie) {
+    if (mEventFd == -1) return false;
+
+    int ret = mq_send(mEventFd, (const char*)ie, sizeof(InputMessage), 100);
+    if (ret < 0) {
+        ALOGW("send message failed:%d", errno);
+        return false;
+    }
+    return true;
+}
+
 } // namespace wm
 } // namespace os

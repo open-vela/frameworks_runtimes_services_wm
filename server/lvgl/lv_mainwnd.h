@@ -57,19 +57,17 @@ typedef struct {
 } lv_mainwnd_buf_dsc_t;
 
 typedef struct {
-    // 1: for key; 2: for pointer
-    int type : 8;
+    lv_indev_type_t type;
+    lv_indev_state_t state;
     union {
         struct {
-            uint32_t key;
+            uint32_t key_code;
         } keypad;
         struct {
-            uint32_t x;
-            uint32_t y;
+            int32_t x, y;
+            int32_t raw_x, raw_y;
         } pointer;
     };
-    // 0: for release; 1: for pressed
-    int state : 8;
 } lv_mainwnd_input_event_t;
 
 typedef struct _lv_mainwnd_metainfo_t {
@@ -80,7 +78,7 @@ typedef struct _lv_mainwnd_metainfo_t {
     bool (*release_buffer)(struct _lv_mainwnd_metainfo_t* meta, lv_mainwnd_buf_dsc_t* buf_dsc);
 
     // collect input data and send it to observer
-    int (*send_input_event)(struct _lv_mainwnd_metainfo_t* meta, lv_mainwnd_input_event_t* event);
+    bool (*send_input_event)(struct _lv_mainwnd_metainfo_t* meta, lv_mainwnd_input_event_t* event);
 
     // notify caller state (destroy)
     bool (*on_destroy)(struct _lv_mainwnd_metainfo_t* meta, lv_mainwnd_buf_dsc_t* buf_dsc);

@@ -21,6 +21,7 @@
 #include <binder/Parcelable.h>
 #include <binder/Status.h>
 #include <utils/RefBase.h>
+#include <wm/InputMessage.h>
 
 namespace os {
 namespace wm {
@@ -50,6 +51,8 @@ public:
 
     bool create(const std::string name);
     void release();
+
+    bool sendMessage(const InputMessage* ie);
 
     DISALLOW_COPY_AND_ASSIGN(InputChannel);
 

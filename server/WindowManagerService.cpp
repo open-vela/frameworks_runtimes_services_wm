@@ -148,7 +148,8 @@ Status WindowManagerService::addWindow(const sp<IWindow>& window, const LayoutPa
     }
     WindowToken* winToken = itToken->second;
 
-    WindowState* win = new WindowState(this, window, winToken, attrs, visibility);
+    WindowState* win = new WindowState(this, window, winToken, attrs, visibility,
+                                       outInputChannel != nullptr ? true : false);
     mWindowMap.emplace(client, win);
 
     winToken->addWindow(win);
