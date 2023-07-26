@@ -65,14 +65,13 @@ bool RootContainer::init() {
 }
 
 bool RootContainer::drawFrame() {
-    lv_refr_now(mDisp);
+    lv_timer_handler();
     return true;
 }
 
 bool RootContainer::handleEvent(int fd, int events) {
     if (events == mVsyncEvent) {
-        _lv_disp_refr_timer(NULL);
-        return true;
+        return drawFrame();
     }
     return false;
 }
