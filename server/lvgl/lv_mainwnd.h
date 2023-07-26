@@ -49,11 +49,7 @@ enum {
 
 typedef struct {
     int id;
-    lv_coord_t w;
-    lv_coord_t h;
-    uint32_t cf : 5;
-    uint32_t data_size;
-    void* data;
+    lv_img_dsc_t img_dsc;
 } lv_mainwnd_buf_dsc_t;
 
 typedef struct {
