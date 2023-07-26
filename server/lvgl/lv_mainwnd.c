@@ -61,11 +61,13 @@ static inline void reset_buf_dsc(lv_obj_t* obj) {
 
     lv_mainwnd_t* mainwnd = (lv_mainwnd_t*)obj;
     mainwnd->buf_dsc.id = INVALID_BUFID;
-    mainwnd->buf_dsc.data = NULL;
-    mainwnd->buf_dsc.data_size = 0;
-    mainwnd->buf_dsc.cf = LV_IMG_CF_UNKNOWN;
-    mainwnd->buf_dsc.w = 0;
-    mainwnd->buf_dsc.h = 0;
+
+    mainwnd->buf_dsc.img_dsc.data = NULL;
+    mainwnd->buf_dsc.img_dsc.data_size = 0;
+    mainwnd->buf_dsc.img_dsc.header.cf = LV_IMG_CF_UNKNOWN;
+    mainwnd->buf_dsc.img_dsc.header.always_zero = 0;
+    mainwnd->buf_dsc.img_dsc.header.w = 0;
+    mainwnd->buf_dsc.img_dsc.header.h = 0;
 }
 
 static inline void reset_meta_info(lv_obj_t* obj) {
@@ -103,17 +105,19 @@ bool lv_mainwnd_update_buffer(lv_obj_t* obj, lv_mainwnd_buf_dsc_t* buf_dsc, cons
         return true;
     }
 
-    if (!buf_dsc->data || buf_dsc->w == 0 || buf_dsc->h == 0) {
+    if (!buf_dsc->img_dsc.data || buf_dsc->img_dsc.header.w == 0 ||
+        buf_dsc->img_dsc.header.h == 0) {
         return false;
     }
 
     lv_mainwnd_t* mainwnd = (lv_mainwnd_t*)obj;
     mainwnd->buf_dsc.id = buf_dsc->id;
-    mainwnd->buf_dsc.data = buf_dsc->data;
-    mainwnd->buf_dsc.data_size = buf_dsc->data_size;
-    mainwnd->buf_dsc.cf = buf_dsc->cf;
-    mainwnd->buf_dsc.w = buf_dsc->w;
-    mainwnd->buf_dsc.h = buf_dsc->h;
+
+    mainwnd->buf_dsc.img_dsc.data = buf_dsc->img_dsc.data;
+    mainwnd->buf_dsc.img_dsc.data_size = buf_dsc->img_dsc.data_size;
+    mainwnd->buf_dsc.img_dsc.header.cf = buf_dsc->img_dsc.header.cf;
+    mainwnd->buf_dsc.img_dsc.header.w = buf_dsc->img_dsc.header.w;
+    mainwnd->buf_dsc.img_dsc.header.h = buf_dsc->img_dsc.header.h;
 
     if (!area) {
         lv_obj_invalidate(obj);
@@ -184,29 +188,29 @@ static inline void draw_buffer(lv_obj_t* obj, lv_draw_ctx_t* draw_ctx) {
     if (!draw_ctx) return;
 
     lv_mainwnd_t* mainwnd = (lv_mainwnd_t*)obj;
-    if (!mainwnd->buf_dsc.data) return;
+    if (!mainwnd->buf_dsc.img_dsc.data) return;
 
     lv_area_t win_coords;
     lv_draw_img_dsc_t img_dsc;
 
     lv_area_copy(&win_coords, &obj->coords);
-    win_coords.y2 = win_coords.y1 + mainwnd->buf_dsc.h - 1;
-    win_coords.x2 = win_coords.x1 + mainwnd->buf_dsc.w - 1;
+    win_coords.y2 = win_coords.y1 + mainwnd->buf_dsc.img_dsc.header.h - 1;
+    win_coords.x2 = win_coords.x1 + mainwnd->buf_dsc.img_dsc.header.w - 1;
 
     lv_draw_img_dsc_init(&img_dsc);
     lv_obj_init_draw_img_dsc(obj, LV_PART_MAIN, &img_dsc);
 
     img_dsc.zoom = LV_IMG_ZOOM_NONE;
     img_dsc.angle = 0;
-    img_dsc.pivot.x = mainwnd->buf_dsc.w / 2;
-    img_dsc.pivot.y = mainwnd->buf_dsc.h / 2;
+    img_dsc.pivot.x = mainwnd->buf_dsc.img_dsc.header.w / 2;
+    img_dsc.pivot.y = mainwnd->buf_dsc.img_dsc.header.h / 2;
     img_dsc.antialias = 0;
 
 #if LVGL_VERSION_MAJOR >= 9
-    img_dsc.src = mainwnd->buf_dsc.data;
+    img_dsc.src = &mainwnd->buf_dsc.img_dsc;
     lv_draw_img(draw_ctx, &img_dsc, &win_coords);
 #else
-    lv_draw_img(draw_ctx, &img_dsc, &win_coords, mainwnd->buf_dsc.data);
+    lv_draw_img(draw_ctx, &img_dsc, &win_coords, &mainwnd->buf_dsc.img_dsc);
 #endif
 }
 
