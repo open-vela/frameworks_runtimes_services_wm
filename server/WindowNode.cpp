@@ -34,11 +34,11 @@ static inline WindowNode* toWindowNode(lv_mainwnd_metainfo_t* meta) {
 static inline void initBufDsc(lv_mainwnd_buf_dsc_t* buf_dsc, BufferKey id, int32_t w, int32_t h,
                               uint32_t size, void* data) {
     buf_dsc->id = id;
-    buf_dsc->w = w;
-    buf_dsc->h = h;
-    buf_dsc->cf = LV_IMG_CF_TRUE_COLOR_ALPHA;
-    buf_dsc->data_size = size;
-    buf_dsc->data = data;
+    buf_dsc->img_dsc.header.w = w;
+    buf_dsc->img_dsc.header.h = h;
+    buf_dsc->img_dsc.header.cf = LV_IMG_CF_TRUE_COLOR_ALPHA;
+    buf_dsc->img_dsc.data_size = size;
+    buf_dsc->img_dsc.data = (const uint8_t*)data;
 }
 
 // for lvgl mainwnd
