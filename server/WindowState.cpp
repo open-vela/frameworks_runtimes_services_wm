@@ -65,7 +65,7 @@ std::shared_ptr<BufferConsumer> WindowState::getBufferConsumer() {
 
 std::shared_ptr<InputChannel> WindowState::createInputChannel(const std::string name) {
     if (mInputChannel != nullptr) {
-        ALOGE("mInputChannel is existed,create failed");
+        ALOGE("mInputChannel is existed, create failed");
         return nullptr;
     }
     mInputChannel = std::make_shared<InputChannel>();
@@ -77,6 +77,7 @@ std::shared_ptr<InputChannel> WindowState::createInputChannel(const std::string 
 
 bool WindowState::sendInputMessage(const InputMessage* ie) {
     if (mInputChannel != nullptr) return mInputChannel->sendMessage(ie);
+    ALOGW("input message: invalid input channel!");
     return false;
 }
 
