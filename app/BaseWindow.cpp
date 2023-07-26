@@ -17,10 +17,13 @@
 #include "BaseWindow.h"
 
 #include <mqueue.h>
+
+#include "SurfaceTransaction.h"
 #ifdef CONFIG_ENABLE_BUFFER_QUEUE_BY_NAME
 #include <sys/mman.h>
 #include <sys/stat.h>
 #endif
+
 #include "UIDriverProxy.h"
 #include "uv.h"
 #include "wm/InputChannel.h"

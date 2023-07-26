@@ -24,6 +24,7 @@
 
 #include "DummyDriverProxy.h"
 #include "LVGLDriverProxy.h"
+#include "SurfaceTransaction.h"
 
 namespace os {
 namespace wm {

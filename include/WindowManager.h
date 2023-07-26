@@ -19,7 +19,6 @@
 #include <mutex>
 
 #include "BaseWindow.h"
-#include "SurfaceTransaction.h"
 #include "app/Context.h"
 #include "os/wm/BnWindowManager.h"
 

@@ -20,7 +20,6 @@
 #include <binder/Status.h>
 #include <utils/RefBase.h>
 
-#include "UIDriverProxy.h"
 #include "WindowManager.h"
 #include "app/Context.h"
 #include "app/UvLoop.h"
@@ -28,9 +27,10 @@
 #include "os/wm/VsyncRequest.h"
 #include "wm/LayoutParams.h"
 #include "wm/WindowFrames.h"
-
 namespace os {
 namespace wm {
+
+using CUSTOM_DRAW_CALLBACK = std::function<void(void*, uint32_t)>;
 
 class BufferProducer;
 class UIDriverProxy;
