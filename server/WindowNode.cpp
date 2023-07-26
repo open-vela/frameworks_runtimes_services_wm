@@ -73,10 +73,14 @@ bool releaseDrawBuffer(struct _lv_mainwnd_metainfo_t* meta, lv_mainwnd_buf_dsc_t
 
 static bool sendInputEvent(struct _lv_mainwnd_metainfo_t* meta, lv_mainwnd_input_event_t* event) {
     if (event == nullptr) {
+        ALOGW("input event: shouldn't send null event!");
         return false;
     }
     WindowNode* node = toWindowNode(meta);
-    if (node == nullptr) return false;
+    if (node == nullptr) {
+        ALOGW("input event: no valid window, cann't send it!");
+        return false;
+    }
 
     const InputMessage* ie = (const InputMessage*)event;
     return node->getState()->sendInputMessage(ie);
