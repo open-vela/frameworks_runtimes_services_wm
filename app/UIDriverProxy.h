@@ -16,14 +16,13 @@
 
 #pragma once
 
+#include "BaseWindow.h"
 #include "wm/BufferQueue.h"
 #include "wm/InputMessage.h"
 #include "wm/Rect.h"
 
 namespace os {
 namespace wm {
-
-using CUSTOM_DRAW_CALLBACK = std::function<void(void*, uint32_t)>;
 
 class BaseWindow;
 
