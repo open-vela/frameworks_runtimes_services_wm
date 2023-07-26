@@ -40,32 +40,25 @@ typedef struct {
     lv_coord_t h;
     uint32_t cf : 5;
     uint8_t data_type : 2;
-    const void * info;
-} lv_sim_meta_info_t;
+    const void *info;
+} lv_sim_t;
 
 /**********************
  *  STATIC PROTOTYPES
  **********************/
 
-static bool lv_mainwnd_acquire_buffer(lv_mainwnd_metainfo_t *meta, lv_mainwnd_buf_dsc_t *buf_dsc);
-static bool lv_mainwnd_release_buffer(lv_mainwnd_metainfo_t *meta, lv_mainwnd_buf_dsc_t *buf_dsc);
-static bool lv_mainwnd_send_input_event(lv_mainwnd_metainfo_t *meta,
-                                       lv_mainwnd_input_event_t *event);
-static bool lv_mainwnd_on_destroy(lv_mainwnd_metainfo_t *meta, lv_mainwnd_buf_dsc_t* buf_dsc);
+static bool acquire_buffer(lv_mainwnd_metainfo_t *meta, lv_mainwnd_buf_dsc_t *buf_dsc);
+static bool release_buffer(lv_mainwnd_metainfo_t *meta, lv_mainwnd_buf_dsc_t *buf_dsc);
+static bool send_input_event(lv_mainwnd_metainfo_t *meta, lv_mainwnd_input_event_t *event);
+static bool on_destroy(lv_mainwnd_metainfo_t *meta, lv_mainwnd_buf_dsc_t *buf_dsc);
 
-static void lv_sim_metainfo_generate(lv_sim_meta_info_t *sim_meta_info, const void *info, int id,
-                                     lv_coord_t w, lv_coord_t h, uint32_t cf);
-
-static void lv_metainfo_init(lv_mainwnd_metainfo_t *meta_info);
-static void lv_set_sim_metainfo(lv_mainwnd_metainfo_t *meta_info,
-                                lv_sim_meta_info_t *sim_meta_info);
+static void metainfo_init(lv_mainwnd_metainfo_t *meta_info);
 
 /**********************
  *   GLOBAL FUNCTIONS
  **********************/
 
-void lv_mainwnd_sim_test(void)
-{
+void lv_mainwnd_sim_test(void) {
     static lv_color_t cbuf[LV_CANVAS_BUF_SIZE_TRUE_COLOR(BUFFER_WIDTH, BUFFER_HEIGHT)];
 
     lv_draw_rect_dsc_t rect_dsc;
@@ -82,32 +75,35 @@ void lv_mainwnd_sim_test(void)
     rect_dsc.shadow_ofs_x = 5;
     rect_dsc.shadow_ofs_y = 5;
 
-    lv_obj_t *lv_canvas = lv_canvas_create(lv_scr_act());
-    lv_canvas_set_buffer(lv_canvas, cbuf, BUFFER_WIDTH, BUFFER_HEIGHT, LV_IMG_CF_TRUE_COLOR);
-    lv_obj_align(lv_canvas, LV_ALIGN_TOP_RIGHT, 0, 0);
-    lv_canvas_draw_rect(lv_canvas, (BUFFER_WIDTH - 150) / 2, (BUFFER_HEIGHT - 150) / 2, 150, 150,
+    lv_obj_t *canvas = lv_canvas_create(lv_scr_act());
+    lv_canvas_set_buffer(canvas, cbuf, BUFFER_WIDTH, BUFFER_HEIGHT, LV_IMG_CF_TRUE_COLOR);
+    lv_obj_align(canvas, LV_ALIGN_TOP_RIGHT, 0, 0);
+    lv_canvas_draw_rect(canvas, (BUFFER_WIDTH - 150) / 2, (BUFFER_HEIGHT - 150) / 2, 150, 150,
                         &rect_dsc);
-    lv_img_dsc_t *dsc = lv_canvas_get_img(lv_canvas);
 
-    lv_obj_t *app_label = lv_label_create(lv_canvas);
+    lv_obj_t *app_label = lv_label_create(canvas);
     lv_label_set_text(app_label, "app buffer");
 
-    lv_sim_meta_info_t *sim_meta_info = lv_mem_alloc(sizeof(lv_sim_meta_info_t));
-    if (!sim_meta_info) {
-        LV_LOG_WARN("lv_mainwnd_sim_test: failed to allocate memory for lv_sim_meta_info_t");
+    lv_sim_t *sim_data = lv_mem_alloc(sizeof(lv_sim_t));
+    if (!sim_data) {
+        LV_LOG_WARN("lv_mainwnd_sim_test: failed to allocate memory for lv_sim_t");
         return;
     }
-    lv_sim_metainfo_generate(sim_meta_info, dsc, 2023, BUFFER_WIDTH, BUFFER_HEIGHT,
-                             LV_IMG_CF_TRUE_COLOR);
+
+    sim_data->info = cbuf;
+    sim_data->id = 2023;
+    sim_data->w = BUFFER_WIDTH;
+    sim_data->h = BUFFER_HEIGHT;
+    sim_data->cf = LV_IMG_CF_TRUE_COLOR;
 
     lv_mainwnd_metainfo_t *meta_info = lv_mem_alloc(sizeof(lv_mainwnd_metainfo_t));
     if (!meta_info) {
-        lv_mem_free(sim_meta_info);
+        lv_mem_free(sim_data);
         LV_LOG_WARN("lv_mainwnd_sim_test: failed to allocate memory for lv_mainwnd_metainfo_t");
         return;
     }
-    lv_metainfo_init(meta_info);
-    lv_set_sim_metainfo(meta_info, sim_meta_info);
+    metainfo_init(meta_info);
+    meta_info->info = sim_data;
 
     lv_obj_t *mainwnd = lv_mainwnd_create(lv_scr_act());
     lv_mainwnd_set_metainfo(mainwnd, meta_info);
@@ -121,56 +117,40 @@ void lv_mainwnd_sim_test(void)
  *   STATIC FUNCTIONS
  **********************/
 
-static bool lv_mainwnd_acquire_buffer(lv_mainwnd_metainfo_t * meta, lv_mainwnd_buf_dsc_t * buf_dsc)
-{
+static bool acquire_buffer(lv_mainwnd_metainfo_t *meta, lv_mainwnd_buf_dsc_t *buf_dsc) {
     if (!buf_dsc || !meta) {
         return false;
     }
 
-    lv_sim_meta_info_t * sim_meta_info = (lv_sim_meta_info_t *)(meta->info);
-    buf_dsc->id = sim_meta_info->id;
-    buf_dsc->w = sim_meta_info->w;
-    buf_dsc->h = sim_meta_info->h;
-    buf_dsc->data = (void *)sim_meta_info->info;
-    buf_dsc->cf = sim_meta_info->cf;
+    lv_sim_t *sim_data = (lv_sim_t *)(meta->info);
+    buf_dsc->id = sim_data->id;
+    buf_dsc->img_dsc.data = sim_data->info;
+    buf_dsc->img_dsc.data_size = sim_data->w * sim_data->h * LV_IMG_PX_SIZE_ALPHA_BYTE;
+    buf_dsc->img_dsc.header.w = sim_data->w;
+    buf_dsc->img_dsc.header.h = sim_data->h;
+    buf_dsc->img_dsc.header.cf = sim_data->cf;
 
     return true;
 }
 
-static bool lv_mainwnd_release_buffer(lv_mainwnd_metainfo_t *meta, lv_mainwnd_buf_dsc_t *buf_dsc) {
+static bool release_buffer(lv_mainwnd_metainfo_t *meta, lv_mainwnd_buf_dsc_t *buf_dsc) {
     // TODO
     return true;
 }
 
-static bool lv_mainwnd_send_input_event(lv_mainwnd_metainfo_t *meta,
-                                       lv_mainwnd_input_event_t *event) {
+static bool send_input_event(lv_mainwnd_metainfo_t *meta, lv_mainwnd_input_event_t *event) {
     // TODO
     return true;
 }
 
-static bool lv_mainwnd_on_destroy(lv_mainwnd_metainfo_t *meta, lv_mainwnd_buf_dsc_t* buf_dsc) {
+static bool on_destroy(lv_mainwnd_metainfo_t *meta, lv_mainwnd_buf_dsc_t *buf_dsc) {
     // TODO
     return true;
 }
 
-static void lv_sim_metainfo_generate(lv_sim_meta_info_t *sim_meta_info, const void *info, int id,
-                                     lv_coord_t w, lv_coord_t h, uint32_t cf) {
-    sim_meta_info->info = info;
-    sim_meta_info->id = id;
-    sim_meta_info->w = w;
-    sim_meta_info->h = h;
-    sim_meta_info->cf = cf;
-}
-
-static void lv_metainfo_init(lv_mainwnd_metainfo_t * meta_info)
-{
-    meta_info->acquire_buffer = lv_mainwnd_acquire_buffer;
-    meta_info->release_buffer = lv_mainwnd_release_buffer;
-    meta_info->send_input_event = lv_mainwnd_send_input_event;
-    meta_info->on_destroy = lv_mainwnd_on_destroy;
-}
-
-static void lv_set_sim_metainfo(lv_mainwnd_metainfo_t *meta_info,
-                                lv_sim_meta_info_t *sim_meta_info) {
-    meta_info->info = sim_meta_info;
+static void metainfo_init(lv_mainwnd_metainfo_t *meta_info) {
+    meta_info->acquire_buffer = acquire_buffer;
+    meta_info->release_buffer = release_buffer;
+    meta_info->send_input_event = send_input_event;
+    meta_info->on_destroy = on_destroy;
 }
