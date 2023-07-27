@@ -31,6 +31,10 @@ using namespace std;
 
 class LayoutParams : public Parcelable {
 public:
+    static const int WINDOW_INVISIBLE = 0;
+    static const int WINDOW_VISIBLE = 1;
+    static const int WINDOW_GONE = 2;
+
     // for type
     static const int TYPE_APPLICATION = 1;
     static const int TYPE_SYSTEM_WINDOW = 1000;
@@ -69,8 +73,6 @@ public:
     int32_t mFlags;
     int32_t mFormat;
     sp<IBinder> mToken;
-
-private:
 };
 
 } // namespace wm
