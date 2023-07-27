@@ -86,10 +86,6 @@ static void eventCallback(int fd, int status, int events, void* data) {
     }
 }
 
-BaseWindow::BaseWindow() {
-    BaseWindow(nullptr);
-}
-
 BaseWindow::~BaseWindow() {
     if (mPoll) delete mPoll;
 }
@@ -100,9 +96,10 @@ BaseWindow::BaseWindow(::os::app::Context* context)
         mPoll(nullptr),
         mVsyncRequest(VsyncRequest::VSYNC_REQ_NONE),
         mAppVisible(false) {
-    mIWindow = sp<W>::make(this);
     mAttrs = LayoutParams();
     mAttrs.mToken = context->getToken();
+
+    mIWindow = sp<W>::make(this);
 }
 
 void BaseWindow::setWindowManager(WindowManager* wm) {
@@ -157,6 +154,7 @@ void BaseWindow::setSurfaceControl(SurfaceControl* surfaceControl) {
     std::unordered_map<BufferKey, BufferId> bufferIds = mSurfaceControl->bufferIds();
     for (auto it = bufferIds.begin(); it != bufferIds.end(); ++it) {
         ALOGI("reset SurfaceControl bufferId:%s,%d", it->second.mName.c_str(), it->second.mKey);
+
         int32_t fd = shm_open(it->second.mName.c_str(), O_RDWR, S_IRUSR | S_IWUSR);
         ids.push_back({it->second.mName, it->second.mKey, fd});
     }
@@ -210,7 +208,7 @@ void BaseWindow::handleOnFrame(int32_t seq) {
         }
         BufferItem* item = buffProducer->dequeueBuffer();
         if (!item) {
-            ALOGE("onFrame, no valid buffer!");
+            ALOGI("onFrame, no valid buffer!");
             return;
         }
 
@@ -252,9 +250,9 @@ void BaseWindow::updateOrCreateBufferQueue() {
     }
 }
 
-void BaseWindow::setCustomDrawCallback(const CUSTOM_DRAW_CALLBACK& cb) {
+void BaseWindow::setMockUIEventCallback(const MOCKUI_EVENT_CALLBACK& cb) {
     if (mUIProxy.get() == nullptr) return;
-    mUIProxy->setDrawCallback(cb);
+    mUIProxy->setEventCallback(cb);
 }
 
 } // namespace wm
