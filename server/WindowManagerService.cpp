@@ -243,7 +243,7 @@ Status WindowManagerService::updateWindowTokenVisibility(const sp<IBinder>& toke
                                                          int32_t visibility) {
     auto it = mTokenMap.find(token);
     if (it != mTokenMap.end()) {
-        it->second->setClientVisible(visibility ? true : false);
+        it->second->setClientVisible(visibility == LayoutParams::WINDOW_VISIBLE ? true : false);
     } else {
         return Status::fromExceptionCode(1, "can't find token in map");
     }
