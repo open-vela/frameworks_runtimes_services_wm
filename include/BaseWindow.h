@@ -27,10 +27,18 @@
 #include "os/wm/VsyncRequest.h"
 #include "wm/LayoutParams.h"
 #include "wm/WindowFrames.h"
+
 namespace os {
 namespace wm {
 
-using CUSTOM_DRAW_CALLBACK = std::function<void(void*, uint32_t)>;
+// for MockUI (DummyDriver)
+enum {
+    MOCKUI_EVENT_DRAW = 1,
+    MOCKUI_EVENT_CLICK = 2,
+};
+// data, size, event
+using MOCKUI_EVENT_CALLBACK = std::function<void(void*, uint32_t, uint32_t)>;
+// end for MockUI (DummyDriver)
 
 class BufferProducer;
 class UIDriverProxy;
@@ -58,13 +66,8 @@ public:
         BaseWindow* mBaseWindow;
     };
 
-    // TODO: add context
-    BaseWindow();
-    ~BaseWindow();
-
     BaseWindow(::os::app::Context* context);
-
-    DISALLOW_COPY_AND_ASSIGN(BaseWindow);
+    ~BaseWindow();
 
     bool scheduleVsync(VsyncRequest freq);
 
@@ -81,8 +84,6 @@ public:
     std::shared_ptr<UIDriverProxy>& getUIProxy() {
         return mUIProxy;
     }
-
-    void setCustomDrawCallback(const CUSTOM_DRAW_CALLBACK& cb);
 
     void setLayoutParams(LayoutParams lp) {
         mAttrs = lp;
@@ -115,6 +116,10 @@ public:
 
     void setInputChannel(InputChannel* inputChannel);
     void setSurfaceControl(SurfaceControl* surfaceControl);
+
+    void setMockUIEventCallback(const MOCKUI_EVENT_CALLBACK& cb);
+
+    DISALLOW_COPY_AND_ASSIGN(BaseWindow);
 
 private:
     void updateOrCreateBufferQueue();

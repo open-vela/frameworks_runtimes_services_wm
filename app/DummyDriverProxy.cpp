@@ -26,6 +26,7 @@ DummyDriverProxy::DummyDriverProxy(std::shared_ptr<BaseWindow> win) : UIDriverPr
 DummyDriverProxy::~DummyDriverProxy() {}
 
 bool DummyDriverProxy::initUIInstance() {
+    mActive = false;
     return true;
 }
 
@@ -36,15 +37,34 @@ void DummyDriverProxy::drawFrame(BufferItem* bufItem) {
     if (!bufItem) return;
 
     void* buffer = onDequeueBuffer();
-    if (buffer && mDrawCallback) {
-        mDrawCallback(buffer, bufItem->mSize);
+    if (buffer && mEventCallback) {
+        mEventCallback(buffer, bufItem->mSize, MOCKUI_EVENT_DRAW);
     }
     onQueueBuffer();
 }
 
 void DummyDriverProxy::handleEvent(InputMessage& message) {
-    ALOGI("handle event for dummy proxy.");
     dumpInputMessage(&message);
+
+    switch (message.type) {
+        case INPUT_MESSAGE_TYPE_POINTER: {
+            if (message.state == INPUT_MESSAGE_STATE_PRESSED) {
+                mActive = true;
+            } else if (message.state == INPUT_MESSAGE_STATE_RELEASED) {
+                if (!mActive) {
+                    return;
+                }
+
+                mActive = false;
+                if (mEventCallback) mEventCallback(NULL, 0, MOCKUI_EVENT_CLICK);
+            }
+            break;
+        }
+
+        default:
+            mActive = false;
+            break;
+    }
 }
 
 void* DummyDriverProxy::getRoot() {

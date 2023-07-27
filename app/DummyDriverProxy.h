@@ -32,12 +32,13 @@ public:
     void handleEvent(InputMessage& message) override;
     void drawFrame(BufferItem* bufItem) override;
 
-    void setDrawCallback(const CUSTOM_DRAW_CALLBACK& cb) override {
-        mDrawCallback = cb;
+    void setEventCallback(const MOCKUI_EVENT_CALLBACK& cb) override {
+        mEventCallback = cb;
     }
 
 private:
-    CUSTOM_DRAW_CALLBACK mDrawCallback;
+    MOCKUI_EVENT_CALLBACK mEventCallback;
+    bool mActive;
 };
 
 } // namespace wm

@@ -64,6 +64,6 @@ bool UIDriverProxy::finishDrawing() {
     return mFlags != 0 ? true : false;
 }
 
-void UIDriverProxy::setDrawCallback(const CUSTOM_DRAW_CALLBACK& cb) {}
+void UIDriverProxy::setEventCallback(const MOCKUI_EVENT_CALLBACK& cb) {}
 } // namespace wm
 } // namespace os

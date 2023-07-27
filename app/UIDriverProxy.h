@@ -53,7 +53,7 @@ public:
         return mBufferItem;
     }
 
-    virtual void setDrawCallback(const CUSTOM_DRAW_CALLBACK& cb);
+    virtual void setEventCallback(const MOCKUI_EVENT_CALLBACK& cb);
 
     enum {
         UIP_BUFFER_UPDATE = 1,
