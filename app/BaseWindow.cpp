@@ -141,8 +141,12 @@ void BaseWindow::doDie() {
 void BaseWindow::setInputChannel(InputChannel* inputChannel) {
     if (inputChannel != nullptr && inputChannel->isValid()) {
         mInputChannel.reset(inputChannel);
-        mPoll = new ::os::app::UvPoll(mContext->getMainLoop(), mInputChannel->getEventFd());
-        mPoll->start(UV_READABLE, eventCallback, this);
+        mPoll = new uv_poll_t;
+        mPoll->data = this;
+        uv_poll_init(mContext->getMainLoop()->get(), mPoll, mInputChannel->getEventFd());
+        uv_poll_start(mPoll, UV_READABLE, [](uv_poll_t* handle, int status, int events) {
+            eventCallback(handle->io_watcher.fd, status, events, handle->data);
+        });
     } else {
         mInputChannel.reset();
     }

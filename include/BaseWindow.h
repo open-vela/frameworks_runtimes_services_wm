@@ -134,7 +134,7 @@ private:
     std::shared_ptr<SurfaceControl> mSurfaceControl;
     std::shared_ptr<InputChannel> mInputChannel;
     std::shared_ptr<UIDriverProxy> mUIProxy;
-    ::os::app::UvPoll* mPoll;
+    uv_poll_t* mPoll;
     VsyncRequest mVsyncRequest;
     bool mAppVisible;
     atomic_bool mFrameDone;
