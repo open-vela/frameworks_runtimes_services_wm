@@ -55,7 +55,6 @@ private:
     vector<std::shared_ptr<BaseWindow>> mWindows;
     sp<IWindowManager> mService;
     std::shared_ptr<SurfaceTransaction> mTransaction;
-    static WindowManager* mInstance;
 };
 
 } // namespace wm
