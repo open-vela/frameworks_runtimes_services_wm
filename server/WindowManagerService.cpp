@@ -23,6 +23,7 @@
 #include <sys/stat.h>
 #include <utils/Log.h>
 
+#include "../system_server/BaseProfiler.h"
 #include "RootContainer.h"
 #include "WindowState.h"
 #include "WindowToken.h"
@@ -65,10 +66,12 @@ static inline bool createSharedBuffer(int32_t size, BufferId* id) {
 
 static int eventCnt = 0;
 static inline int handleUIEvent(int /*fd*/, int /*events*/, void* data) {
+    WM_PROFILER_BEGIN();
     WindowManagerService* service = static_cast<WindowManagerService*>(data);
     ALOGI("handle UI Event %d", ++eventCnt);
     service->getRootContainer()->drawFrame();
     service->responseVsync();
+    WM_PROFILER_END();
     return 1;
 }
 
@@ -254,11 +257,14 @@ Status WindowManagerService::updateWindowTokenVisibility(const sp<IBinder>& toke
 }
 
 Status WindowManagerService::applyTransaction(const vector<LayerState>& state) {
+    WM_PROFILER_BEGIN();
+
     for (const auto& layerState : state) {
         if (mWindowMap.find(layerState.mToken) != mWindowMap.end()) {
             mWindowMap[layerState.mToken]->applyTransaction(layerState);
         }
     }
+    WM_PROFILER_END();
 
     return Status::ok();
 }
@@ -275,9 +281,11 @@ Status WindowManagerService::requestVsync(const sp<IWindow>& window, VsyncReques
 }
 
 void WindowManagerService::responseVsync() {
+    WM_PROFILER_BEGIN();
     for (const auto& [key, state] : mWindowMap) {
         state->onVsync();
     }
+    WM_PROFILER_END();
 }
 
 int32_t WindowManagerService::createSurfaceControl(SurfaceControl* outSurfaceControl,

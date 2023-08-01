@@ -21,6 +21,7 @@
 #include <sys/mman.h>
 #include <utils/RefBase.h>
 
+#include "../system_server/BaseProfiler.h"
 #include "RootContainer.h"
 #include "WindowManagerService.h"
 #include "wm/LayerState.h"
@@ -125,6 +126,8 @@ void WindowState::destoryInputChannel() {
 
 void WindowState::applyTransaction(LayerState layerState) {
     ALOGI("applyTransaction(%p)", this);
+    WM_PROFILER_BEGIN();
+
     BufferItem* buffItem = nullptr;
     Rect* rect = nullptr;
     if (layerState.mFlags & LayerState::LAYER_POSITION_CHANGED) {
@@ -148,6 +151,7 @@ void WindowState::applyTransaction(LayerState layerState) {
     }
 
     mNode->updateBuffer(buffItem, rect);
+    WM_PROFILER_END();
 }
 
 bool WindowState::scheduleVsync(VsyncRequest vsyncReq) {

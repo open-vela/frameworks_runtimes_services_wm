@@ -16,6 +16,8 @@
 
 #include "WindowNode.h"
 
+#include "../system_server/BaseProfiler.h"
+
 namespace os {
 namespace wm {
 
@@ -121,6 +123,8 @@ WindowNode::~WindowNode() {
 }
 
 bool WindowNode::updateBuffer(BufferItem* item, Rect* rect) {
+    WM_PROFILER_BEGIN();
+
     bool result = false;
     lv_area_t area;
     lv_mainwnd_buf_dsc_t dsc;
@@ -150,8 +154,10 @@ bool WindowNode::updateBuffer(BufferItem* item, Rect* rect) {
         mBuffer = oldBuffer;
     } else if (oldBuffer && !mState->releaseBuffer(oldBuffer)) {
         ALOGE("WMS releaseBuffer(%d) exception\n", oldBuffer->mKey);
+        WM_PROFILER_END();
         return false;
     }
+    WM_PROFILER_END();
     return result;
 }
 

@@ -16,6 +16,8 @@
 
 #include "DummyDriverProxy.h"
 
+#include "../system_server/BaseProfiler.h"
+
 namespace os {
 namespace wm {
 
@@ -31,16 +33,22 @@ bool DummyDriverProxy::initUIInstance() {
 }
 
 void DummyDriverProxy::drawFrame(BufferItem* bufItem) {
+    WM_PROFILER_BEGIN();
+
     UIDriverProxy::drawFrame(bufItem);
     ALOGI("draw frame for dummy proxy.");
 
-    if (!bufItem) return;
+    if (!bufItem) {
+        WM_PROFILER_END();
+        return;
+    }
 
     void* buffer = onDequeueBuffer();
     if (buffer && mEventCallback) {
         mEventCallback(buffer, bufItem->mSize, MOCKUI_EVENT_DRAW);
     }
     onQueueBuffer();
+    WM_PROFILER_END();
 }
 
 void DummyDriverProxy::handleEvent(InputMessage& message) {
