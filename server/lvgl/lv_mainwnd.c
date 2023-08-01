@@ -25,6 +25,8 @@
 
 #include "lv_mainwnd.h"
 
+#include "../../../system_server/BaseProfiler.h"
+
 /*********************
  *      DEFINES
  *********************/
@@ -98,15 +100,18 @@ lv_obj_t* lv_mainwnd_create(lv_obj_t* parent) {
 
 bool lv_mainwnd_update_buffer(lv_obj_t* obj, lv_mainwnd_buf_dsc_t* buf_dsc, const lv_area_t* area) {
     LV_ASSERT_OBJ(obj, MY_CLASS);
+    WM_PROFILER_BEGIN();
 
     if (!buf_dsc) {
         lv_obj_add_flag(obj, LV_OBJ_FLAG_HIDDEN);
         reset_buf_dsc(obj);
+        WM_PROFILER_END();
         return true;
     }
 
     if (!buf_dsc->img_dsc.data || buf_dsc->img_dsc.header.w == 0 ||
         buf_dsc->img_dsc.header.h == 0) {
+        WM_PROFILER_END();
         return false;
     }
 
@@ -121,6 +126,7 @@ bool lv_mainwnd_update_buffer(lv_obj_t* obj, lv_mainwnd_buf_dsc_t* buf_dsc, cons
 
     if (!area) {
         lv_obj_invalidate(obj);
+        WM_PROFILER_END();
         return true;
     }
     lv_area_t win_coords;
@@ -130,7 +136,7 @@ bool lv_mainwnd_update_buffer(lv_obj_t* obj, lv_mainwnd_buf_dsc_t* buf_dsc, cons
     if (_lv_area_intersect(&inv_area, &win_coords, area)) {
         lv_obj_invalidate_area(obj, &inv_area);
     }
-
+    WM_PROFILER_END();
     return true;
 }
 
@@ -186,6 +192,7 @@ static void lv_mainwnd_destructor(const lv_obj_class_t* class_p, lv_obj_t* obj) 
 
 static inline void draw_buffer(lv_obj_t* obj, lv_draw_ctx_t* draw_ctx) {
     if (!draw_ctx) return;
+    WM_PROFILER_BEGIN();
 
     lv_mainwnd_t* mainwnd = (lv_mainwnd_t*)obj;
     if (!mainwnd->buf_dsc.img_dsc.data) return;
@@ -213,6 +220,7 @@ static inline void draw_buffer(lv_obj_t* obj, lv_draw_ctx_t* draw_ctx) {
 #else
     lv_draw_img(draw_ctx, &img_dsc, &win_coords, &mainwnd->buf_dsc.img_dsc);
 #endif
+    WM_PROFILER_END();
 }
 
 static inline void dump_input_event(lv_mainwnd_input_event_t* ie) {
