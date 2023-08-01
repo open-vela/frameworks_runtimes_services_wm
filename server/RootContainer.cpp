@@ -29,6 +29,8 @@ namespace wm {
 RootContainer::RootContainer() : mDisp(nullptr), mSyncMode(DSM_TIMER) {
 #ifdef CONFIG_FB_SYNC
     mVsyncEvent = FBIO_WAITFORVSYNC;
+#else
+    mVsyncEvent = -1;
 #endif
     init();
 }
