@@ -37,15 +37,11 @@ WindowManager::WindowManager() {
 WindowManager::~WindowManager() {
     mService = nullptr;
     mWindows.clear();
-    delete mInstance;
 }
 
-WindowManager* WindowManager::mInstance = nullptr;
 WindowManager* WindowManager::getInstance() {
-    if (mInstance == nullptr) {
-        mInstance = new WindowManager();
-    }
-    return mInstance;
+    static WindowManager instance;
+    return &instance;
 }
 
 sp<IWindowManager>& WindowManager::getService() {
