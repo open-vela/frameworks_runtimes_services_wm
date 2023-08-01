@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "WindowManagerService"
+#define LOG_TAG "WMS"
 
 #include "WindowManagerService.h"
 
@@ -63,8 +63,10 @@ static inline bool createSharedBuffer(int32_t size, BufferId* id) {
     return true;
 }
 
+static int eventCnt = 0;
 static inline int handleUIEvent(int /*fd*/, int /*events*/, void* data) {
     WindowManagerService* service = static_cast<WindowManagerService*>(data);
+    ALOGI("handle UI Event %d", ++eventCnt);
     service->getRootContainer()->drawFrame();
     service->responseVsync();
     return 1;
@@ -97,6 +99,7 @@ private:
 WindowManagerService::WindowManagerService() : mRootFd(-1) {
     mLooper = Looper::getForThread();
     mContainer = new RootContainer();
+    ALOGI("WMS init");
     if (mLooper) {
         if (mContainer->getSyncMode() == DSM_TIMER) {
             mFrameHandler = new UIFrameHandler(this);

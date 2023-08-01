@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define LOG_TAG "BaseWindow"
 
 #include "BaseWindow.h"
 
@@ -95,7 +96,8 @@ BaseWindow::BaseWindow(::os::app::Context* context)
         mWindowManager(nullptr),
         mPoll(nullptr),
         mVsyncRequest(VsyncRequest::VSYNC_REQ_NONE),
-        mAppVisible(false) {
+        mAppVisible(false),
+        mFrameDone(true) {
     mAttrs = LayoutParams();
     mAttrs.mToken = context->getToken();
 
@@ -125,7 +127,7 @@ std::shared_ptr<BufferProducer> BaseWindow::getBufferProducer() {
     if (mSurfaceControl.get() != nullptr && mSurfaceControl->isValid()) {
         return std::static_pointer_cast<BufferProducer>(mSurfaceControl->bufferQueue());
     }
-    ALOGW("mSurfaceControl is not existed");
+    ALOGW("mSurfaceControl is invalid!");
     return nullptr;
 }
 
@@ -168,7 +170,17 @@ void BaseWindow::dispatchAppVisibility(bool visible) {
 }
 
 void BaseWindow::onFrame(int32_t seq) {
-    mContext->getMainLoop()->postTask([this, seq](void*) { this->handleOnFrame(seq); });
+    if (!mFrameDone.load(std::memory_order_acquire)) {
+        ALOGW("onFrame(%p) %d, waiting frame done!", this, seq);
+        return;
+    }
+
+    mFrameDone.exchange(false, std::memory_order_release);
+
+    mContext->getMainLoop()->postTask([this, seq](void*) {
+        this->handleOnFrame(seq);
+        mFrameDone.exchange(true, std::memory_order_release);
+    });
 }
 
 void BaseWindow::bufferReleased(int32_t bufKey) {
@@ -192,6 +204,7 @@ void BaseWindow::handleAppVisibility(bool visible) {
 
 void BaseWindow::handleOnFrame(int32_t seq) {
     mVsyncRequest = nextVsyncState(mVsyncRequest);
+    ALOGI("handleOnFrame(%p) %d", this, seq);
 
     if (mSurfaceControl.get() == nullptr) {
         mWindowManager->relayoutWindow(shared_from_this());
@@ -203,12 +216,12 @@ void BaseWindow::handleOnFrame(int32_t seq) {
 
         std::shared_ptr<BufferProducer> buffProducer = getBufferProducer();
         if (buffProducer.get() == nullptr) {
-            ALOGW("buffProducer is not existed!");
+            ALOGW("buffProducer is invalid!");
             return;
         }
         BufferItem* item = buffProducer->dequeueBuffer();
         if (!item) {
-            ALOGI("onFrame, no valid buffer!");
+            ALOGW("onFrame, no valid buffer!\n");
             return;
         }
 
@@ -224,6 +237,8 @@ void BaseWindow::handleOnFrame(int32_t seq) {
         transaction->setBuffer(mSurfaceControl, *item);
         auto rect = mUIProxy->rectCrop();
         if (rect) transaction->setBufferCrop(mSurfaceControl, *rect);
+
+        ALOGI("handleOnFrame(%p) %d apply transaction\n", this, seq);
         transaction->apply();
     }
 }
@@ -231,7 +246,7 @@ void BaseWindow::handleOnFrame(int32_t seq) {
 void BaseWindow::handleBufferReleased(int32_t bufKey) {
     std::shared_ptr<BufferProducer> buffProducer = getBufferProducer();
     if (buffProducer.get() == nullptr) {
-        ALOGW("buffProducer is not existed!");
+        ALOGW("buffProducer is invalid!");
         return;
     }
     auto buffer = buffProducer->syncFreeState(bufKey);

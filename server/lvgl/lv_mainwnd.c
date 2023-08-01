@@ -206,6 +206,7 @@ static inline void draw_buffer(lv_obj_t* obj, lv_draw_ctx_t* draw_ctx) {
     img_dsc.pivot.y = mainwnd->buf_dsc.img_dsc.header.h / 2;
     img_dsc.antialias = 0;
 
+    LV_LOG_TRACE("draw (%p) with (%d)", mainwnd, mainwnd->buf_dsc.id);
 #if LVGL_VERSION_MAJOR >= 9
     img_dsc.src = &mainwnd->buf_dsc.img_dsc;
     lv_draw_img(draw_ctx, &img_dsc, &win_coords);
