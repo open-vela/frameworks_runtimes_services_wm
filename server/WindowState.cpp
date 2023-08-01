@@ -88,6 +88,9 @@ void WindowState::setViewVisibility(bool visibility) {
 
 void WindowState::sendAppVisibilityToClients() {
     mVisibility = mToken->isClientVisible();
+    if (!mVisibility) {
+        scheduleVsync(VsyncRequest::VSYNC_REQ_NONE);
+    }
     mClient->dispatchAppVisibility(mVisibility);
 }
 
@@ -121,6 +124,7 @@ void WindowState::destoryInputChannel() {
 }
 
 void WindowState::applyTransaction(LayerState layerState) {
+    ALOGI("applyTransaction(%p)", this);
     BufferItem* buffItem = nullptr;
     Rect* rect = nullptr;
     if (layerState.mFlags & LayerState::LAYER_POSITION_CHANGED) {
@@ -156,6 +160,7 @@ bool WindowState::scheduleVsync(VsyncRequest vsyncReq) {
 bool WindowState::onVsync() {
     if (mVsyncRequest == VsyncRequest::VSYNC_REQ_NONE) return false;
 
+    ALOGI("(%p) send vsync to client", this);
     mVsyncRequest = nextVsyncState(mVsyncRequest);
     mClient->onFrame(++mFrameReq);
     return true;
@@ -165,7 +170,6 @@ void WindowState::removeIfPossible() {
     destorySurfaceControl();
     destoryInputChannel();
     mToken.reset();
-    // win node
     mNode = nullptr;
 
     ALOGI("called");

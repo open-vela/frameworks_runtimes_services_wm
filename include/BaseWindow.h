@@ -20,6 +20,8 @@
 #include <binder/Status.h>
 #include <utils/RefBase.h>
 
+#include <atomic>
+
 #include "WindowManager.h"
 #include "app/Context.h"
 #include "app/UvLoop.h"
@@ -135,6 +137,7 @@ private:
     ::os::app::UvPoll* mPoll;
     VsyncRequest mVsyncRequest;
     bool mAppVisible;
+    atomic_bool mFrameDone;
 };
 
 } // namespace wm
