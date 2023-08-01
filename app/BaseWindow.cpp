@@ -25,6 +25,7 @@
 #include <sys/stat.h>
 #endif
 
+#include "../system_server/BaseProfiler.h"
 #include "UIDriverProxy.h"
 #include "uv.h"
 #include "wm/InputChannel.h"
@@ -174,8 +175,10 @@ void BaseWindow::dispatchAppVisibility(bool visible) {
 }
 
 void BaseWindow::onFrame(int32_t seq) {
+    WM_PROFILER_BEGIN();
     if (!mFrameDone.load(std::memory_order_acquire)) {
         ALOGW("onFrame(%p) %d, waiting frame done!", this, seq);
+        WM_PROFILER_END();
         return;
     }
 
@@ -185,6 +188,7 @@ void BaseWindow::onFrame(int32_t seq) {
         this->handleOnFrame(seq);
         mFrameDone.exchange(true, std::memory_order_release);
     });
+    WM_PROFILER_END();
 }
 
 void BaseWindow::bufferReleased(int32_t bufKey) {
@@ -207,6 +211,8 @@ void BaseWindow::handleAppVisibility(bool visible) {
 }
 
 void BaseWindow::handleOnFrame(int32_t seq) {
+    WM_PROFILER_BEGIN();
+
     mVsyncRequest = nextVsyncState(mVsyncRequest);
     ALOGI("handleOnFrame(%p) %d", this, seq);
 
@@ -216,22 +222,28 @@ void BaseWindow::handleOnFrame(int32_t seq) {
             updateOrCreateBufferQueue();
         }
     } else {
-        if (mUIProxy.get() == nullptr) return;
+        if (mUIProxy.get() == nullptr) {
+            WM_PROFILER_END();
+            return;
+        }
 
         std::shared_ptr<BufferProducer> buffProducer = getBufferProducer();
         if (buffProducer.get() == nullptr) {
             ALOGW("buffProducer is invalid!");
+            WM_PROFILER_END();
             return;
         }
         BufferItem* item = buffProducer->dequeueBuffer();
         if (!item) {
             ALOGW("onFrame, no valid buffer!\n");
+            WM_PROFILER_END();
             return;
         }
 
         mUIProxy->drawFrame(item);
         if (!mUIProxy->finishDrawing()) {
             buffProducer->cancelBuffer(item);
+            WM_PROFILER_END();
             return;
         }
 
@@ -245,6 +257,7 @@ void BaseWindow::handleOnFrame(int32_t seq) {
         ALOGI("handleOnFrame(%p) %d apply transaction\n", this, seq);
         transaction->apply();
     }
+    WM_PROFILER_END();
 }
 
 void BaseWindow::handleBufferReleased(int32_t bufKey) {

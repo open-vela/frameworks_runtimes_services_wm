@@ -17,6 +17,7 @@
 
 #include "SurfaceTransaction.h"
 
+#include "../system_server/BaseProfiler.h"
 #include "wm/BufferQueue.h"
 #include "wm/LayerState.h"
 #include "wm/Rect.h"
@@ -75,6 +76,8 @@ SurfaceTransaction& SurfaceTransaction::setAlpha(const std::shared_ptr<SurfaceCo
 
 SurfaceTransaction& SurfaceTransaction::apply() {
     // TODO:
+    WM_PROFILER_BEGIN();
+
     std::vector<LayerState> layerStates;
     for (std::unordered_map<sp<IBinder>, LayerState, IBinderHash>::iterator it =
                  mLayerStates.begin();
@@ -82,6 +85,8 @@ SurfaceTransaction& SurfaceTransaction::apply() {
         layerStates.push_back(it->second);
     }
     mWindowManager->getService()->applyTransaction(layerStates);
+    WM_PROFILER_END();
+
     return *this;
 }
 
