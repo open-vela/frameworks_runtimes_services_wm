@@ -24,6 +24,7 @@
 #include <utils/Log.h>
 
 #include "../system_server/BaseProfiler.h"
+#include "LogUtils.h"
 #include "RootContainer.h"
 #include "WindowState.h"
 #include "WindowToken.h"
@@ -44,12 +45,12 @@ static inline bool createSharedBuffer(int32_t size, BufferId* id) {
     std::string bufferPath = graphicsPath + std::to_string(pid) + "/bq/" + getUniqueId();
     int32_t fd = shm_open(bufferPath.c_str(), O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
     if (fd == -1) {
-        ALOGE("Failed to create shared memory,%s", strerror(errno));
+        FLOGE("Failed to create shared memory,%s", strerror(errno));
         return false;
     }
 
     if (ftruncate(fd, size) == -1) {
-        ALOGE("Failed to resize shared memory");
+        FLOGE("Failed to resize shared memory");
         close(fd);
         return false;
     }
@@ -68,7 +69,7 @@ static int eventCnt = 0;
 static inline int handleUIEvent(int /*fd*/, int /*events*/, void* data) {
     WM_PROFILER_BEGIN();
     WindowManagerService* service = static_cast<WindowManagerService*>(data);
-    ALOGI("handle UI Event %d", ++eventCnt);
+    FLOGI("event count: %d", ++eventCnt);
     service->getRootContainer()->drawFrame();
     service->responseVsync();
     WM_PROFILER_END();
@@ -102,7 +103,7 @@ private:
 WindowManagerService::WindowManagerService() : mRootFd(-1) {
     mLooper = Looper::getForThread();
     mContainer = new RootContainer();
-    ALOGI("WMS init");
+    FLOGI("WMS init");
     if (mLooper) {
         if (mContainer->getSyncMode() == DSM_TIMER) {
             mFrameHandler = new UIFrameHandler(this);
@@ -133,6 +134,7 @@ Status WindowManagerService::getPhysicalDisplayInfo(int32_t displayId, DisplayIn
     *_aidl_return = 0;
     if (mContainer) {
         mContainer->getDisplayInfo(info);
+        FLOGD("width:%d,height:%d", info->width, info->height);
     }
     WM_PROFILER_END();
 
@@ -143,6 +145,7 @@ Status WindowManagerService::addWindow(const sp<IWindow>& window, const LayoutPa
                                        int32_t visibility, int32_t displayId, int32_t userId,
                                        InputChannel* outInputChannel, int32_t* _aidl_return) {
     WM_PROFILER_BEGIN();
+    FLOGD("visibility:%d,w:%d,h:%d", visibility, attrs.mWidth, attrs.mHeight);
     sp<IBinder> client = IInterface::asBinder(window);
     auto itState = mWindowMap.find(client);
     if (itState != mWindowMap.end()) {
@@ -183,7 +186,7 @@ Status WindowManagerService::addWindow(const sp<IWindow>& window, const LayoutPa
 Status WindowManagerService::removeWindow(const sp<IWindow>& window) {
     // TODO
     WM_PROFILER_BEGIN();
-
+    FLOGI("%p", window.get());
     sp<IBinder> client = IInterface::asBinder(window);
     auto itState = mWindowMap.find(client);
     if (itState != mWindowMap.end()) {
@@ -202,16 +205,17 @@ Status WindowManagerService::relayout(const sp<IWindow>& window, const LayoutPar
                                       int32_t visibility, SurfaceControl* outSurfaceControl,
                                       int32_t* _aidl_return) {
     WM_PROFILER_BEGIN();
+    FLOGI("%p", window.get());
     *_aidl_return = -1;
     sp<IBinder> client = IInterface::asBinder(window);
     WindowState* win;
     auto it = mWindowMap.find(client);
     if (it != mWindowMap.end()) {
-        ALOGI("find winstate in map");
         win = it->second;
     } else {
         win = nullptr;
         WM_PROFILER_END();
+        FLOGW("can't find winstate in map");
         return Status::fromExceptionCode(1, "can't find winstate in map");
     }
 
@@ -237,6 +241,7 @@ Status WindowManagerService::isWindowToken(const sp<IBinder>& binder, bool* _aid
         *_aidl_return = false;
     }
     WM_PROFILER_END();
+    FLOGD("isWindowToken = %d", *_aidl_return);
 
     return Status::ok();
 }
@@ -244,8 +249,10 @@ Status WindowManagerService::isWindowToken(const sp<IBinder>& binder, bool* _aid
 Status WindowManagerService::addWindowToken(const sp<IBinder>& token, int32_t type,
                                             int32_t displayId) {
     WM_PROFILER_BEGIN();
+    FLOGI("%p", token.get());
     auto it = mTokenMap.find(token);
     if (it != mTokenMap.end()) {
+        FLOGW("windowToken already existed");
         return Status::fromExceptionCode(1, "windowToken already existed");
     } else {
         WindowToken* windToken = new WindowToken(this, token, type, displayId);
@@ -257,9 +264,9 @@ Status WindowManagerService::addWindowToken(const sp<IBinder>& token, int32_t ty
 
 Status WindowManagerService::removeWindowToken(const sp<IBinder>& token, int32_t displayId) {
     WM_PROFILER_BEGIN();
+    FLOGI("%p", token.get());
     auto it = mTokenMap.find(token);
     if (it != mTokenMap.end()) {
-        ALOGI("removeAllWindowsIfPossible ");
         it->second->removeAllWindowsIfPossible();
     } else {
         return Status::fromExceptionCode(1, "can't find token in map");
@@ -273,6 +280,7 @@ Status WindowManagerService::removeWindowToken(const sp<IBinder>& token, int32_t
 Status WindowManagerService::updateWindowTokenVisibility(const sp<IBinder>& token,
                                                          int32_t visibility) {
     WM_PROFILER_BEGIN();
+    FLOGD("visibility:%d", visibility);
     auto it = mTokenMap.find(token);
     if (it != mTokenMap.end()) {
         it->second->setClientVisible(visibility == LayoutParams::WINDOW_VISIBLE ? true : false);
@@ -297,7 +305,7 @@ Status WindowManagerService::applyTransaction(const vector<LayerState>& state) {
 
 Status WindowManagerService::requestVsync(const sp<IWindow>& window, VsyncRequest freq) {
     WM_PROFILER_BEGIN();
-
+    FLOGD("freq:%d", (int)freq);
     sp<IBinder> client = IInterface::asBinder(window);
     auto it = mWindowMap.find(client);
     if (it != mWindowMap.end()) {
@@ -334,6 +342,7 @@ int32_t WindowManagerService::createSurfaceControl(SurfaceControl* outSurfaceCon
                 close(ids[j].mFd);
             }
             ids.clear();
+            FLOGE("createSharedBuffer failed,clear buffer ids!");
             return -1;
         }
         ids.push_back(id);

@@ -16,6 +16,7 @@
 
 #include "wm/SurfaceControl.h"
 
+#include "LogUtils.h"
 #include "ParcelUtils.h"
 
 namespace os {
@@ -92,7 +93,7 @@ void SurfaceControl::initBufferIds(std::vector<BufferId>& ids) {
 
 bool SurfaceControl::isValid() {
     if (mHandle == nullptr || mToken == nullptr) {
-        ALOGE("invalid handle (%p) or client (%p)", mHandle.get(), mToken.get());
+        FLOGE("invalid handle (%p) or client (%p)", mHandle.get(), mToken.get());
         return false;
     }
 

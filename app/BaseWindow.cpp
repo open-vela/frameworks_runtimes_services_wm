@@ -19,6 +19,7 @@
 
 #include <mqueue.h>
 
+#include "LogUtils.h"
 #include "SurfaceTransaction.h"
 #ifdef CONFIG_ENABLE_BUFFER_QUEUE_BY_NAME
 #include <sys/mman.h>
@@ -69,7 +70,7 @@ Status BaseWindow::W::bufferReleased(int32_t bufKey) {
 
 static void eventCallback(int fd, int status, int events, void* data) {
     if (status < 0) {
-        ALOGE("Poll error: %s ", uv_strerror(status));
+        FLOGE("Poll error: %s ", uv_strerror(status));
         return;
     }
 
@@ -111,7 +112,7 @@ void BaseWindow::setWindowManager(WindowManager* wm) {
 
 bool BaseWindow::scheduleVsync(VsyncRequest freq) {
     if (mVsyncRequest == freq) {
-        ALOGI("Warning: It's waiting previous vsync response.");
+        FLOGI("Warning: It's waiting previous vsync response.");
         return false;
     }
 
@@ -132,7 +133,7 @@ std::shared_ptr<BufferProducer> BaseWindow::getBufferProducer() {
     if (mSurfaceControl.get() != nullptr && mSurfaceControl->isValid()) {
         return std::static_pointer_cast<BufferProducer>(mSurfaceControl->bufferQueue());
     }
-    ALOGW("mSurfaceControl is invalid!");
+    FLOGW("mSurfaceControl is invalid!");
     return nullptr;
 }
 
@@ -164,7 +165,7 @@ void BaseWindow::setSurfaceControl(SurfaceControl* surfaceControl) {
     vector<BufferId> ids;
     std::unordered_map<BufferKey, BufferId> bufferIds = mSurfaceControl->bufferIds();
     for (auto it = bufferIds.begin(); it != bufferIds.end(); ++it) {
-        ALOGI("reset SurfaceControl bufferId:%s,%d", it->second.mName.c_str(), it->second.mKey);
+        FLOGI("reset SurfaceControl bufferId:%s,%d", it->second.mName.c_str(), it->second.mKey);
 
         int32_t fd = shm_open(it->second.mName.c_str(), O_RDWR, S_IRUSR | S_IWUSR);
         ids.push_back({it->second.mName, it->second.mKey, fd});
@@ -175,6 +176,7 @@ void BaseWindow::setSurfaceControl(SurfaceControl* surfaceControl) {
 
 void BaseWindow::dispatchAppVisibility(bool visible) {
     WM_PROFILER_BEGIN();
+    FLOGD("visible:%d", visible);
     mContext->getMainLoop()->postTask(
             [this, visible](void*) { this->handleAppVisibility(visible); });
     WM_PROFILER_END();
@@ -183,7 +185,7 @@ void BaseWindow::dispatchAppVisibility(bool visible) {
 void BaseWindow::onFrame(int32_t seq) {
     WM_PROFILER_BEGIN();
     if (!mFrameDone.load(std::memory_order_acquire)) {
-        ALOGW("onFrame(%p) %d, waiting frame done!", this, seq);
+        FLOGW("onFrame(%p) %d, waiting frame done!", this, seq);
         WM_PROFILER_END();
         return;
     }
@@ -199,6 +201,7 @@ void BaseWindow::onFrame(int32_t seq) {
 
 void BaseWindow::bufferReleased(int32_t bufKey) {
     WM_PROFILER_BEGIN();
+    FLOGD("bufKey:%d", bufKey);
     mContext->getMainLoop()->postTask(
             [this, bufKey](void*) { this->handleBufferReleased(bufKey); });
     WM_PROFILER_END();
@@ -210,6 +213,7 @@ void BaseWindow::handleAppVisibility(bool visible) {
     }
 
     WM_PROFILER_BEGIN();
+    FLOGD("visible:%d", visible);
     mAppVisible = visible;
     mWindowManager->relayoutWindow(shared_from_this());
     if (mSurfaceControl.get() != nullptr && mSurfaceControl->isValid()) {
@@ -223,7 +227,7 @@ void BaseWindow::handleAppVisibility(bool visible) {
 
 void BaseWindow::handleOnFrame(int32_t seq) {
     mVsyncRequest = nextVsyncState(mVsyncRequest);
-    ALOGI("handleOnFrame(%p) %d", this, seq);
+    FLOGI("frame(%p) %d", this, seq);
 
     if (mSurfaceControl.get() == nullptr) {
         WM_PROFILER_BEGIN();
@@ -239,12 +243,14 @@ void BaseWindow::handleOnFrame(int32_t seq) {
 
         std::shared_ptr<BufferProducer> buffProducer = getBufferProducer();
         if (buffProducer.get() == nullptr) {
-            ALOGW("buffProducer is invalid!");
+            FLOGW("buffProducer is invalid!");
+            WM_PROFILER_END();
             return;
         }
         BufferItem* item = buffProducer->dequeueBuffer();
         if (!item) {
-            ALOGI("onFrame, no valid buffer!\n");
+            FLOGW("onFrame, no valid buffer!\n");
+            WM_PROFILER_END();
             return;
         }
 
@@ -262,7 +268,7 @@ void BaseWindow::handleOnFrame(int32_t seq) {
         auto rect = mUIProxy->rectCrop();
         if (rect) transaction->setBufferCrop(mSurfaceControl, *rect);
 
-        ALOGI("handleOnFrame(%p) %d apply transaction\n", this, seq);
+        FLOGI("handleOnFrame(%p) %d apply transaction\n", this, seq);
         transaction->apply();
 
         auto callback = mUIProxy->getEventCallback();
@@ -276,16 +282,17 @@ void BaseWindow::handleOnFrame(int32_t seq) {
 void BaseWindow::handleBufferReleased(int32_t bufKey) {
     std::shared_ptr<BufferProducer> buffProducer = getBufferProducer();
     if (buffProducer.get() == nullptr) {
-        ALOGW("buffProducer is invalid!");
+        FLOGW("buffProducer is invalid!");
         return;
     }
 
     WM_PROFILER_BEGIN();
     auto buffer = buffProducer->syncFreeState(bufKey);
     if (!buffer) {
-        ALOGE("bufferReleased, release %d failure!", bufKey);
+        FLOGE("bufferReleased, release %d failure!", bufKey);
     }
     WM_PROFILER_END();
+    FLOGD("release bufKey:%d done!", bufKey);
 }
 
 void BaseWindow::updateOrCreateBufferQueue() {
@@ -296,6 +303,7 @@ void BaseWindow::updateOrCreateBufferQueue() {
                 std::make_shared<BufferProducer>(mSurfaceControl);
         mSurfaceControl->setBufferQueue(buffProducer);
     }
+    FLOGD("updateOrCreateBufferQueue done!");
 }
 
 void BaseWindow::setMockUIEventCallback(const MOCKUI_EVENT_CALLBACK& cb) {
