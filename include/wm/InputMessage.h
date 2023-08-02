@@ -18,6 +18,8 @@
 
 #include <utils/Log.h>
 
+#include "LogUtils.h"
+
 #define MAX_MSG 50
 
 namespace os {
@@ -50,13 +52,13 @@ typedef struct {
 static inline void dumpInputMessage(const InputMessage* ie) {
     if (!ie) return;
 
-    ALOGD("Message: type(%d), state(%d)\n", ie->type, ie->state);
+    FLOGD("Message: type(%d), state(%d)\n", ie->type, ie->state);
     if (ie->type == INPUT_MESSAGE_TYPE_POINTER) {
-        ALOGD("\t\traw pos(%d, %d), pos(%d, %d)\n", ie->pointer.raw_x, ie->pointer.raw_y,
+        FLOGD("\t\traw pos(%d, %d), pos(%d, %d)\n", ie->pointer.raw_x, ie->pointer.raw_y,
               ie->pointer.x, ie->pointer.y);
 
     } else if (ie->type == INPUT_MESSAGE_TYPE_KEYPAD) {
-        ALOGD("\t\tkeycode(%d)", ie->keypad.key_code);
+        FLOGD("\t\tkeycode(%d)", ie->keypad.key_code);
     }
 }
 
