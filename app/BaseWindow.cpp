@@ -115,8 +115,12 @@ bool BaseWindow::scheduleVsync(VsyncRequest freq) {
         return false;
     }
 
+    WM_PROFILER_BEGIN();
+
     mVsyncRequest = freq;
     mWindowManager->getService()->requestVsync(getIWindow(), freq);
+
+    WM_PROFILER_END();
     return true;
 }
 
