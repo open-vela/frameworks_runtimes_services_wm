@@ -36,6 +36,10 @@ public:
         mEventCallback = cb;
     }
 
+    MOCKUI_EVENT_CALLBACK getEventCallback() override {
+        return mEventCallback;
+    }
+
 private:
     MOCKUI_EVENT_CALLBACK mEventCallback;
     bool mActive;
