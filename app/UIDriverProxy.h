@@ -54,6 +54,7 @@ public:
     }
 
     virtual void setEventCallback(const MOCKUI_EVENT_CALLBACK& cb);
+    virtual MOCKUI_EVENT_CALLBACK getEventCallback();
 
     enum {
         UIP_BUFFER_UPDATE = 1,

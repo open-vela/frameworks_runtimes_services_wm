@@ -65,5 +65,10 @@ bool UIDriverProxy::finishDrawing() {
 }
 
 void UIDriverProxy::setEventCallback(const MOCKUI_EVENT_CALLBACK& cb) {}
+
+MOCKUI_EVENT_CALLBACK UIDriverProxy::getEventCallback() {
+    return nullptr;
+}
+
 } // namespace wm
 } // namespace os
