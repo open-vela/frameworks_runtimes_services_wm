@@ -18,6 +18,7 @@
 
 #include <sys/mman.h>
 
+#include "LogUtils.h"
 #include "wm/SurfaceControl.h"
 
 namespace os {
@@ -53,11 +54,11 @@ bool BufferQueue::cancelBuffer(BufferItem* item) {
 void BufferQueue::clearBuffers() {
     for (auto it = mBuffers.begin(); it != mBuffers.end(); ++it) {
         if (it->second.mBuffer && munmap(it->second.mBuffer, it->second.mSize) == -1) {
-            ALOGE("munmap");
+            FLOGE("munmap");
         }
 
         if (close(it->second.mFd) == -1) {
-            ALOGE("close");
+            FLOGE("close");
         }
     }
     mBuffers.clear();
@@ -106,7 +107,7 @@ bool BufferQueue::update(const std::shared_ptr<SurfaceControl>& sc) {
         void* buffer = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, bufferFd, 0);
 
         if (buffer == MAP_FAILED) {
-            ALOGE("Failed to map shared memory");
+            FLOGE("Failed to map shared memory");
             return false;
         }
 

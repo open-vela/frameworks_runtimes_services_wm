@@ -22,6 +22,7 @@
 #include <utils/RefBase.h>
 
 #include "../system_server/BaseProfiler.h"
+#include "LogUtils.h"
 #include "RootContainer.h"
 #include "WindowManagerService.h"
 #include "wm/LayerState.h"
@@ -66,7 +67,7 @@ std::shared_ptr<BufferConsumer> WindowState::getBufferConsumer() {
 
 std::shared_ptr<InputChannel> WindowState::createInputChannel(const std::string name) {
     if (mInputChannel != nullptr) {
-        ALOGE("mInputChannel is existed, create failed");
+        FLOGE("mInputChannel is existed, create failed");
         return nullptr;
     }
     WM_PROFILER_BEGIN();
@@ -80,7 +81,7 @@ std::shared_ptr<InputChannel> WindowState::createInputChannel(const std::string 
 
 bool WindowState::sendInputMessage(const InputMessage* ie) {
     if (mInputChannel != nullptr) return mInputChannel->sendMessage(ie);
-    ALOGW("input message: invalid input channel!");
+    FLOGW("input message: invalid input channel!");
     return false;
 }
 
@@ -91,7 +92,7 @@ void WindowState::setViewVisibility(bool visibility) {
 
 void WindowState::sendAppVisibilityToClients() {
     WM_PROFILER_BEGIN();
-
+    FLOGD("WindowState sendAppVisibility");
     mVisibility = mToken->isClientVisible();
     if (!mVisibility) {
         scheduleVsync(VsyncRequest::VSYNC_REQ_NONE);
@@ -103,6 +104,7 @@ void WindowState::sendAppVisibilityToClients() {
 std::shared_ptr<SurfaceControl> WindowState::createSurfaceControl(vector<BufferId> ids) {
     WM_PROFILER_BEGIN();
     setHasSurface(false);
+    FLOGD("WindowState createSurfaceControl");
 
     sp<IBinder> handle = new BBinder();
     mSurfaceControl =
@@ -121,18 +123,22 @@ std::shared_ptr<SurfaceControl> WindowState::createSurfaceControl(vector<BufferI
 }
 
 void WindowState::destorySurfaceControl() {
+    FLOGD("WindowState destorySurfaceControl");
+
     mNode->updateBuffer(nullptr, nullptr);
     scheduleVsync(VsyncRequest::VSYNC_REQ_NONE);
     mSurfaceControl.reset();
 }
 
 void WindowState::destoryInputChannel() {
+    FLOGD("WindowState destoryInputChannel");
+
     mInputChannel->release();
     mInputChannel.reset();
 }
 
 void WindowState::applyTransaction(LayerState layerState) {
-    ALOGI("applyTransaction(%p)", this);
+    FLOGI("applyTransaction(%p)", this);
     WM_PROFILER_BEGIN();
 
     BufferItem* buffItem = nullptr;
@@ -162,6 +168,8 @@ void WindowState::applyTransaction(LayerState layerState) {
 }
 
 bool WindowState::scheduleVsync(VsyncRequest vsyncReq) {
+    FLOGD("vsyceReq:%d", (int)vsyncReq);
+
     if (mVsyncRequest == vsyncReq) return false;
 
     mVsyncRequest = vsyncReq;
@@ -172,7 +180,7 @@ bool WindowState::onVsync() {
     if (mVsyncRequest == VsyncRequest::VSYNC_REQ_NONE || !mVisibility) return false;
     WM_PROFILER_BEGIN();
 
-    ALOGI("(%p) send vsync to client", this);
+    FLOGI("(%p) send vsync to client", this);
     mVsyncRequest = nextVsyncState(mVsyncRequest);
     mClient->onFrame(++mFrameReq);
     WM_PROFILER_END();
@@ -186,10 +194,12 @@ void WindowState::removeIfPossible() {
     mToken.reset();
     mNode = nullptr;
 
-    ALOGI("called");
+    FLOGI("WindowState remove window");
 }
 
 BufferItem* WindowState::acquireBuffer() {
+    FLOGI("acquireBuffer");
+
     std::shared_ptr<BufferConsumer> consumer = getBufferConsumer();
     if (consumer == nullptr) {
         return nullptr;
@@ -198,6 +208,8 @@ BufferItem* WindowState::acquireBuffer() {
 }
 
 bool WindowState::releaseBuffer(BufferItem* buffer) {
+    FLOGI("releaseBuffer");
+
     std::shared_ptr<BufferConsumer> consumer = getBufferConsumer();
     if (consumer == nullptr) {
         return false;
@@ -213,6 +225,7 @@ bool WindowState::releaseBuffer(BufferItem* buffer) {
 
 void WindowState::setRequestedSize(int32_t requestedWidth, int32_t requestedHeight) {
     if ((mRequestedWidth != requestedWidth || mRequestedHeight != requestedHeight)) {
+        FLOGD("requestedWidth:%d,requestedHeight:%d", requestedWidth, requestedHeight);
         mRequestedWidth = requestedWidth;
         mRequestedHeight = requestedHeight;
     }

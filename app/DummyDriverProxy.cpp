@@ -17,6 +17,7 @@
 #include "DummyDriverProxy.h"
 
 #include "../system_server/BaseProfiler.h"
+#include "LogUtils.h"
 
 namespace os {
 namespace wm {
@@ -36,7 +37,7 @@ void DummyDriverProxy::drawFrame(BufferItem* bufItem) {
     WM_PROFILER_BEGIN();
 
     UIDriverProxy::drawFrame(bufItem);
-    ALOGI("draw frame for dummy proxy.");
+    FLOGI("draw frame for dummy proxy.");
 
     if (!bufItem) {
         WM_PROFILER_END();

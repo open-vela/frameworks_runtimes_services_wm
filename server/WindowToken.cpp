@@ -18,6 +18,7 @@
 
 #include "WindowToken.h"
 
+#include "LogUtils.h"
 #include "WindowState.h"
 
 namespace os {
@@ -35,11 +36,12 @@ WindowToken::~WindowToken() {
 void WindowToken::addWindow(WindowState* win) {
     for (auto it = mChildren.begin(); it != mChildren.end(); it++) {
         if ((*it) == win) {
-            ALOGW("already attach in the mChildren\n");
+            FLOGW("already attach in the mChildren\n");
             return;
         }
     }
     mChildren.push_back(win);
+    FLOGD("add to Children list done");
 }
 
 bool WindowToken::isClientVisible() {
@@ -50,7 +52,7 @@ void WindowToken::setClientVisible(bool clientVisible) {
     if (mClientVisible == clientVisible) {
         return;
     }
-    ALOGI("clientVisible=%d", clientVisible);
+    FLOGI("setClientVisible=%d", clientVisible);
     mClientVisible = clientVisible;
     for (auto it = mChildren.begin(); it != mChildren.end(); it++) {
         (*it)->sendAppVisibilityToClients();
@@ -62,9 +64,10 @@ void WindowToken::removeAllWindowsIfPossible() {
     while (iter != mChildren.end()) {
         (*iter)->removeIfPossible();
         mChildren.erase(iter);
-        ALOGW("removeAllWindows in the mChildren\n");
+        FLOGW("removeAllWindows in the mChildren\n");
         ++iter;
     }
+    FLOGD("removeAllWindows done");
 }
 
 } // namespace wm

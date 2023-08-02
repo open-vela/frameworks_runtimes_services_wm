@@ -25,6 +25,7 @@
 #include "../system_server/BaseProfiler.h"
 #include "DummyDriverProxy.h"
 #include "LVGLDriverProxy.h"
+#include "LogUtils.h"
 #include "SurfaceTransaction.h"
 
 namespace os {
@@ -75,7 +76,7 @@ sp<IWindowManager>& WindowManager::getService() {
     if (mService == nullptr || !android::IInterface::asBinder(mService)->isBinderAlive()) {
         if (android::getService<IWindowManager>(android::String16(WindowManager::name()),
                                                 &mService) != android::NO_ERROR) {
-            ALOGE("ServiceManager can't find the service:%s", WindowManager::name());
+            FLOGE("ServiceManager can't find the service:%s", WindowManager::name());
         }
     }
     return mService;
@@ -83,9 +84,8 @@ sp<IWindowManager>& WindowManager::getService() {
 
 std::shared_ptr<BaseWindow> WindowManager::newWindow(::os::app::Context* context) {
     WM_PROFILER_BEGIN();
-
     std::shared_ptr<BaseWindow> window = std::make_shared<BaseWindow>(context);
-
+    FLOGI("%p", window.get());
     window->setWindowManager(this);
     mWindows.push_back(window);
 
@@ -105,7 +105,7 @@ std::shared_ptr<BaseWindow> WindowManager::newWindow(::os::app::Context* context
 
 int32_t WindowManager::attachIWindow(std::shared_ptr<BaseWindow> window) {
     WM_PROFILER_BEGIN();
-
+    FLOGI("%p", window.get());
     sp<IWindow> w = window->getIWindow();
     int32_t result = 0;
     // TODO: create inputchannel if app need input event
@@ -130,7 +130,7 @@ int32_t WindowManager::attachIWindow(std::shared_ptr<BaseWindow> window) {
 
 void WindowManager::relayoutWindow(std::shared_ptr<BaseWindow> window) {
     WM_PROFILER_BEGIN();
-
+    FLOGI("%p", window.get());
     LayoutParams params = window->getLayoutParams();
     sp<IBinder> handle = new BBinder();
     SurfaceControl* surfaceControl = new SurfaceControl(params.mToken, handle, params.mWidth,
@@ -144,7 +144,7 @@ void WindowManager::relayoutWindow(std::shared_ptr<BaseWindow> window) {
 
 bool WindowManager::removeWindow(std::shared_ptr<BaseWindow> window) {
     WM_PROFILER_BEGIN();
-
+    FLOGI("%p", window.get());
     mService->removeWindow(window->getIWindow());
     window->doDie();
     auto it = std::find(mWindows.begin(), mWindows.end(), window);
@@ -152,6 +152,7 @@ bool WindowManager::removeWindow(std::shared_ptr<BaseWindow> window) {
         mWindows.erase(it);
     }
     WM_PROFILER_END();
+    FLOGD("done");
 
     return 0;
 }

@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
+#define LOG_TAG "WindowNode"
+
 #include "WindowNode.h"
 
 #include "../system_server/BaseProfiler.h"
+#include "LogUtils.h"
 
 namespace os {
 namespace wm {
@@ -52,7 +55,7 @@ static bool acquireDrawBuffer(struct _lv_mainwnd_metainfo_t* meta, lv_mainwnd_bu
 
     BufferItem* bufItem = node->acquireBuffer();
     if (bufItem == nullptr) {
-        ALOGI("acquire buffer from state failure!");
+        FLOGI("acquire buffer from state failure!");
         return false;
     }
 
@@ -75,12 +78,12 @@ bool releaseDrawBuffer(struct _lv_mainwnd_metainfo_t* meta, lv_mainwnd_buf_dsc_t
 
 static bool sendInputEvent(struct _lv_mainwnd_metainfo_t* meta, lv_mainwnd_input_event_t* event) {
     if (event == nullptr) {
-        ALOGW("input event: shouldn't send null event!");
+        FLOGW("input event: shouldn't send null event!");
         return false;
     }
     WindowNode* node = toWindowNode(meta);
     if (node == nullptr) {
-        ALOGW("input event: no valid window, cann't send it!");
+        FLOGW("input event: no valid window, cann't send it!");
         return false;
     }
 
@@ -146,14 +149,14 @@ bool WindowNode::updateBuffer(BufferItem* item, Rect* rect) {
         result = lv_mainwnd_update_buffer(mWidget, NULL, NULL);
     }
 
-    ALOGI("WMS updateBuffer(%s) from(%d) to(%d)\n", result ? "success" : "failure",
+    FLOGI("updateBuffer(%s) from(%d) to(%d)\n", result ? "success" : "failure",
           oldBuffer ? oldBuffer->mKey : -1, mBuffer ? mBuffer->mKey : -1);
 
     // need to reset buffer
     if (!result) {
         mBuffer = oldBuffer;
     } else if (oldBuffer && !mState->releaseBuffer(oldBuffer)) {
-        ALOGE("WMS releaseBuffer(%d) exception\n", oldBuffer->mKey);
+        FLOGE("releaseBuffer(%d) exception\n", oldBuffer->mKey);
         WM_PROFILER_END();
         return false;
     }
