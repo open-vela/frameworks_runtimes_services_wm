@@ -37,6 +37,7 @@ namespace wm {
 enum {
     MOCKUI_EVENT_DRAW = 1,
     MOCKUI_EVENT_CLICK = 2,
+    MOCKUI_EVENT_POSTDRAW = 3,
 };
 // data, size, event
 using MOCKUI_EVENT_CALLBACK = std::function<void(void*, uint32_t, uint32_t)>;

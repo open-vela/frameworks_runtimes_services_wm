@@ -256,6 +256,11 @@ void BaseWindow::handleOnFrame(int32_t seq) {
 
         ALOGI("handleOnFrame(%p) %d apply transaction\n", this, seq);
         transaction->apply();
+
+        auto callback = mUIProxy->getEventCallback();
+        if (callback) {
+            callback(this, 0, MOCKUI_EVENT_POSTDRAW);
+        }
     }
     WM_PROFILER_END();
 }
