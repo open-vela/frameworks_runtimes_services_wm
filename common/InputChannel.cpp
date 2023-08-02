@@ -20,6 +20,7 @@
 
 #include <mqueue.h>
 
+#include "LogUtils.h"
 #include "wm/InputMessage.h"
 
 namespace os {
@@ -56,7 +57,7 @@ bool InputChannel::create(const std::string name) {
     mqstat.mq_flags = 0;
 
     if (((mqd_t)-1) == (mEventFd = mq_open(name.c_str(), oflag, 0777, &mqstat))) {
-        ALOGI("mq_open doesn't return success");
+        FLOGI("mq_open doesn't return success");
         return false;
     }
 
@@ -72,13 +73,13 @@ void InputChannel::release() {
 
 bool InputChannel::sendMessage(const InputMessage* ie) {
     if (mEventFd == -1) {
-        ALOGW("input message: can't send message without valid channel!");
+        FLOGW("input message: can't send message without valid channel!");
         return false;
     }
 
     int ret = mq_send(mEventFd, (const char*)ie, sizeof(InputMessage), 100);
     if (ret < 0) {
-        ALOGW("input message: send message failed:'%s(%d)'", strerror(errno), errno);
+        FLOGW("input message: send message failed:'%s(%d)'", strerror(errno), errno);
         return false;
     }
     return true;
