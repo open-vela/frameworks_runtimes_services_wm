@@ -22,6 +22,7 @@
 #include <binder/IServiceManager.h>
 #include <utils/RefBase.h>
 
+#include "../system_server/BaseProfiler.h"
 #include "DummyDriverProxy.h"
 #include "LVGLDriverProxy.h"
 #include "SurfaceTransaction.h"
@@ -56,6 +57,8 @@ sp<IWindowManager>& WindowManager::getService() {
 }
 
 std::shared_ptr<BaseWindow> WindowManager::newWindow(::os::app::Context* context) {
+    WM_PROFILER_BEGIN();
+
     std::shared_ptr<BaseWindow> window = std::make_shared<BaseWindow>(context);
 
     window->setWindowManager(this);
@@ -70,11 +73,14 @@ std::shared_ptr<BaseWindow> WindowManager::newWindow(::os::app::Context* context
     auto proxy = std::make_shared<::os::wm::LVGLDriverProxy>(window);
     window->setUIProxy(std::dynamic_pointer_cast<::os::wm::UIDriverProxy>(proxy));
 #endif
+    WM_PROFILER_END();
 
     return window;
 }
 
 int32_t WindowManager::attachIWindow(std::shared_ptr<BaseWindow> window) {
+    WM_PROFILER_BEGIN();
+
     sp<IWindow> w = window->getIWindow();
     int32_t result = 0;
     // TODO: create inputchannel if app need input event
@@ -92,11 +98,14 @@ int32_t WindowManager::attachIWindow(std::shared_ptr<BaseWindow> window) {
 
     mService->addWindow(w, lp, 1, 0, 1, outInputChannel, &result);
     window->setInputChannel(outInputChannel);
+    WM_PROFILER_END();
 
     return result;
 }
 
 void WindowManager::relayoutWindow(std::shared_ptr<BaseWindow> window) {
+    WM_PROFILER_BEGIN();
+
     LayoutParams params = window->getLayoutParams();
     sp<IBinder> handle = new BBinder();
     SurfaceControl* surfaceControl = new SurfaceControl(params.mToken, handle, params.mWidth,
@@ -105,15 +114,19 @@ void WindowManager::relayoutWindow(std::shared_ptr<BaseWindow> window) {
     mService->relayout(window->getIWindow(), params, params.mWidth, params.mHeight,
                        window->getAppVisible(), surfaceControl, &result);
     window->setSurfaceControl(surfaceControl);
+    WM_PROFILER_END();
 }
 
 bool WindowManager::removeWindow(std::shared_ptr<BaseWindow> window) {
+    WM_PROFILER_BEGIN();
+
     mService->removeWindow(window->getIWindow());
     window->doDie();
     auto it = std::find(mWindows.begin(), mWindows.end(), window);
     if (it != mWindows.end()) {
         mWindows.erase(it);
     }
+    WM_PROFILER_END();
 
     return 0;
 }

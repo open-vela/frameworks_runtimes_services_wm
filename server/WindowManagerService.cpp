@@ -129,20 +129,25 @@ WindowManagerService::~WindowManagerService() {
 
 Status WindowManagerService::getPhysicalDisplayInfo(int32_t displayId, DisplayInfo* info,
                                                     int32_t* _aidl_return) {
+    WM_PROFILER_BEGIN();
     *_aidl_return = 0;
     if (mContainer) {
         mContainer->getDisplayInfo(info);
     }
+    WM_PROFILER_END();
+
     return Status::ok();
 }
 
 Status WindowManagerService::addWindow(const sp<IWindow>& window, const LayoutParams& attrs,
                                        int32_t visibility, int32_t displayId, int32_t userId,
                                        InputChannel* outInputChannel, int32_t* _aidl_return) {
+    WM_PROFILER_BEGIN();
     sp<IBinder> client = IInterface::asBinder(window);
     auto itState = mWindowMap.find(client);
     if (itState != mWindowMap.end()) {
         *_aidl_return = -1;
+        WM_PROFILER_END();
         return Status::fromExceptionCode(1, "window already existed");
     }
 
@@ -150,8 +155,10 @@ Status WindowManagerService::addWindow(const sp<IWindow>& window, const LayoutPa
     auto itToken = mTokenMap.find(token);
     if (itToken == mTokenMap.end()) {
         *_aidl_return = -1;
+        WM_PROFILER_END();
         return Status::fromExceptionCode(1, "can't find window token in map");
     }
+
     WindowToken* winToken = itToken->second;
 
     WindowState* win = new WindowState(this, window, winToken, attrs, visibility,
@@ -168,11 +175,15 @@ Status WindowManagerService::addWindow(const sp<IWindow>& window, const LayoutPa
     }
 
     *_aidl_return = 0;
+    WM_PROFILER_END();
+
     return Status::ok();
 }
 
 Status WindowManagerService::removeWindow(const sp<IWindow>& window) {
     // TODO
+    WM_PROFILER_BEGIN();
+
     sp<IBinder> client = IInterface::asBinder(window);
     auto itState = mWindowMap.find(client);
     if (itState != mWindowMap.end()) {
@@ -181,6 +192,8 @@ Status WindowManagerService::removeWindow(const sp<IWindow>& window) {
         return Status::fromExceptionCode(1, "can't find winstate in map");
     }
     mWindowMap.erase(client);
+    WM_PROFILER_END();
+
     return Status::ok();
 }
 
@@ -188,6 +201,7 @@ Status WindowManagerService::relayout(const sp<IWindow>& window, const LayoutPar
                                       int32_t requestedWidth, int32_t requestedHeight,
                                       int32_t visibility, SurfaceControl* outSurfaceControl,
                                       int32_t* _aidl_return) {
+    WM_PROFILER_BEGIN();
     *_aidl_return = -1;
     sp<IBinder> client = IInterface::asBinder(window);
     WindowState* win;
@@ -197,6 +211,7 @@ Status WindowManagerService::relayout(const sp<IWindow>& window, const LayoutPar
         win = it->second;
     } else {
         win = nullptr;
+        WM_PROFILER_END();
         return Status::fromExceptionCode(1, "can't find winstate in map");
     }
 
@@ -207,22 +222,28 @@ Status WindowManagerService::relayout(const sp<IWindow>& window, const LayoutPar
     } else {
         win->destorySurfaceControl();
     }
+    WM_PROFILER_END();
 
     return Status::ok();
 }
 
 Status WindowManagerService::isWindowToken(const sp<IBinder>& binder, bool* _aidl_return) {
+    WM_PROFILER_BEGIN();
+
     auto it = mTokenMap.find(binder);
     if (it != mTokenMap.end()) {
         *_aidl_return = true;
     } else {
         *_aidl_return = false;
     }
+    WM_PROFILER_END();
+
     return Status::ok();
 }
 
 Status WindowManagerService::addWindowToken(const sp<IBinder>& token, int32_t type,
                                             int32_t displayId) {
+    WM_PROFILER_BEGIN();
     auto it = mTokenMap.find(token);
     if (it != mTokenMap.end()) {
         return Status::fromExceptionCode(1, "windowToken already existed");
@@ -230,10 +251,12 @@ Status WindowManagerService::addWindowToken(const sp<IBinder>& token, int32_t ty
         WindowToken* windToken = new WindowToken(this, token, type, displayId);
         mTokenMap.emplace(token, windToken);
     }
+    WM_PROFILER_END();
     return Status::ok();
 }
 
 Status WindowManagerService::removeWindowToken(const sp<IBinder>& token, int32_t displayId) {
+    WM_PROFILER_BEGIN();
     auto it = mTokenMap.find(token);
     if (it != mTokenMap.end()) {
         ALOGI("removeAllWindowsIfPossible ");
@@ -242,17 +265,21 @@ Status WindowManagerService::removeWindowToken(const sp<IBinder>& token, int32_t
         return Status::fromExceptionCode(1, "can't find token in map");
     }
     mTokenMap.erase(token);
+    WM_PROFILER_END();
+
     return Status::ok();
 }
 
 Status WindowManagerService::updateWindowTokenVisibility(const sp<IBinder>& token,
                                                          int32_t visibility) {
+    WM_PROFILER_BEGIN();
     auto it = mTokenMap.find(token);
     if (it != mTokenMap.end()) {
         it->second->setClientVisible(visibility == LayoutParams::WINDOW_VISIBLE ? true : false);
     } else {
         return Status::fromExceptionCode(1, "can't find token in map");
     }
+    WM_PROFILER_END();
     return Status::ok();
 }
 
@@ -265,11 +292,12 @@ Status WindowManagerService::applyTransaction(const vector<LayerState>& state) {
         }
     }
     WM_PROFILER_END();
-
     return Status::ok();
 }
 
 Status WindowManagerService::requestVsync(const sp<IWindow>& window, VsyncRequest freq) {
+    WM_PROFILER_BEGIN();
+
     sp<IBinder> client = IInterface::asBinder(window);
     auto it = mWindowMap.find(client);
     if (it != mWindowMap.end()) {
@@ -277,6 +305,8 @@ Status WindowManagerService::requestVsync(const sp<IWindow>& window, VsyncReques
     } else {
         return Status::fromExceptionCode(1, "can't find winstate in map");
     }
+    WM_PROFILER_END();
+
     return Status::ok();
 }
 

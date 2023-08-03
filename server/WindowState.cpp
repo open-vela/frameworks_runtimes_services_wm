@@ -69,10 +69,12 @@ std::shared_ptr<InputChannel> WindowState::createInputChannel(const std::string 
         ALOGE("mInputChannel is existed, create failed");
         return nullptr;
     }
+    WM_PROFILER_BEGIN();
     mInputChannel = std::make_shared<InputChannel>();
     if (!mInputChannel->create(name)) {
         mInputChannel = nullptr;
     }
+    WM_PROFILER_END();
     return mInputChannel;
 }
 
@@ -88,14 +90,18 @@ void WindowState::setViewVisibility(bool visibility) {
 }
 
 void WindowState::sendAppVisibilityToClients() {
+    WM_PROFILER_BEGIN();
+
     mVisibility = mToken->isClientVisible();
     if (!mVisibility) {
         scheduleVsync(VsyncRequest::VSYNC_REQ_NONE);
     }
     mClient->dispatchAppVisibility(mVisibility);
+    WM_PROFILER_END();
 }
 
 std::shared_ptr<SurfaceControl> WindowState::createSurfaceControl(vector<BufferId> ids) {
+    WM_PROFILER_BEGIN();
     setHasSurface(false);
 
     sp<IBinder> handle = new BBinder();
@@ -109,6 +115,7 @@ std::shared_ptr<SurfaceControl> WindowState::createSurfaceControl(vector<BufferI
     mSurfaceControl->setBufferQueue(buffConsumer);
 
     setHasSurface(true);
+    WM_PROFILER_END();
 
     return mSurfaceControl;
 }
@@ -162,11 +169,14 @@ bool WindowState::scheduleVsync(VsyncRequest vsyncReq) {
 }
 
 bool WindowState::onVsync() {
-    if (mVsyncRequest == VsyncRequest::VSYNC_REQ_NONE) return false;
+    if (mVsyncRequest == VsyncRequest::VSYNC_REQ_NONE || !mVisibility) return false;
+    WM_PROFILER_BEGIN();
 
     ALOGI("(%p) send vsync to client", this);
     mVsyncRequest = nextVsyncState(mVsyncRequest);
     mClient->onFrame(++mFrameReq);
+    WM_PROFILER_END();
+
     return true;
 }
 
@@ -193,10 +203,11 @@ bool WindowState::releaseBuffer(BufferItem* buffer) {
         return false;
     }
     if (consumer && consumer->releaseBuffer(buffer) && mClient) {
+        WM_PROFILER_BEGIN();
         mClient->bufferReleased(buffer->mKey);
+        WM_PROFILER_END();
         return true;
     }
-
     return false;
 }
 

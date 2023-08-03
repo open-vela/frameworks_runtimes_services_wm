@@ -174,8 +174,10 @@ void BaseWindow::setSurfaceControl(SurfaceControl* surfaceControl) {
 }
 
 void BaseWindow::dispatchAppVisibility(bool visible) {
+    WM_PROFILER_BEGIN();
     mContext->getMainLoop()->postTask(
             [this, visible](void*) { this->handleAppVisibility(visible); });
+    WM_PROFILER_END();
 }
 
 void BaseWindow::onFrame(int32_t seq) {
@@ -196,14 +198,18 @@ void BaseWindow::onFrame(int32_t seq) {
 }
 
 void BaseWindow::bufferReleased(int32_t bufKey) {
+    WM_PROFILER_BEGIN();
     mContext->getMainLoop()->postTask(
             [this, bufKey](void*) { this->handleBufferReleased(bufKey); });
+    WM_PROFILER_END();
 }
 
 void BaseWindow::handleAppVisibility(bool visible) {
     if (mAppVisible == visible) {
         return;
     }
+
+    WM_PROFILER_BEGIN();
     mAppVisible = visible;
     mWindowManager->relayoutWindow(shared_from_this());
     if (mSurfaceControl.get() != nullptr && mSurfaceControl->isValid()) {
@@ -212,45 +218,43 @@ void BaseWindow::handleAppVisibility(bool visible) {
         // release mSurfaceControl
         mSurfaceControl.reset();
     }
+    WM_PROFILER_END();
 }
 
 void BaseWindow::handleOnFrame(int32_t seq) {
-    WM_PROFILER_BEGIN();
-
     mVsyncRequest = nextVsyncState(mVsyncRequest);
     ALOGI("handleOnFrame(%p) %d", this, seq);
 
     if (mSurfaceControl.get() == nullptr) {
+        WM_PROFILER_BEGIN();
         mWindowManager->relayoutWindow(shared_from_this());
         if (mSurfaceControl->isValid()) {
             updateOrCreateBufferQueue();
         }
+        WM_PROFILER_END();
     } else {
         if (mUIProxy.get() == nullptr) {
-            WM_PROFILER_END();
             return;
         }
 
         std::shared_ptr<BufferProducer> buffProducer = getBufferProducer();
         if (buffProducer.get() == nullptr) {
             ALOGW("buffProducer is invalid!");
-            WM_PROFILER_END();
             return;
         }
         BufferItem* item = buffProducer->dequeueBuffer();
         if (!item) {
             ALOGW("onFrame, no valid buffer!\n");
-            WM_PROFILER_END();
             return;
         }
 
+        WM_PROFILER_BEGIN();
         mUIProxy->drawFrame(item);
         if (!mUIProxy->finishDrawing()) {
             buffProducer->cancelBuffer(item);
             WM_PROFILER_END();
             return;
         }
-
         buffProducer->queueBuffer(item);
 
         auto transaction = mWindowManager->getTransaction();
@@ -265,8 +269,8 @@ void BaseWindow::handleOnFrame(int32_t seq) {
         if (callback) {
             callback(this, 0, MOCKUI_EVENT_POSTDRAW);
         }
+        WM_PROFILER_END();
     }
-    WM_PROFILER_END();
 }
 
 void BaseWindow::handleBufferReleased(int32_t bufKey) {
@@ -275,10 +279,13 @@ void BaseWindow::handleBufferReleased(int32_t bufKey) {
         ALOGW("buffProducer is invalid!");
         return;
     }
+
+    WM_PROFILER_BEGIN();
     auto buffer = buffProducer->syncFreeState(bufKey);
     if (!buffer) {
         ALOGE("bufferReleased, release %d failure!", bufKey);
     }
+    WM_PROFILER_END();
 }
 
 void BaseWindow::updateOrCreateBufferQueue() {
