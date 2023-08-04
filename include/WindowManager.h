@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <pthread.h>
+
 #include <mutex>
 
 #include "BaseWindow.h"
@@ -37,6 +39,7 @@ public:
         return "window";
     }
     static WindowManager* getInstance();
+    void destroy();
 
     std::shared_ptr<BaseWindow> newWindow(::os::app::Context* context);
     int32_t attachIWindow(std::shared_ptr<BaseWindow> window);
@@ -50,11 +53,14 @@ public:
 
 private:
     WindowManager();
+    static void createTLSKey();
+    static void destructTLSData(void* data);
 
     std::mutex mLock;
     vector<std::shared_ptr<BaseWindow>> mWindows;
     sp<IWindowManager> mService;
     std::shared_ptr<SurfaceTransaction> mTransaction;
+    static pthread_key_t mTLSKey;
 };
 
 } // namespace wm
