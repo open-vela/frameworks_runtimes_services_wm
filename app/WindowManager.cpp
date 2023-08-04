@@ -30,6 +30,8 @@
 namespace os {
 namespace wm {
 
+pthread_key_t WindowManager::mTLSKey;
+
 WindowManager::WindowManager() {
     mTransaction = std::make_shared<SurfaceTransaction>();
     mTransaction->setWindowManager(this);
@@ -40,9 +42,32 @@ WindowManager::~WindowManager() {
     mWindows.clear();
 }
 
+void WindowManager::destroy() {
+    (void)pthread_setspecific(mTLSKey, NULL);
+}
+
+void WindowManager::destructTLSData(void* data) {
+    if (data) {
+        WindowManager* wm = (WindowManager*)data;
+        delete wm;
+    }
+}
+
+void WindowManager::createTLSKey() {
+    (void)pthread_key_create(&mTLSKey, destructTLSData);
+}
+
 WindowManager* WindowManager::getInstance() {
-    static WindowManager instance;
-    return &instance;
+    static pthread_once_t key_once = PTHREAD_ONCE_INIT;
+    (void)pthread_once(&key_once, createTLSKey);
+
+    WindowManager* instance;
+    if ((instance = (WindowManager*)pthread_getspecific(mTLSKey)) == NULL) {
+        instance = new WindowManager();
+        if (instance) (void)pthread_setspecific(mTLSKey, instance);
+    }
+
+    return instance;
 }
 
 sp<IWindowManager>& WindowManager::getService() {
