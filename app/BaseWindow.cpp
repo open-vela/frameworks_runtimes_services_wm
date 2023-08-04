@@ -244,7 +244,7 @@ void BaseWindow::handleOnFrame(int32_t seq) {
         }
         BufferItem* item = buffProducer->dequeueBuffer();
         if (!item) {
-            ALOGW("onFrame, no valid buffer!\n");
+            ALOGI("onFrame, no valid buffer!\n");
             return;
         }
 
