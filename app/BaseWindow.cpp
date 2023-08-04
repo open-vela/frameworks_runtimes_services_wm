@@ -90,7 +90,12 @@ static void eventCallback(int fd, int status, int events, void* data) {
 }
 
 BaseWindow::~BaseWindow() {
-    if (mPoll) delete mPoll;
+    if (mPoll) {
+        uv_poll_stop(mPoll);
+        uv_close(reinterpret_cast<uv_handle_t*>(mPoll),
+                 [](uv_handle_t* handle) { delete reinterpret_cast<uv_poll_t*>(handle); });
+        mPoll = NULL;
+    }
 }
 
 BaseWindow::BaseWindow(::os::app::Context* context)
@@ -141,7 +146,6 @@ void BaseWindow::doDie() {
     // TODO destory lvglDriver
     mInputChannel.reset();
     mSurfaceControl.reset();
-    delete mPoll;
 }
 
 void BaseWindow::setInputChannel(InputChannel* inputChannel) {
