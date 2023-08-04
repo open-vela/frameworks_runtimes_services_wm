@@ -145,6 +145,8 @@ void WindowManager::relayoutWindow(std::shared_ptr<BaseWindow> window) {
 bool WindowManager::removeWindow(std::shared_ptr<BaseWindow> window) {
     WM_PROFILER_BEGIN();
     FLOGI("%p", window.get());
+
+    mTransaction->clean();
     mService->removeWindow(window->getIWindow());
     window->doDie();
     auto it = std::find(mWindows.begin(), mWindows.end(), window);

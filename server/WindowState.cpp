@@ -216,7 +216,7 @@ bool WindowState::releaseBuffer(BufferItem* buffer) {
     if (consumer == nullptr) {
         return false;
     }
-    if (consumer && consumer->releaseBuffer(buffer) && mClient) {
+    if (consumer && consumer->releaseBuffer(buffer) && mClient && mVisibility) {
         WM_PROFILER_BEGIN();
         mClient->bufferReleased(buffer->mKey);
         WM_PROFILER_END();
