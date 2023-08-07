@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#define LOG_TAG "SurfaceControl"
+
 #include "wm/SurfaceControl.h"
 
 #include "LogUtils.h"

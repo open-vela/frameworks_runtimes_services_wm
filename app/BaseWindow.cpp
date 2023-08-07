@@ -133,7 +133,7 @@ std::shared_ptr<BufferProducer> BaseWindow::getBufferProducer() {
     if (mSurfaceControl.get() != nullptr && mSurfaceControl->isValid()) {
         return std::static_pointer_cast<BufferProducer>(mSurfaceControl->bufferQueue());
     }
-    FLOGW("mSurfaceControl is invalid!");
+    FLOGD("no valid SurfaceControl when window is %svisible!", getAppVisible() ? "" : "not ");
     return nullptr;
 }
 
@@ -226,8 +226,13 @@ void BaseWindow::handleAppVisibility(bool visible) {
 }
 
 void BaseWindow::handleOnFrame(int32_t seq) {
+    if (!this->getAppVisible()) {
+        FLOGD("window is not visible now.");
+        return;
+    }
+
     mVsyncRequest = nextVsyncState(mVsyncRequest);
-    FLOGI("frame(%p) %d", this, seq);
+    FLOGD("frame(%p) %d", this, seq);
 
     if (mSurfaceControl.get() == nullptr) {
         WM_PROFILER_BEGIN();
@@ -282,7 +287,6 @@ void BaseWindow::handleOnFrame(int32_t seq) {
 void BaseWindow::handleBufferReleased(int32_t bufKey) {
     std::shared_ptr<BufferProducer> buffProducer = getBufferProducer();
     if (buffProducer.get() == nullptr) {
-        FLOGW("buffProducer is invalid!");
         return;
     }
 

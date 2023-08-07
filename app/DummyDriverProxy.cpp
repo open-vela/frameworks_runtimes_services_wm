@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#define LOG_TAG "DummyProxy"
+
 #include "DummyDriverProxy.h"
 
 #include "../system_server/BaseProfiler.h"
