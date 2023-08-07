@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#define LOG_TAG "LVGLProxy"
+
 #include "LVGLDriverProxy.h"
 
 #include <lv_porting/lv_porting.h>

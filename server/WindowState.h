@@ -44,9 +44,11 @@ public:
     WindowState(WindowManagerService* service, const sp<IWindow>& window, WindowToken* token,
                 const LayoutParams& params, int32_t visibility, bool enableInput);
 
-    bool isVisible();
+    bool isVisible() {
+        return mVisibility;
+    }
     void sendAppVisibilityToClients();
-    void setViewVisibility(bool visibility);
+    void setVisibility(bool visibility);
     void removeIfPossible();
 
     std::shared_ptr<InputChannel> createInputChannel(const std::string name);
