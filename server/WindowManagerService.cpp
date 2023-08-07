@@ -219,9 +219,8 @@ Status WindowManagerService::relayout(const sp<IWindow>& window, const LayoutPar
         return Status::fromExceptionCode(1, "can't find winstate in map");
     }
 
-    win->setRequestedSize(requestedWidth, requestedHeight);
-
     if (visibility) {
+        win->setRequestedSize(requestedWidth, requestedHeight);
         *_aidl_return = createSurfaceControl(outSurfaceControl, win);
     } else {
         win->destorySurfaceControl();
@@ -309,7 +308,9 @@ Status WindowManagerService::requestVsync(const sp<IWindow>& window, VsyncReques
     sp<IBinder> client = IInterface::asBinder(window);
     auto it = mWindowMap.find(client);
     if (it != mWindowMap.end()) {
-        it->second->scheduleVsync(freq);
+        if (!it->second->scheduleVsync(freq)) {
+            FLOGD("scheduleVsync %d for %p failure!", (int)freq, it->second);
+        }
     } else {
         return Status::fromExceptionCode(1, "can't find winstate in map");
     }
@@ -321,7 +322,7 @@ Status WindowManagerService::requestVsync(const sp<IWindow>& window, VsyncReques
 void WindowManagerService::responseVsync() {
     WM_PROFILER_BEGIN();
     for (const auto& [key, state] : mWindowMap) {
-        state->onVsync();
+        if (state->isVisible()) state->onVsync();
     }
     WM_PROFILER_END();
 }

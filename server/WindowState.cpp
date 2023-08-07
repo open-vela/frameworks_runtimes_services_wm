@@ -85,26 +85,28 @@ bool WindowState::sendInputMessage(const InputMessage* ie) {
     return false;
 }
 
-void WindowState::setViewVisibility(bool visibility) {
+void WindowState::setVisibility(bool visibility) {
     mVisibility = visibility;
+
+    if (!visibility) {
+        scheduleVsync(VsyncRequest::VSYNC_REQ_NONE);
+    }
     // TODO: NOTIFY WIN NODE
 }
 
 void WindowState::sendAppVisibilityToClients() {
     WM_PROFILER_BEGIN();
-    FLOGD("WindowState sendAppVisibility");
-    mVisibility = mToken->isClientVisible();
-    if (!mVisibility) {
-        scheduleVsync(VsyncRequest::VSYNC_REQ_NONE);
-    }
-    mClient->dispatchAppVisibility(mVisibility);
+    FLOGD("");
+
+    setVisibility(mToken->isClientVisible());
+    mClient->dispatchAppVisibility(isVisible());
     WM_PROFILER_END();
 }
 
 std::shared_ptr<SurfaceControl> WindowState::createSurfaceControl(vector<BufferId> ids) {
     WM_PROFILER_BEGIN();
     setHasSurface(false);
-    FLOGD("WindowState createSurfaceControl");
+    FLOGD("");
 
     sp<IBinder> handle = new BBinder();
     mSurfaceControl =
@@ -123,7 +125,7 @@ std::shared_ptr<SurfaceControl> WindowState::createSurfaceControl(vector<BufferI
 }
 
 void WindowState::destorySurfaceControl() {
-    FLOGD("WindowState destorySurfaceControl");
+    FLOGD("");
 
     mNode->updateBuffer(nullptr, nullptr);
     scheduleVsync(VsyncRequest::VSYNC_REQ_NONE);
@@ -131,14 +133,14 @@ void WindowState::destorySurfaceControl() {
 }
 
 void WindowState::destoryInputChannel() {
-    FLOGD("WindowState destoryInputChannel");
+    FLOGD("");
 
     mInputChannel->release();
     mInputChannel.reset();
 }
 
 void WindowState::applyTransaction(LayerState layerState) {
-    FLOGI("applyTransaction(%p)", this);
+    FLOGI("(%p)", this);
     WM_PROFILER_BEGIN();
 
     BufferItem* buffItem = nullptr;
@@ -177,7 +179,7 @@ bool WindowState::scheduleVsync(VsyncRequest vsyncReq) {
 }
 
 bool WindowState::onVsync() {
-    if (mVsyncRequest == VsyncRequest::VSYNC_REQ_NONE || !mVisibility) return false;
+    if (mVsyncRequest == VsyncRequest::VSYNC_REQ_NONE || !isVisible()) return false;
     WM_PROFILER_BEGIN();
 
     FLOGI("(%p) send vsync to client", this);
@@ -194,11 +196,11 @@ void WindowState::removeIfPossible() {
     mToken.reset();
     mNode = nullptr;
 
-    FLOGI("WindowState remove window");
+    FLOGI("");
 }
 
 BufferItem* WindowState::acquireBuffer() {
-    FLOGI("acquireBuffer");
+    FLOGI("");
 
     std::shared_ptr<BufferConsumer> consumer = getBufferConsumer();
     if (consumer == nullptr) {
@@ -208,7 +210,7 @@ BufferItem* WindowState::acquireBuffer() {
 }
 
 bool WindowState::releaseBuffer(BufferItem* buffer) {
-    FLOGI("releaseBuffer");
+    FLOGI("");
 
     std::shared_ptr<BufferConsumer> consumer = getBufferConsumer();
     if (consumer == nullptr) {
