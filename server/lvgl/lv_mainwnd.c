@@ -222,23 +222,33 @@ static inline void draw_buffer(lv_obj_t* obj, lv_event_t* e) {
 #endif
 
     lv_mainwnd_t* mainwnd = (lv_mainwnd_t*)obj;
+
     if (!mainwnd->buf_dsc.img_dsc.data) return;
+    if (mainwnd->buf_dsc.img_dsc.header.w == 0 || mainwnd->buf_dsc.img_dsc.header.h == 0) return;
 
-    lv_area_t win_coords;
     lv_draw_img_dsc_t img_dsc;
-
-    lv_area_copy(&win_coords, &obj->coords);
-    win_coords.y2 = win_coords.y1 + mainwnd->buf_dsc.img_dsc.header.h - 1;
-    win_coords.x2 = win_coords.x1 + mainwnd->buf_dsc.img_dsc.header.w - 1;
-
     lv_draw_img_dsc_init(&img_dsc);
     lv_obj_init_draw_img_dsc(obj, LV_PART_MAIN, &img_dsc);
 
-    img_dsc.zoom = LV_IMG_ZOOM_NONE;
+    lv_coord_t img_w = mainwnd->buf_dsc.img_dsc.header.w;
+    lv_coord_t img_h = mainwnd->buf_dsc.img_dsc.header.h;
+
+    uint16_t zoom = LV_IMG_ZOOM_NONE;
+    if (mainwnd->flags & LV_MAINWND_FLAG_DRAW_SCALE) {
+        lv_coord_t obj_w = lv_obj_get_width(obj);
+        zoom = LV_IMG_ZOOM_NONE * obj_w / img_w;
+    }
+    img_dsc.zoom = zoom == 0 ? 1 : zoom;
     img_dsc.angle = 0;
-    img_dsc.pivot.x = mainwnd->buf_dsc.img_dsc.header.w / 2;
-    img_dsc.pivot.y = mainwnd->buf_dsc.img_dsc.header.h / 2;
+    img_dsc.pivot.x = img_w / 2;
+    img_dsc.pivot.y = img_h / 2;
     img_dsc.antialias = 0;
+
+    lv_area_t win_coords;
+    win_coords.x1 = 0;
+    win_coords.x2 = win_coords.x1 + img_w - 1;
+    win_coords.y1 = 0;
+    win_coords.y2 = win_coords.y1 + img_h - 1;
 
     LV_LOG_TRACE("draw (%p) with (%d)", mainwnd, mainwnd->buf_dsc.id);
 #if LVGL_VERSION_MAJOR >= 9
