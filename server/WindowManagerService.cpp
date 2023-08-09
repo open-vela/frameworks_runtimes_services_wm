@@ -146,6 +146,13 @@ Status WindowManagerService::addWindow(const sp<IWindow>& window, const LayoutPa
                                        InputChannel* outInputChannel, int32_t* _aidl_return) {
     WM_PROFILER_BEGIN();
     FLOGD("visibility:%d,w:%d,h:%d", visibility, attrs.mWidth, attrs.mHeight);
+
+    if (mWindowMap.size() >= CONFIG_ENABLE_WINDOW_LIMIT_MAX) {
+        ALOGE("failure, exceed maximum window limit!");
+        *_aidl_return = -1;
+        return Status::fromExceptionCode(1, "exceed maximum window limit!");
+    }
+
     sp<IBinder> client = IInterface::asBinder(window);
     auto itState = mWindowMap.find(client);
     if (itState != mWindowMap.end()) {
@@ -279,11 +286,12 @@ Status WindowManagerService::removeWindowToken(const sp<IBinder>& token, int32_t
 Status WindowManagerService::updateWindowTokenVisibility(const sp<IBinder>& token,
                                                          int32_t visibility) {
     WM_PROFILER_BEGIN();
-    FLOGD("visibility:%d", visibility);
+    FLOGD("token:%p,visibility:%d", token.get(), visibility);
     auto it = mTokenMap.find(token);
     if (it != mTokenMap.end()) {
         it->second->setClientVisible(visibility == LayoutParams::WINDOW_VISIBLE ? true : false);
     } else {
+        FLOGW("can't find token in map");
         return Status::fromExceptionCode(1, "can't find token in map");
     }
     WM_PROFILER_END();
