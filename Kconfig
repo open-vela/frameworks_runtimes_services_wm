@@ -38,4 +38,8 @@ config ENABLE_BUFFER_QUEUE_BY_NAME
 	tristate "Enable buffer queue by name"
 	default y
 
+config ENABLE_WINDOW_LIMIT_MAX
+	int "support max appwindow numbers"
+	default 10
+
 endif
