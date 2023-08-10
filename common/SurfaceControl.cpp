@@ -95,7 +95,7 @@ void SurfaceControl::initBufferIds(std::vector<BufferId>& ids) {
 
 bool SurfaceControl::isValid() {
     if (mHandle == nullptr || mToken == nullptr) {
-        FLOGE("invalid handle (%p) or client (%p)", mHandle.get(), mToken.get());
+        FLOGD("invalid handle (%p) or client (%p)", mHandle.get(), mToken.get());
         return false;
     }
 
