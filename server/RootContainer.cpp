@@ -58,9 +58,20 @@ lv_obj_t* RootContainer::getTopLayer() {
 
 bool RootContainer::init() {
     lv_init();
-    // TODO: custom init for porting
 
+#if LVGL_VERSION_MAJOR >= 9
+
+#ifdef CONFIG_LV_USE_LINUX_FBDEV
+    lv_linux_fbdev_set_file(lv_linux_fbdev_create(), CONFIG_LV_FBDEV_INTERFACE_DEFAULT_DEVICEPATH);
+#endif
+
+#ifdef CONFIG_LV_USE_NUTTX_TOUCHSCREEN
+    lv_nuttx_touchscreen_create(CONFIG_LV_TOUCHPAD_INTERFACE_DEFAULT_DEVICEPATH);
+#endif
+
+#else
     lv_porting_init();
+#endif
 
     mDisp = lv_disp_get_default();
     return mDisp ? true : false;
