@@ -66,7 +66,11 @@ static inline void reset_buf_dsc(lv_obj_t* obj) {
 
     mainwnd->buf_dsc.img_dsc.data = NULL;
     mainwnd->buf_dsc.img_dsc.data_size = 0;
+#if LVGL_VERSION_MAJOR >= 9
+    mainwnd->buf_dsc.img_dsc.header.cf = LV_COLOR_FORMAT_UNKNOWN;
+#else
     mainwnd->buf_dsc.img_dsc.header.cf = LV_IMG_CF_UNKNOWN;
+#endif
     mainwnd->buf_dsc.img_dsc.header.always_zero = 0;
     mainwnd->buf_dsc.img_dsc.header.w = 0;
     mainwnd->buf_dsc.img_dsc.header.h = 0;
@@ -190,9 +194,14 @@ static void lv_mainwnd_destructor(const lv_obj_class_t* class_p, lv_obj_t* obj) 
     reset_buf_dsc(obj);
 }
 
-static inline void draw_buffer(lv_obj_t* obj, lv_draw_ctx_t* draw_ctx) {
-    if (!draw_ctx) return;
+static inline void draw_buffer(lv_obj_t* obj, lv_event_t* e) {
     WM_PROFILER_BEGIN();
+
+#if LVGL_VERSION_MAJOR >= 9
+    lv_layer_t* layer = lv_event_get_layer(e);
+#else
+    lv_draw_ctx_t* draw_ctx = lv_event_get_draw_ctx(e);
+#endif
 
     lv_mainwnd_t* mainwnd = (lv_mainwnd_t*)obj;
     if (!mainwnd->buf_dsc.img_dsc.data) return;
@@ -216,7 +225,7 @@ static inline void draw_buffer(lv_obj_t* obj, lv_draw_ctx_t* draw_ctx) {
     LV_LOG_TRACE("draw (%p) with (%d)", mainwnd, mainwnd->buf_dsc.id);
 #if LVGL_VERSION_MAJOR >= 9
     img_dsc.src = &mainwnd->buf_dsc.img_dsc;
-    lv_draw_img(draw_ctx, &img_dsc, &win_coords);
+    lv_draw_img(layer, &img_dsc, &win_coords);
 #else
     lv_draw_img(draw_ctx, &img_dsc, &win_coords, &mainwnd->buf_dsc.img_dsc);
 #endif
@@ -285,7 +294,7 @@ static void lv_mainwnd_event(const lv_obj_class_t* class_p, lv_event_t* e) {
     switch (code) {
         case LV_EVENT_DRAW_MAIN: {
             if (mainwnd->buf_dsc.id != INVALID_BUFID) {
-                draw_buffer(obj, lv_event_get_draw_ctx(e));
+                draw_buffer(obj, e);
                 return;
             }
 
@@ -298,7 +307,7 @@ static void lv_mainwnd_event(const lv_obj_class_t* class_p, lv_event_t* e) {
                 LV_LOG_WARN("acquire_buffer failure!");
                 return;
             }
-            draw_buffer(obj, lv_event_get_draw_ctx(e));
+            draw_buffer(obj, e);
             break;
         }
 
