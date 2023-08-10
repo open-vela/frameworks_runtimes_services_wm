@@ -117,7 +117,7 @@ void BaseWindow::setWindowManager(WindowManager* wm) {
 
 bool BaseWindow::scheduleVsync(VsyncRequest freq) {
     if (mVsyncRequest == freq) {
-        FLOGI("Warning: It's waiting previous vsync response.");
+        FLOGD("Warning: It's waiting previous vsync response.");
         return false;
     }
 
@@ -189,7 +189,7 @@ void BaseWindow::dispatchAppVisibility(bool visible) {
 void BaseWindow::onFrame(int32_t seq) {
     WM_PROFILER_BEGIN();
     if (!mFrameDone.load(std::memory_order_acquire)) {
-        FLOGW("onFrame(%p) %d, waiting frame done!", this, seq);
+        FLOGD("onFrame(%p) %d, waiting frame done!", this, seq);
         WM_PROFILER_END();
         return;
     }
@@ -257,13 +257,13 @@ void BaseWindow::handleOnFrame(int32_t seq) {
 
         std::shared_ptr<BufferProducer> buffProducer = getBufferProducer();
         if (buffProducer.get() == nullptr) {
-            FLOGW("buffProducer is invalid!");
+            FLOGD("buffProducer is invalid!");
             WM_PROFILER_END();
             return;
         }
         BufferItem* item = buffProducer->dequeueBuffer();
         if (!item) {
-            FLOGW("onFrame, no valid buffer!\n");
+            FLOGD("onFrame, no valid buffer!\n");
             WM_PROFILER_END();
             return;
         }
@@ -282,7 +282,7 @@ void BaseWindow::handleOnFrame(int32_t seq) {
         auto rect = mUIProxy->rectCrop();
         if (rect) transaction->setBufferCrop(mSurfaceControl, *rect);
 
-        FLOGI("handleOnFrame(%p) %d apply transaction\n", this, seq);
+        FLOGD("handleOnFrame(%p) %d apply transaction\n", this, seq);
         transaction->apply();
 
         auto callback = mUIProxy->getEventCallback();
@@ -302,7 +302,7 @@ void BaseWindow::handleBufferReleased(int32_t bufKey) {
     WM_PROFILER_BEGIN();
     auto buffer = buffProducer->syncFreeState(bufKey);
     if (!buffer) {
-        FLOGE("bufferReleased, release %d failure!", bufKey);
+        FLOGD("bufferReleased, release %d failure!", bufKey);
     }
     WM_PROFILER_END();
     FLOGD("release bufKey:%d done!", bufKey);

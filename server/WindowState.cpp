@@ -81,7 +81,7 @@ std::shared_ptr<InputChannel> WindowState::createInputChannel(const std::string 
 
 bool WindowState::sendInputMessage(const InputMessage* ie) {
     if (mInputChannel != nullptr) return mInputChannel->sendMessage(ie);
-    FLOGW("input message: invalid input channel!");
+    FLOGD("input message: invalid input channel!");
     return false;
 }
 
@@ -146,7 +146,7 @@ void WindowState::destoryInputChannel() {
 }
 
 void WindowState::applyTransaction(LayerState layerState) {
-    FLOGI("(%p)", this);
+    FLOGD("(%p)", this);
     WM_PROFILER_BEGIN();
 
     BufferItem* buffItem = nullptr;
@@ -188,7 +188,7 @@ bool WindowState::onVsync() {
     if (mVsyncRequest == VsyncRequest::VSYNC_REQ_NONE || !isVisible()) return false;
     WM_PROFILER_BEGIN();
 
-    FLOGI("(%p) send vsync to client", this);
+    FLOGD("(%p) send vsync to client", this);
     mVsyncRequest = nextVsyncState(mVsyncRequest);
     mClient->onFrame(++mFrameReq);
     WM_PROFILER_END();
@@ -202,11 +202,11 @@ void WindowState::removeIfPossible() {
     mToken.reset();
     mNode = nullptr;
 
-    FLOGI("");
+    FLOGD("");
 }
 
 BufferItem* WindowState::acquireBuffer() {
-    FLOGI("");
+    FLOGD("");
 
     std::shared_ptr<BufferConsumer> consumer = getBufferConsumer();
     if (consumer == nullptr) {
@@ -216,7 +216,7 @@ BufferItem* WindowState::acquireBuffer() {
 }
 
 bool WindowState::releaseBuffer(BufferItem* buffer) {
-    FLOGI("");
+    FLOGD("");
 
     std::shared_ptr<BufferConsumer> consumer = getBufferConsumer();
     if (consumer == nullptr) {
