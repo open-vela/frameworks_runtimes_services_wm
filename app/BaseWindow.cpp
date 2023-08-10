@@ -226,6 +226,11 @@ void BaseWindow::handleAppVisibility(bool visible) {
         // release mSurfaceControl
         mSurfaceControl.reset();
     }
+
+    if (!visible) {
+        mVsyncRequest = VsyncRequest::VSYNC_REQ_NONE;
+    }
+
     WM_PROFILER_END();
 }
 

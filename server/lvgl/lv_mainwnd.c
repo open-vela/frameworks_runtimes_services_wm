@@ -120,6 +120,12 @@ bool lv_mainwnd_update_buffer(lv_obj_t* obj, lv_mainwnd_buf_dsc_t* buf_dsc, cons
     }
 
     lv_mainwnd_t* mainwnd = (lv_mainwnd_t*)obj;
+
+    if (mainwnd->buf_dsc.id < 0 && lv_obj_has_flag(obj, LV_OBJ_FLAG_HIDDEN)) {
+        lv_obj_clear_flag(obj, LV_OBJ_FLAG_HIDDEN);
+    }
+
+    lv_img_cache_invalidate_src(&mainwnd->buf_dsc.img_dsc);
     mainwnd->buf_dsc.id = buf_dsc->id;
 
     mainwnd->buf_dsc.img_dsc.data = buf_dsc->img_dsc.data;
