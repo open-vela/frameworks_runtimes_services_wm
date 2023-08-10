@@ -24,6 +24,7 @@
  *********************/
 #include "../server/lvgl/lv_mainwnd.h"
 
+#if LVGL_VERSION_MAJOR < 9
 /*********************
  *      DEFINES
  *********************/
@@ -57,7 +58,6 @@ static void metainfo_init(lv_mainwnd_metainfo_t *meta_info);
 /**********************
  *   GLOBAL FUNCTIONS
  **********************/
-
 void lv_mainwnd_sim_test(void) {
     static lv_color_t cbuf[LV_CANVAS_BUF_SIZE_TRUE_COLOR(BUFFER_WIDTH, BUFFER_HEIGHT)];
 
@@ -112,7 +112,6 @@ void lv_mainwnd_sim_test(void) {
     lv_obj_t *lvgl_label = lv_label_create(mainwnd);
     lv_label_set_text(lvgl_label, "lvgl buffer");
 }
-
 /**********************
  *   STATIC FUNCTIONS
  **********************/
@@ -154,3 +153,4 @@ static void metainfo_init(lv_mainwnd_metainfo_t *meta_info) {
     meta_info->send_input_event = send_input_event;
     meta_info->on_destroy = on_destroy;
 }
+#endif
