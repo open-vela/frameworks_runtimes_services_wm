@@ -129,6 +129,12 @@ void WindowState::destorySurfaceControl() {
 
     mNode->updateBuffer(nullptr, nullptr);
     scheduleVsync(VsyncRequest::VSYNC_REQ_NONE);
+#ifdef CONFIG_ENABLE_BUFFER_QUEUE_BY_NAME
+    std::unordered_map<BufferKey, BufferId> bufferIds = mSurfaceControl->bufferIds();
+    for (const auto& entry : bufferIds) {
+        shm_unlink(entry.second.mName.c_str());
+    }
+#endif
     mSurfaceControl.reset();
 }
 
