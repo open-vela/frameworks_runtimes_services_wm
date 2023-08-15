@@ -70,7 +70,7 @@ status_t SurfaceControl::readFromParcel(const Parcel* in) {
 
     int32_t size;
     SAFE_PARCEL(in->readInt32, &size);
-    for (int i = 0; i < size; i++) {
+    for (int32_t i = 0; i < size; i++) {
         BufferKey buffKey;
         SAFE_PARCEL(in->readInt32, &buffKey);
 
