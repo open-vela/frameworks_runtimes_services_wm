@@ -73,7 +73,7 @@ private:
     WindowStateMap mWindowMap;
 
     RootContainer* mContainer;
-    int32_t mRootFd;
+    int mRootFd;
     sp<Looper> mLooper;
 
     sp<MessageHandler> mFrameHandler;

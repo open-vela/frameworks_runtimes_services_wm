@@ -36,7 +36,7 @@ typedef enum {
     BSTATE_ACQUIRED,
 } BufferState;
 
-typedef int BufferKey;
+typedef int32_t BufferKey;
 typedef struct {
 #ifdef CONFIG_ENABLE_BUFFER_QUEUE_BY_NAME
     std::string mName;

@@ -31,30 +31,30 @@ using namespace std;
 
 class LayoutParams : public Parcelable {
 public:
-    static const int WINDOW_INVISIBLE = 0;
-    static const int WINDOW_VISIBLE = 1;
-    static const int WINDOW_GONE = 2;
+    static const int32_t WINDOW_INVISIBLE = 0;
+    static const int32_t WINDOW_VISIBLE = 1;
+    static const int32_t WINDOW_GONE = 2;
 
     // for type
-    static const int TYPE_APPLICATION = 1;
-    static const int TYPE_SYSTEM_WINDOW = 1000;
-    static const int TYPE_TOAST = TYPE_SYSTEM_WINDOW + 1;
-    static const int TYPE_DIALOG = TYPE_SYSTEM_WINDOW + 2;
-    static const int INVALID_WINDOW_TYPE = -1;
+    static const int32_t TYPE_APPLICATION = 1;
+    static const int32_t TYPE_SYSTEM_WINDOW = 1000;
+    static const int32_t TYPE_TOAST = TYPE_SYSTEM_WINDOW + 1;
+    static const int32_t TYPE_DIALOG = TYPE_SYSTEM_WINDOW + 2;
+    static const int32_t INVALID_WINDOW_TYPE = -1;
 
     // for width/height
-    static const int MATCH_PARENT = -1;
-    static const int WRAP_CONTENT = -2;
+    static const int32_t MATCH_PARENT = -1;
+    static const int32_t WRAP_CONTENT = -2;
 
     // for format
-    static const int FORMAT_UNKNOWN = 0;
-    static const int FORMAT_TRANSPARENT = -2;
-    static const int FORMAT_OPAQUE = -1;
-    static const int FORMAT_RGB_565 = 0x12;
-    static const int FORMAT_RGB_565A8 = 0x14;
-    static const int FORMAT_RGB_888 = 0x0F;
-    static const int FORMAT_ARGB_8888 = 0x10;
-    static const int FORMAT_XRGB_8888 = 0x11;
+    static const int32_t FORMAT_UNKNOWN = 0;
+    static const int32_t FORMAT_TRANSPARENT = -2;
+    static const int32_t FORMAT_OPAQUE = -1;
+    static const int32_t FORMAT_RGB_565 = 0x12;
+    static const int32_t FORMAT_RGB_565A8 = 0x14;
+    static const int32_t FORMAT_RGB_888 = 0x0F;
+    static const int32_t FORMAT_ARGB_8888 = 0x10;
+    static const int32_t FORMAT_XRGB_8888 = 0x11;
 
     LayoutParams();
     ~LayoutParams();
