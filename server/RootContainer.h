@@ -51,7 +51,7 @@ private:
 
     lv_disp_t* mDisp;
     DispSyncMode mSyncMode;
-    int mVsyncEvent;
+    int32_t mVsyncEvent;
 };
 
 } // namespace wm

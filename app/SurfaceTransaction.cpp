@@ -64,7 +64,7 @@ SurfaceTransaction& SurfaceTransaction::setPosition(const std::shared_ptr<Surfac
 }
 
 SurfaceTransaction& SurfaceTransaction::setAlpha(const std::shared_ptr<SurfaceControl>& sc,
-                                                 int alpha) {
+                                                 int32_t alpha) {
     LayerState* state = getLayerState(sc);
 
     // TODO:

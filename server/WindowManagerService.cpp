@@ -43,7 +43,7 @@ static inline bool createSharedBuffer(int32_t size, BufferId* id) {
     int32_t pid = IPCThreadState::self()->getCallingPid();
 
     std::string bufferPath = graphicsPath + std::to_string(pid) + "/bq/" + getUniqueId();
-    int32_t fd = shm_open(bufferPath.c_str(), O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+    int fd = shm_open(bufferPath.c_str(), O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
     if (fd == -1) {
         FLOGE("Failed to create shared memory,%s", strerror(errno));
         return false;
@@ -65,7 +65,7 @@ static inline bool createSharedBuffer(int32_t size, BufferId* id) {
     return true;
 }
 
-static int eventCnt = 0;
+static int32_t eventCnt = 0;
 static inline int handleUIEvent(int /*fd*/, int /*events*/, void* data) {
     WM_PROFILER_BEGIN();
     WindowManagerService* service = static_cast<WindowManagerService*>(data);
@@ -81,7 +81,7 @@ enum {
 };
 
 // TODO: should config it
-static const int frameInNs = 16 * 1000000;
+static const int32_t frameInNs = 16 * 1000000;
 
 class UIFrameHandler : public MessageHandler {
 public:
@@ -344,10 +344,10 @@ int32_t WindowManagerService::createSurfaceControl(SurfaceControl* outSurfaceCon
     // TODO:parse mformat, temporary value is 4 bytes
     int32_t size = (win->mRequestedWidth) * (win->mRequestedHeight) * 4;
     vector<BufferId> ids;
-    for (int i = 0; i < 2; i++) {
+    for (int32_t i = 0; i < 2; i++) {
         BufferId id;
         if (!createSharedBuffer(size, &id)) {
-            for (int j = 0; j < (int)ids.size(); j++) {
+            for (int32_t j = 0; j < (int)ids.size(); j++) {
                 close(ids[j].mFd);
             }
             ids.clear();

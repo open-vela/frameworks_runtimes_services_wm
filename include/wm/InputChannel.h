@@ -57,7 +57,7 @@ public:
     DISALLOW_COPY_AND_ASSIGN(InputChannel);
 
 private:
-    int32_t mEventFd;
+    int mEventFd;
 };
 
 } // namespace wm
