@@ -150,6 +150,20 @@ bool lv_mainwnd_update_buffer(lv_obj_t* obj, lv_mainwnd_buf_dsc_t* buf_dsc, cons
     return true;
 }
 
+void lv_mainwnd_update_flag(lv_obj_t* obj, lv_mainwnd_flag_e flag, bool bAdd) {
+    LV_ASSERT_OBJ(obj, MY_CLASS);
+    WM_PROFILER_BEGIN();
+
+    lv_mainwnd_t* mainwnd = (lv_mainwnd_t*)obj;
+
+    if (bAdd) {
+        mainwnd->flags |= flag;
+    } else {
+        mainwnd->flags &= ~flag;
+    }
+    WM_PROFILER_END();
+}
+
 /*=====================
  * Setter functions
  *====================*/
@@ -174,8 +188,8 @@ static void lv_mainwnd_constructor(const lv_obj_class_t* class_p, lv_obj_t* obj)
     LV_UNUSED(class_p);
     LV_TRACE_OBJ_CREATE("begin");
 
-    reset_meta_info(obj);
-    reset_buf_dsc(obj);
+    lv_mainwnd_t* mainwnd = (lv_mainwnd_t*)obj;
+    mainwnd->buf_dsc.id = INVALID_BUFID;
 
     LV_TRACE_OBJ_CREATE("finished");
 }
@@ -196,8 +210,6 @@ static void lv_mainwnd_destructor(const lv_obj_class_t* class_p, lv_obj_t* obj) 
     if (mainwnd->meta_info.on_destroy) {
         mainwnd->meta_info.on_destroy(&mainwnd->meta_info, &mainwnd->buf_dsc);
     }
-    reset_meta_info(obj);
-    reset_buf_dsc(obj);
 }
 
 static inline void draw_buffer(lv_obj_t* obj, lv_event_t* e) {
