@@ -47,6 +47,13 @@ enum {
  *      TYPEDEFS
  **********************/
 
+/**
+ * mainwnd flag type*/
+typedef enum {
+    LV_MAINWND_FLAG_DRAW_DEFALUT = 0,
+    LV_MAINWND_FLAG_DRAW_SCALE = 1 << 1,
+} lv_mainwnd_flag_e;
+
 typedef struct {
     int id;
     lv_img_dsc_t img_dsc;
@@ -85,6 +92,7 @@ typedef struct {
     lv_obj_t obj;
     lv_mainwnd_metainfo_t meta_info;
     lv_mainwnd_buf_dsc_t buf_dsc;
+    int flags;
 } lv_mainwnd_t;
 
 extern const lv_obj_class_t lv_mainwnd_class;
@@ -108,6 +116,14 @@ lv_obj_t* lv_mainwnd_create(lv_obj_t* parent);
  * @return true on success, false on failure
  */
 bool lv_mainwnd_update_buffer(lv_obj_t* obj, lv_mainwnd_buf_dsc_t* buf_dsc, const lv_area_t* area);
+
+/**
+ * Update flag.
+ * @param obj           pointer to a main window object
+ * @param flag          main window flag type
+ * @param bAdd          whether to add or clear a flag
+ */
+void lv_mainwnd_update_flag(lv_obj_t* obj, lv_mainwnd_flag_e flag, bool bAdd);
 
 /*=====================
  * Setter functions
