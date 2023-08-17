@@ -121,8 +121,13 @@ int32_t WindowManager::attachIWindow(std::shared_ptr<BaseWindow> window) {
     }
     window->setLayoutParams(lp);
 
-    mService->addWindow(w, lp, 1, 0, 1, outInputChannel, &result);
-    window->setInputChannel(outInputChannel);
+    Status status = mService->addWindow(w, lp, 1, 0, 1, outInputChannel, &result);
+    if (status.isOk()) {
+        window->setInputChannel(outInputChannel);
+    } else {
+        if (outInputChannel) delete outInputChannel;
+        result = -1;
+    }
     WM_PROFILER_END();
 
     return result;
