@@ -177,7 +177,7 @@ Status WindowManagerService::addWindow(const sp<IWindow>& window, const LayoutPa
 
     winToken->addWindow(win);
 
-    if (outInputChannel != nullptr) {
+    if (outInputChannel != nullptr && attrs.hasInput()) {
         int32_t pid = IPCThreadState::self()->getCallingPid();
         std::string name = graphicsPath + std::to_string(pid) + "/event/" + getUniqueId();
         std::shared_ptr<InputChannel> inputChannel = win->createInputChannel(name);
