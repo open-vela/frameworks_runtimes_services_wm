@@ -65,6 +65,10 @@ public:
     status_t writeToParcel(Parcel* out) const override;
     status_t readFromParcel(const Parcel* in) override;
 
+    bool hasInput() const {
+        return (mInputFeatures & INPUT_FEATURE_NO_INPUT_CHANNEL) == 0;
+    }
+
     int32_t mWidth;
     int32_t mHeight;
     int32_t mX;
@@ -73,6 +77,18 @@ public:
     int32_t mFlags;
     int32_t mFormat;
     sp<IBinder> mToken;
+
+private:
+    /**
+     * Does not construct an input channel for this window.  The channel will therefore
+     * be incapable of receiving input.
+     */
+    static const int INPUT_FEATURE_NO_INPUT_CHANNEL = 1 << 0;
+
+    /**
+     * Control a set of features of the input subsystem that are exposed to the app process.
+     */
+    int8_t mInputFeatures;
 };
 
 } // namespace wm

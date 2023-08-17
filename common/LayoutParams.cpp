@@ -32,6 +32,7 @@ LayoutParams::LayoutParams() {
     mFlags = 0;
     mFormat = FORMAT_OPAQUE;
     mToken = NULL;
+    mInputFeatures = 0;
 }
 
 LayoutParams::~LayoutParams() {}
@@ -44,7 +45,8 @@ LayoutParams::LayoutParams(const LayoutParams& other)
         mType(other.mType),
         mFlags(other.mFlags),
         mFormat(other.mFormat),
-        mToken(other.mToken) {}
+        mToken(other.mToken),
+        mInputFeatures(other.mInputFeatures) {}
 
 LayoutParams& LayoutParams::operator=(const LayoutParams& other) {
     if (this != &other) {
@@ -56,6 +58,7 @@ LayoutParams& LayoutParams::operator=(const LayoutParams& other) {
         mFlags = other.mFlags;
         mFormat = other.mFormat;
         mToken = other.mToken;
+        mInputFeatures = other.mInputFeatures;
     }
     return *this;
 }
@@ -69,6 +72,7 @@ status_t LayoutParams::writeToParcel(Parcel* out) const {
     SAFE_PARCEL(out->writeInt32, mFlags);
     SAFE_PARCEL(out->writeInt32, mFormat);
     SAFE_PARCEL(out->writeStrongBinder, mToken);
+    SAFE_PARCEL(out->writeByte, mInputFeatures);
     return android::OK;
 }
 
@@ -81,6 +85,7 @@ status_t LayoutParams::readFromParcel(const Parcel* in) {
     SAFE_PARCEL(in->readInt32, &mFlags);
     SAFE_PARCEL(in->readInt32, &mFormat);
     SAFE_PARCEL(in->readStrongBinder, &mToken);
+    SAFE_PARCEL(in->readByte, &mInputFeatures);
     return android::OK;
 }
 
