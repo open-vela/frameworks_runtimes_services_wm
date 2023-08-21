@@ -18,9 +18,13 @@
 
 #include "RootContainer.h"
 
+#if LVGL_VERSION_MAJOR >= 9
+#include "wm/UIInstance.h"
+#else
 #include <lv_porting/lv_porting.h>
+#endif
+
 #include <lvgl/lvgl.h>
-#include <nuttx/video/fb.h>
 #include <utils/Log.h>
 
 namespace os {
@@ -28,7 +32,7 @@ namespace wm {
 
 RootContainer::RootContainer() : mDisp(nullptr), mSyncMode(DSM_TIMER) {
 #ifdef CONFIG_FB_SYNC
-    mVsyncEvent = FBIO_WAITFORVSYNC;
+    mVsyncEvent = 0;
 #else
     mVsyncEvent = -1;
 #endif
@@ -36,8 +40,8 @@ RootContainer::RootContainer() : mDisp(nullptr), mSyncMode(DSM_TIMER) {
 }
 
 RootContainer::~RootContainer() {
-    // TODO: lvgl deinit
     mDisp = nullptr;
+    UIDeinit();
 }
 
 lv_disp_t* RootContainer::getRoot() {
@@ -57,7 +61,7 @@ lv_obj_t* RootContainer::getTopLayer() {
 }
 
 bool RootContainer::init() {
-    lv_init();
+    UIInit();
 
 #if LVGL_VERSION_MAJOR >= 9
 
@@ -68,7 +72,6 @@ bool RootContainer::init() {
 #ifdef CONFIG_LV_USE_NUTTX_TOUCHSCREEN
     lv_nuttx_touchscreen_create(CONFIG_LV_TOUCHPAD_INTERFACE_DEFAULT_DEVICEPATH);
 #endif
-
 #else
     lv_porting_init();
 #endif
