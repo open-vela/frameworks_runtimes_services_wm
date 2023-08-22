@@ -33,6 +33,7 @@ config SYSTEM_WINDOW_SERVICE_PRIORITY
 config SYSTEM_WINDOW_SERVICE_TEST
 	tristate "Enable WMS test"
 	default n
+        depends on GOOGLE_TEST
 
 config ENABLE_BUFFER_QUEUE_BY_NAME
 	tristate "Enable buffer queue by name"
