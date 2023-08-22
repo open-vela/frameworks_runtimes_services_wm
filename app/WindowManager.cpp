@@ -111,14 +111,14 @@ int32_t WindowManager::attachIWindow(std::shared_ptr<BaseWindow> window) {
     // TODO: create inputchannel if app need input event
     InputChannel* outInputChannel = nullptr;
     LayoutParams lp = window->getLayoutParams();
-    DisplayInfo dispalyInfo;
+    DisplayInfo displayInfo;
 
-    mService->getPhysicalDisplayInfo(1, &dispalyInfo, &result);
+    mService->getPhysicalDisplayInfo(1, &displayInfo, &result);
     if (lp.mWidth == lp.MATCH_PARENT) {
-        lp.mWidth = dispalyInfo.width;
+        lp.mWidth = displayInfo.width;
     }
     if (lp.mHeight == lp.MATCH_PARENT) {
-        lp.mHeight = dispalyInfo.height;
+        lp.mHeight = displayInfo.height;
     }
     window->setLayoutParams(lp);
 
