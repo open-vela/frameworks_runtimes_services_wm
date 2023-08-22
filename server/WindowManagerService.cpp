@@ -80,9 +80,6 @@ enum {
     MSG_DO_FRAME = 1001,
 };
 
-// TODO: should config it
-static const int32_t frameInNs = 16 * 1000000;
-
 class UIFrameHandler : public MessageHandler {
 public:
     UIFrameHandler(WindowManagerService* service) {
@@ -91,7 +88,8 @@ public:
 
     virtual void handleMessage(const Message& message) {
         if (message.what == MSG_DO_FRAME) {
-            Looper::getForThread()->sendMessageDelayed(frameInNs, this, Message(MSG_DO_FRAME));
+            Looper::getForThread()->sendMessageDelayed(CONFIG_WINDOW_REFRESH_PERIOD * 1000000, this,
+                                                       Message(MSG_DO_FRAME));
             handleUIEvent(0, 0, mService);
         }
     }

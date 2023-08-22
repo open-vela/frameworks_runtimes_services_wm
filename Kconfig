@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 config SYSTEM_WINDOW_SERVICE
-	tristate "Enable Window Manager Service"
+	tristate "Enable WMS(window manager service)"
 	default n
 	depends on ANDROID_BINDER
 	depends on SYSTEM_SERVER
@@ -31,7 +31,7 @@ config SYSTEM_WINDOW_SERVICE_PRIORITY
 	default 100
 
 config SYSTEM_WINDOW_SERVICE_TEST
-	tristate "Enable System Window Service Test"
+	tristate "Enable WMS test"
 	default n
 
 config ENABLE_BUFFER_QUEUE_BY_NAME
@@ -39,7 +39,11 @@ config ENABLE_BUFFER_QUEUE_BY_NAME
 	default y
 
 config ENABLE_WINDOW_LIMIT_MAX
-	int "support max appwindow numbers"
+	int "support max application window numbers"
 	default 10
+
+config WINDOW_REFRESH_PERIOD
+	int "Default window refresh period (ms)"
+	default 16
 
 endif
