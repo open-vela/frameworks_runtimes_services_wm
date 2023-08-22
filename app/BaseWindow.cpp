@@ -138,7 +138,7 @@ std::shared_ptr<BufferProducer> BaseWindow::getBufferProducer() {
     if (mSurfaceControl.get() != nullptr && mSurfaceControl->isValid()) {
         return std::static_pointer_cast<BufferProducer>(mSurfaceControl->bufferQueue());
     }
-    FLOGD("no valid SurfaceControl when window is %svisible!", getAppVisible() ? "" : "not ");
+    FLOGI("no valid SurfaceControl when window is %svisible!", getAppVisible() ? "" : "not ");
     return nullptr;
 }
 
@@ -180,7 +180,7 @@ void BaseWindow::setSurfaceControl(SurfaceControl* surfaceControl) {
 
 void BaseWindow::dispatchAppVisibility(bool visible) {
     WM_PROFILER_BEGIN();
-    FLOGD("visible:%d", visible);
+    FLOGI("visible:%d", visible);
     mContext->getMainLoop()->postTask(
             [this, visible](void*) { this->handleAppVisibility(visible); });
     WM_PROFILER_END();
@@ -212,12 +212,12 @@ void BaseWindow::bufferReleased(int32_t bufKey) {
 }
 
 void BaseWindow::handleAppVisibility(bool visible) {
+    FLOGI("visible:%d,mAppVisible:%d", visible, mAppVisible);
     if (mAppVisible == visible) {
         return;
     }
 
     WM_PROFILER_BEGIN();
-    FLOGD("visible:%d", visible);
     mAppVisible = visible;
     mWindowManager->relayoutWindow(shared_from_this());
     if (mSurfaceControl.get() != nullptr && mSurfaceControl->isValid()) {
@@ -316,7 +316,7 @@ void BaseWindow::updateOrCreateBufferQueue() {
                 std::make_shared<BufferProducer>(mSurfaceControl);
         mSurfaceControl->setBufferQueue(buffProducer);
     }
-    FLOGD("updateOrCreateBufferQueue done!");
+    FLOGI("updateOrCreateBufferQueue done!");
 }
 
 void BaseWindow::setMockUIEventCallback(const MOCKUI_EVENT_CALLBACK& cb) {

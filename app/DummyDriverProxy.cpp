@@ -39,7 +39,7 @@ void DummyDriverProxy::drawFrame(BufferItem* bufItem) {
     WM_PROFILER_BEGIN();
 
     UIDriverProxy::drawFrame(bufItem);
-    FLOGI("draw frame for dummy proxy.");
+    FLOGD("draw frame for dummy proxy.");
 
     if (!bufItem) {
         WM_PROFILER_END();

@@ -69,7 +69,7 @@ static int32_t eventCnt = 0;
 static inline int handleUIEvent(int /*fd*/, int /*events*/, void* data) {
     WM_PROFILER_BEGIN();
     WindowManagerService* service = static_cast<WindowManagerService*>(data);
-    FLOGI("event count: %d", ++eventCnt);
+    FLOGD("event count: %d", ++eventCnt);
     service->getRootContainer()->drawFrame();
     service->responseVsync();
     WM_PROFILER_END();
