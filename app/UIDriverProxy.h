@@ -41,7 +41,7 @@ public:
     bool finishDrawing();
 
     // ui proxy response window
-    void onInvalidate(bool periodic);
+    bool onInvalidate(bool periodic);
     void* onDequeueBuffer();
     bool onQueueBuffer();
     void onCancelBuffer();
@@ -53,6 +53,7 @@ public:
         return mBufferItem;
     }
 
+    virtual void updateResolution(int32_t width, int32_t height);
     virtual void setEventCallback(const MOCKUI_EVENT_CALLBACK& cb);
     virtual MOCKUI_EVENT_CALLBACK getEventCallback();
 
