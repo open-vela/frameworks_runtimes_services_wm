@@ -45,6 +45,8 @@ public:
     int32_t attachIWindow(std::shared_ptr<BaseWindow> window);
     void relayoutWindow(std::shared_ptr<BaseWindow> window);
     bool removeWindow(std::shared_ptr<BaseWindow> window);
+    bool dumpWindows();
+
     sp<IWindowManager>& getService();
 
     std::shared_ptr<SurfaceTransaction>& getTransaction() {
