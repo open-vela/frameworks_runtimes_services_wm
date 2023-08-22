@@ -215,5 +215,22 @@ void WindowManager::toBackground() {
     }
 }
 
+bool WindowManager::dumpWindows() {
+    int number = 1;
+    for (const auto& ptr : mWindows) {
+        LayoutParams attrs = ptr->getLayoutParams();
+        bool appVsible = ptr->isVisible();
+        FLOGI("Window %d", number);
+        FLOGI("\t\t size:%dx%d", attrs.mWidth, attrs.mHeight);
+        FLOGI("\t\t position:[%d,%d]", attrs.mX, attrs.mY);
+        FLOGI("\t\t visible:%d", appVsible);
+        FLOGI("\t\t type:%d", attrs.mType);
+        FLOGI("\t\t flags:%d", attrs.mFlags);
+        FLOGI("\t\t format:%d", attrs.mFormat);
+        number++;
+    }
+    return true;
+}
+
 } // namespace wm
 } // namespace os
