@@ -32,8 +32,8 @@ public:
     bool initUIInstance() override;
     void handleEvent(InputMessage& message) override;
     void drawFrame(BufferItem* bufItem) override;
+    void updateResolution(int32_t width, int32_t height);
 
-private:
     lv_disp_t* mDisp;
     lv_indev_t* mIndev;
 };
