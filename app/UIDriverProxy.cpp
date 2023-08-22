@@ -27,10 +27,12 @@ UIDriverProxy::UIDriverProxy(std::shared_ptr<BaseWindow> win)
 
 UIDriverProxy::~UIDriverProxy() {}
 
-void UIDriverProxy::onInvalidate(bool periodic) {
-    if (!mBaseWindow.expired())
-        mBaseWindow.lock()->scheduleVsync(periodic ? VsyncRequest::VSYNC_REQ_PERIODIC
-                                                   : VsyncRequest::VSYNC_REQ_SINGLE);
+bool UIDriverProxy::onInvalidate(bool periodic) {
+    if (!mBaseWindow.expired()) {
+        return mBaseWindow.lock()->scheduleVsync(periodic ? VsyncRequest::VSYNC_REQ_PERIODIC
+                                                          : VsyncRequest::VSYNC_REQ_SINGLE);
+    }
+    return false;
 }
 
 void UIDriverProxy::onRectCrop(Rect& rect) {
@@ -63,6 +65,8 @@ void UIDriverProxy::drawFrame(BufferItem* bufItem) {
 bool UIDriverProxy::finishDrawing() {
     return mFlags != 0 ? true : false;
 }
+
+void UIDriverProxy::updateResolution(int32_t width, int32_t height) {}
 
 void UIDriverProxy::setEventCallback(const MOCKUI_EVENT_CALLBACK& cb) {}
 

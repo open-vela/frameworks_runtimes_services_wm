@@ -164,6 +164,9 @@ void BaseWindow::setInputChannel(InputChannel* inputChannel) {
 
 void BaseWindow::setSurfaceControl(SurfaceControl* surfaceControl) {
     mSurfaceControl.reset(surfaceControl);
+    if (surfaceControl) {
+        mUIProxy->updateResolution(surfaceControl->getWidth(), surfaceControl->getHeight());
+    }
 
 #ifdef CONFIG_ENABLE_BUFFER_QUEUE_BY_NAME
     vector<BufferId> ids;
