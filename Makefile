@@ -44,6 +44,17 @@ CSRCS += $(wildcard server/lvgl/*.c)
 
 ifneq ($(CONFIG_SYSTEM_WINDOW_SERVICE_TEST),)
 CSRCS += $(wildcard test/*.c)
+
+LIBS += -L$(APPDIR)/staging -lframework
+
+MAINSRC  += test/BufferQueueTest.cpp
+PROGNAME += BufferQueueTest
+
+MAINSRC  += test/InputChannelTest.cpp
+PROGNAME += InputChannelTest
+
+MAINSRC  += test/IWindowManagerTest.cpp
+PROGNAME += IWindowManagerTest
 endif
 
 EXPORT_FILES := include
