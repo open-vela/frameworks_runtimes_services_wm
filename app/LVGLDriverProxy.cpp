@@ -19,14 +19,14 @@
 #include "LVGLDriverProxy.h"
 
 #if LVGL_VERSION_MAJOR >= 9
-#include "wm/UIInstance.h"
 #include <lvgl/src/lvgl_private.h>
+
+#include "wm/UIInstance.h"
 #else
 #include <lv_porting/lv_porting.h>
 #endif
 
 #include <lvgl/lvgl.h>
-
 
 namespace os {
 namespace wm {
@@ -39,6 +39,7 @@ LVGLDriverProxy::LVGLDriverProxy(std::shared_ptr<BaseWindow> win)
         mEventFd(-1),
         mLastEventState(LV_INDEV_STATE_RELEASED) {
     mDisp = _disp_init(this);
+    lv_disp_set_default(mDisp);
 }
 
 LVGLDriverProxy::~LVGLDriverProxy() {
@@ -110,7 +111,7 @@ static void _disp_flush_cb(lv_disp_t* disp, const lv_area_t* area_p, uint8_t* co
 
         Rect inv_rect = Rect(area_p->x1, area_p->y1, area_p->x2, area_p->y2);
         proxy->onRectCrop(inv_rect);
-        FLOGD("display flush area (%d,%d)->(%d,%d)", area_p->x1, area_p->y1, area_p->x2,
+        FLOGD("%p display flush area (%d,%d)->(%d,%d)", proxy, area_p->x1, area_p->y1, area_p->x2,
               area_p->y2);
     }
     lv_disp_flush_ready(disp);
@@ -127,7 +128,7 @@ static void _disp_event_cb(lv_event_t* e) {
             }
             void* buffer = proxy->onDequeueBuffer();
             if (buffer) {
-                FLOGD("Render Start");
+                FLOGD("%p Render Start", proxy);
                 proxy->mDisp->buf_act = (uint8_t*)buffer;
             }
             break;
@@ -141,7 +142,7 @@ static void _disp_event_cb(lv_event_t* e) {
 
             bool periodic = lv_anim_get_timer()->paused ? false : true;
             if (proxy->onInvalidate(periodic)) {
-                FLOGD("Invalidate area");
+                FLOGD("%p Invalidate area", proxy);
             }
             break;
         }
@@ -171,7 +172,7 @@ static lv_disp_t* _disp_init(LVGLDriverProxy* proxy) {
 
     void* draw_buf = lv_malloc(buf_size);
     if (draw_buf == NULL) {
-        LV_LOG_ERROR("display draw_buf malloc failed");
+        LV_LOG_ERROR("display draw_buf malloc failure!");
         return NULL;
     }
 

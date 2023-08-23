@@ -90,7 +90,10 @@ void WindowState::setVisibility(bool visibility) {
 
     if (!visibility) {
         scheduleVsync(VsyncRequest::VSYNC_REQ_NONE);
+    } else if (mVsyncRequest == VsyncRequest::VSYNC_REQ_NONE) {
+        scheduleVsync(VsyncRequest::VSYNC_REQ_SINGLE);
     }
+
     // TODO: NOTIFY WIN NODE
 }
 

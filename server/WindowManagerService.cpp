@@ -65,11 +65,9 @@ static inline bool createSharedBuffer(int32_t size, BufferId* id) {
     return true;
 }
 
-static int32_t eventCnt = 0;
 static inline int handleUIEvent(int /*fd*/, int /*events*/, void* data) {
     WM_PROFILER_BEGIN();
     WindowManagerService* service = static_cast<WindowManagerService*>(data);
-    FLOGD("event count: %d", ++eventCnt);
     service->getRootContainer()->drawFrame();
     service->responseVsync();
     WM_PROFILER_END();
@@ -230,6 +228,8 @@ Status WindowManagerService::relayout(const sp<IWindow>& window, const LayoutPar
     } else {
         win->destorySurfaceControl();
     }
+    win->setVisibility(visibility);
+
     WM_PROFILER_END();
 
     return Status::ok();
