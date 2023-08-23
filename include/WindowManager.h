@@ -53,6 +53,11 @@ public:
 
     void toBackground();
 
+    void getDisplayInfo(uint32_t* width, uint32_t* height) {
+        if (width) *width = mDispWidth;
+        if (height) *height = mDispHeight;
+    }
+
 private:
     WindowManager();
     std::mutex mLock;
@@ -61,6 +66,7 @@ private:
     std::shared_ptr<SurfaceTransaction> mTransaction;
     uv_timer_t mEventTimer;
     bool mTimerInited;
+    uint32_t mDispWidth, mDispHeight;
 };
 
 } // namespace wm

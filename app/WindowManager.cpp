@@ -56,6 +56,14 @@ WindowManager::WindowManager() : mTimerInited(false) {
     mTransaction = std::make_shared<SurfaceTransaction>();
     mTransaction->setWindowManager(this);
     getService();
+
+    // init display size
+    DisplayInfo displayInfo;
+    int32_t result = 0;
+    mService->getPhysicalDisplayInfo(1, &displayInfo, &result);
+    mDispWidth = displayInfo.width;
+    mDispHeight = displayInfo.height;
+
 #if LVGL_VERSION_MAJOR >= 9
     UIInit();
 #endif
@@ -135,12 +143,11 @@ int32_t WindowManager::attachIWindow(std::shared_ptr<BaseWindow> window) {
     LayoutParams lp = window->getLayoutParams();
     DisplayInfo displayInfo;
 
-    mService->getPhysicalDisplayInfo(1, &displayInfo, &result);
     if (lp.mWidth == lp.MATCH_PARENT) {
-        lp.mWidth = displayInfo.width;
+        lp.mWidth = mDispWidth;
     }
     if (lp.mHeight == lp.MATCH_PARENT) {
-        lp.mHeight = displayInfo.height;
+        lp.mHeight = mDispHeight;
     }
     window->setLayoutParams(lp);
 
