@@ -146,7 +146,7 @@ int32_t WindowManager::attachIWindow(std::shared_ptr<BaseWindow> window) {
 
     if (lp.hasInput()) outInputChannel = new InputChannel();
 
-    Status status = mService->addWindow(w, lp, 1, 0, 1, outInputChannel, &result);
+    Status status = mService->addWindow(w, lp, 0, 0, 1, outInputChannel, &result);
     if (status.isOk()) {
         window->setInputChannel(outInputChannel);
 
