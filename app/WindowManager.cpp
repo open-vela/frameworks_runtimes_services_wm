@@ -27,47 +27,64 @@
 #include "LVGLDriverProxy.h"
 #include "LogUtils.h"
 #include "SurfaceTransaction.h"
+#include "uv.h"
+
+#if LVGL_VERSION_MAJOR >= 9
+#include "wm/UIInstance.h"
+#endif
+
+#include <nuttx/tls.h>
+
+static void _lv_timer_cb(uv_timer_t*) {
+#if LVGL_VERSION_MAJOR >= 9
+    lv_timer_handler();
+#endif
+}
 
 namespace os {
 namespace wm {
 
-pthread_key_t WindowManager::mTLSKey;
-
-WindowManager::WindowManager() {
-    mTransaction = std::make_shared<SurfaceTransaction>();
-    mTransaction->setWindowManager(this);
-    getService();
-}
-WindowManager::~WindowManager() {
-    mService = nullptr;
-    mWindows.clear();
-}
-
-void WindowManager::destroy() {
-    (void)pthread_setspecific(mTLSKey, NULL);
-}
-
-void WindowManager::destructTLSData(void* data) {
-    if (data) {
-        WindowManager* wm = (WindowManager*)data;
+static void _wm_inst_free(FAR void* instance) {
+    FLOGI("free wm instance for thread(%d)", pthread_self());
+    if (instance) {
+        WindowManager* wm = (WindowManager*)instance;
         delete wm;
     }
 }
 
-void WindowManager::createTLSKey() {
-    (void)pthread_key_create(&mTLSKey, destructTLSData);
+WindowManager::WindowManager() : mTimerInited(false) {
+    mTransaction = std::make_shared<SurfaceTransaction>();
+    mTransaction->setWindowManager(this);
+    getService();
+#if LVGL_VERSION_MAJOR >= 9
+    UIInit();
+#endif
+}
+WindowManager::~WindowManager() {
+    toBackground();
+#if LVGL_VERSION_MAJOR >= 9
+    UIDeinit();
+#endif
+    mService = nullptr;
+    mWindows.clear();
 }
 
 WindowManager* WindowManager::getInstance() {
-    static pthread_once_t key_once = PTHREAD_ONCE_INIT;
-    (void)pthread_once(&key_once, createTLSKey);
-
+    static int index = -1;
     WindowManager* instance;
-    if ((instance = (WindowManager*)pthread_getspecific(mTLSKey)) == NULL) {
-        instance = new WindowManager();
-        if (instance) (void)pthread_setspecific(mTLSKey, instance);
+
+    if (index < 0) {
+        index = task_tls_alloc(_wm_inst_free);
     }
 
+    if (index >= 0) {
+        instance = (WindowManager*)task_tls_get_value(index);
+        if (instance == NULL) {
+            instance = new WindowManager();
+            task_tls_set_value(index, (uintptr_t)instance);
+            FLOGI("new wm instance for thread(%d)", pthread_self());
+        }
+    }
     return instance;
 }
 
@@ -89,15 +106,19 @@ std::shared_ptr<BaseWindow> WindowManager::newWindow(::os::app::Context* context
     window->setWindowManager(this);
     mWindows.push_back(window);
 
-#ifndef CONFIG_WM_USE_LVGL
-    // for dummy driver
-    auto proxy = std::make_shared<::os::wm::DummyDriverProxy>(window);
-    window->setUIProxy(std::dynamic_pointer_cast<::os::wm::UIDriverProxy>(proxy));
-#else
+#if LVGL_VERSION_MAJOR >= 9
     // for lvgl driver
     auto proxy = std::make_shared<::os::wm::LVGLDriverProxy>(window);
     window->setUIProxy(std::dynamic_pointer_cast<::os::wm::UIDriverProxy>(proxy));
+#else
+    // for dummy driver
+    auto proxy = std::make_shared<::os::wm::DummyDriverProxy>(window);
+    window->setUIProxy(std::dynamic_pointer_cast<::os::wm::UIDriverProxy>(proxy));
 #endif
+    if (!mTimerInited) {
+        uv_timer_init(context->getMainLoop()->get(), &mEventTimer);
+        mTimerInited = true;
+    }
     WM_PROFILER_END();
 
     return window;
@@ -106,9 +127,9 @@ std::shared_ptr<BaseWindow> WindowManager::newWindow(::os::app::Context* context
 int32_t WindowManager::attachIWindow(std::shared_ptr<BaseWindow> window) {
     WM_PROFILER_BEGIN();
     FLOGI("%p", window.get());
+
     sp<IWindow> w = window->getIWindow();
     int32_t result = 0;
-    // TODO: create inputchannel if app need input event
     InputChannel* outInputChannel = nullptr;
     LayoutParams lp = window->getLayoutParams();
     DisplayInfo displayInfo;
@@ -127,6 +148,13 @@ int32_t WindowManager::attachIWindow(std::shared_ptr<BaseWindow> window) {
     Status status = mService->addWindow(w, lp, 1, 0, 1, outInputChannel, &result);
     if (status.isOk()) {
         window->setInputChannel(outInputChannel);
+
+#if LVGL_VERSION_MAJOR >= 9
+        if (mTimerInited && mEventTimer.timer_cb == NULL) {
+            uv_timer_start(&mEventTimer, _lv_timer_cb, CONFIG_WINDOW_REFRESH_PERIOD,
+                           CONFIG_WINDOW_REFRESH_PERIOD);
+        }
+#endif
     } else {
         if (outInputChannel) delete outInputChannel;
         result = -1;
@@ -145,7 +173,7 @@ void WindowManager::relayoutWindow(std::shared_ptr<BaseWindow> window) {
                                                         params.mHeight, params.mFormat);
     int32_t result = 0;
     mService->relayout(window->getIWindow(), params, params.mWidth, params.mHeight,
-                       window->getAppVisible(), surfaceControl, &result);
+                       window->isVisible(), surfaceControl, &result);
     window->setSurfaceControl(surfaceControl);
     WM_PROFILER_END();
 }
@@ -161,10 +189,22 @@ bool WindowManager::removeWindow(std::shared_ptr<BaseWindow> window) {
     if (it != mWindows.end()) {
         mWindows.erase(it);
     }
+#if LVGL_VERSION_MAJOR >= 9
+    if (mWindows.size() == 0) {
+        toBackground();
+    }
+#endif
     WM_PROFILER_END();
     FLOGD("done");
 
     return 0;
+}
+
+void WindowManager::toBackground() {
+    if (mTimerInited && mEventTimer.timer_cb) {
+        uv_timer_stop(&mEventTimer);
+        mEventTimer.timer_cb = NULL;
+    }
 }
 
 } // namespace wm

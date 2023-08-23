@@ -27,9 +27,9 @@
 #include "app/UvLoop.h"
 #include "os/wm/BnWindow.h"
 #include "os/wm/VsyncRequest.h"
+#include "wm/InputMessage.h"
 #include "wm/LayoutParams.h"
 #include "wm/WindowFrames.h"
-
 namespace os {
 namespace wm {
 
@@ -51,7 +51,6 @@ class SurfaceControl;
 
 using android::sp;
 using android::binder::Status;
-
 class BaseWindow : public std::enable_shared_from_this<BaseWindow> {
 public:
     class W : public BnWindow {
@@ -105,8 +104,8 @@ public:
     std::shared_ptr<BufferProducer> getBufferProducer();
 
     void doDie();
-    bool getAppVisible() {
-        return mAppVisible;
+    bool isVisible() {
+        return mVisible;
     }
     void dispatchAppVisibility(bool visible);
     void handleAppVisibility(bool visible);
@@ -119,6 +118,7 @@ public:
 
     void setInputChannel(InputChannel* inputChannel);
     void setSurfaceControl(SurfaceControl* surfaceControl);
+    bool readEvent(InputMessage* message);
 
     void setMockUIEventCallback(const MOCKUI_EVENT_CALLBACK& cb);
 
@@ -137,8 +137,9 @@ private:
     std::shared_ptr<UIDriverProxy> mUIProxy;
     uv_poll_t* mPoll;
     VsyncRequest mVsyncRequest;
-    bool mAppVisible;
+    bool mVisible;
     atomic_bool mFrameDone;
+    int mEventFd;
 };
 
 } // namespace wm

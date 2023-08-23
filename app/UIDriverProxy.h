@@ -33,8 +33,6 @@ public:
 
     virtual void* getRoot() = 0;
     virtual void* getWindow() = 0;
-    virtual bool initUIInstance() = 0;
-    virtual void handleEvent(InputMessage& message) = 0;
 
     // window request ui proxy, update buffer data
     virtual void drawFrame(BufferItem* item);
@@ -53,7 +51,15 @@ public:
         return mBufferItem;
     }
 
+    /* Return true for event timer read, false for event fd poll*/
+    virtual bool enableInput(bool enable);
+    /* for event timer */
+    bool readEvent(InputMessage* message);
+    /* for event fd */
+    virtual void handleEvent(InputMessage& message) = 0;
+
     virtual void updateResolution(int32_t width, int32_t height);
+
     virtual void setEventCallback(const MOCKUI_EVENT_CALLBACK& cb);
     virtual MOCKUI_EVENT_CALLBACK getEventCallback();
 

@@ -51,16 +51,16 @@ public:
         return mTransaction;
     }
 
+    void toBackground();
+
 private:
     WindowManager();
-    static void createTLSKey();
-    static void destructTLSData(void* data);
-
     std::mutex mLock;
     vector<std::shared_ptr<BaseWindow>> mWindows;
     sp<IWindowManager> mService;
     std::shared_ptr<SurfaceTransaction> mTransaction;
-    static pthread_key_t mTLSKey;
+    uv_timer_t mEventTimer;
+    bool mTimerInited;
 };
 
 } // namespace wm

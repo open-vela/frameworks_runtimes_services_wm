@@ -28,7 +28,6 @@ public:
 
     void* getRoot() override;
     void* getWindow() override;
-    bool initUIInstance() override;
     void handleEvent(InputMessage& message) override;
     void drawFrame(BufferItem* bufItem) override;
 
