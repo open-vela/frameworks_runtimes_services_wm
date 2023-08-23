@@ -124,7 +124,6 @@ void BaseWindow::setWindowManager(WindowManager* wm) {
 
 bool BaseWindow::scheduleVsync(VsyncRequest freq) {
     if (mVsyncRequest == freq) {
-        FLOGD("Warning: It's waiting previous vsync response.");
         return false;
     }
 
@@ -297,7 +296,7 @@ void BaseWindow::handleOnFrame(int32_t seq) {
         auto rect = mUIProxy->rectCrop();
         if (rect) transaction->setBufferCrop(mSurfaceControl, *rect);
 
-        FLOGD("handleOnFrame(%p) %d apply transaction\n", this, seq);
+        FLOGD("frame(%p) %d apply transaction\n", this, seq);
         transaction->apply();
 
         auto callback = mUIProxy->getEventCallback();
