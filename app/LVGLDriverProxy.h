@@ -29,13 +29,17 @@ public:
 
     void* getRoot() override;
     void* getWindow() override;
-    bool initUIInstance() override;
-    void handleEvent(InputMessage& message) override;
     void drawFrame(BufferItem* bufItem) override;
-    void updateResolution(int32_t width, int32_t height);
+
+    void updateResolution(int32_t width, int32_t height) override;
+    void handleEvent(InputMessage& message) override;
+
+    bool enableInput(bool enable) override;
 
     lv_disp_t* mDisp;
     lv_indev_t* mIndev;
+    int mEventFd;
+    lv_indev_state_t mLastEventState;
 };
 
 } // namespace wm
