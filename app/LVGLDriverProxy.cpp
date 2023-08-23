@@ -20,12 +20,13 @@
 
 #if LVGL_VERSION_MAJOR >= 9
 #include "wm/UIInstance.h"
+#include <lvgl/src/lvgl_private.h>
 #else
 #include <lv_porting/lv_porting.h>
 #endif
 
 #include <lvgl/lvgl.h>
-#include <lvgl/src/lvgl_private.h>
+
 
 namespace os {
 namespace wm {
@@ -33,7 +34,10 @@ static lv_disp_t* _disp_init(LVGLDriverProxy* proxy);
 static lv_indev_t* _indev_init(LVGLDriverProxy* proxy);
 
 LVGLDriverProxy::LVGLDriverProxy(std::shared_ptr<BaseWindow> win)
-      : UIDriverProxy(win), mIndev(nullptr), mEventFd(-1), mLastEventState(LV_INDEV_STATE_PRESSED) {
+      : UIDriverProxy(win),
+        mIndev(nullptr),
+        mEventFd(-1),
+        mLastEventState(LV_INDEV_STATE_RELEASED) {
     mDisp = _disp_init(this);
 }
 
@@ -106,7 +110,8 @@ static void _disp_flush_cb(lv_disp_t* disp, const lv_area_t* area_p, uint8_t* co
 
         Rect inv_rect = Rect(area_p->x1, area_p->y1, area_p->x2, area_p->y2);
         proxy->onRectCrop(inv_rect);
-        FLOGD("display flush area(%dx%d -> %dx%d)", area_p->x1, area_p->y1, area_p->x2, area_p->y2);
+        FLOGD("display flush area (%d,%d)->(%d,%d)", area_p->x1, area_p->y1, area_p->x2,
+              area_p->y2);
     }
     lv_disp_flush_ready(disp);
 }
