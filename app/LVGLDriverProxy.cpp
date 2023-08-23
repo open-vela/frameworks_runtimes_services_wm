@@ -155,11 +155,14 @@ static void _disp_event_cb(lv_event_t* e) {
             break;
     }
 }
+static void* _virt_disp_buffer = NULL;
+static uint32_t _virt_buf_size = 0;
 
 static lv_disp_t* _disp_init(LVGLDriverProxy* proxy) {
-    const int width = 1, height = 1;
+    uint32_t width = 1, height = 1;
+    WindowManager::getInstance()->getDisplayInfo(&width, &height);
 
-    lv_disp_t* disp = lv_disp_create(1, 1);
+    lv_disp_t* disp = lv_disp_create(width, height);
     if (disp == NULL) {
         return NULL;
     }
@@ -167,18 +170,21 @@ static lv_disp_t* _disp_init(LVGLDriverProxy* proxy) {
     lv_timer_del(disp->refr_timer);
     disp->refr_timer = NULL;
 
-    uint32_t px_size = lv_color_format_get_size(lv_disp_get_color_format(disp));
-    uint32_t buf_size = width * height * px_size;
+    if (_virt_disp_buffer == NULL) {
+        uint32_t px_size = lv_color_format_get_size(lv_disp_get_color_format(disp));
+        _virt_buf_size = width * height * px_size;
 
-    void* draw_buf = lv_malloc(buf_size);
-    if (draw_buf == NULL) {
-        LV_LOG_ERROR("display draw_buf malloc failure!");
-        return NULL;
+        void* draw_buf = lv_malloc(_virt_buf_size);
+        if (draw_buf == NULL) {
+            LV_LOG_ERROR("display draw_buf malloc failure!");
+            return NULL;
+        }
+        _virt_disp_buffer = draw_buf;
     }
 
     lv_disp_render_mode_t render_mode = LV_DISP_RENDER_MODE_FULL;
     // LV_DISP_RENDER_MODE_DIRECT
-    lv_disp_set_draw_buffers(disp, draw_buf, NULL, buf_size, render_mode);
+    lv_disp_set_draw_buffers(disp, _virt_disp_buffer, NULL, _virt_buf_size, render_mode);
     lv_disp_set_flush_cb(disp, _disp_flush_cb);
     lv_event_add(&disp->event_list, _disp_event_cb, LV_EVENT_ALL, proxy);
     lv_disp_set_user_data(disp, proxy);
