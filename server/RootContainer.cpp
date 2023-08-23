@@ -18,9 +18,9 @@
 
 #include "RootContainer.h"
 
-#if LVGL_VERSION_MAJOR >= 9
 #include "wm/UIInstance.h"
-#else
+
+#if LVGL_VERSION_MAJOR < 9
 #include <lv_porting/lv_porting.h>
 #endif
 
