@@ -66,6 +66,17 @@ bool UIDriverProxy::finishDrawing() {
     return mFlags != 0 ? true : false;
 }
 
+bool UIDriverProxy::enableInput(bool enable) {
+    return false;
+}
+
+bool UIDriverProxy::readEvent(InputMessage* message) {
+    if (message && !mBaseWindow.expired()) {
+        return mBaseWindow.lock()->readEvent(message);
+    }
+    return false;
+}
+
 void UIDriverProxy::updateResolution(int32_t width, int32_t height) {}
 
 void UIDriverProxy::setEventCallback(const MOCKUI_EVENT_CALLBACK& cb) {}

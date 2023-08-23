@@ -30,20 +30,15 @@
 namespace os {
 namespace wm {
 static lv_disp_t* _disp_init(LVGLDriverProxy* proxy);
+static lv_indev_t* _indev_init(LVGLDriverProxy* proxy);
 
 LVGLDriverProxy::LVGLDriverProxy(std::shared_ptr<BaseWindow> win)
-      : UIDriverProxy(win), mDisp(nullptr), mIndev(nullptr) {
-    initUIInstance();
+      : UIDriverProxy(win), mIndev(nullptr), mEventFd(-1), mLastEventState(LV_INDEV_STATE_PRESSED) {
+    mDisp = _disp_init(this);
 }
 
 LVGLDriverProxy::~LVGLDriverProxy() {
-    UIDeinit();
-}
-
-bool LVGLDriverProxy::initUIInstance() {
-    UIInit();
-    mDisp = _disp_init(this);
-    return mDisp ? true : false;
+    enableInput(false);
 }
 
 void LVGLDriverProxy::drawFrame(BufferItem* bufItem) {
@@ -55,11 +50,13 @@ void LVGLDriverProxy::drawFrame(BufferItem* bufItem) {
     UIDriverProxy::drawFrame(bufItem);
     FLOGD("");
 
-    lv_refr_now(mDisp);
+    if (lv_disp_get_default() != mDisp) {
+        lv_disp_set_default(mDisp);
+    }
+    _lv_disp_refr_timer(NULL);
 }
 
 void LVGLDriverProxy::handleEvent(InputMessage& message) {
-    // TODO: switch message to indev event
     dumpInputMessage(&message);
 }
 
@@ -79,7 +76,24 @@ static lv_disp_t* _disp_init(LVGLDriverProxy* proxy) {
     return NULL;
 }
 
+bool LVGLDriverProxy::enableInput(bool enable) {
+    return false;
+}
 #else
+
+bool LVGLDriverProxy::enableInput(bool enable) {
+    if (enable) {
+        mIndev = _indev_init(this);
+        return mIndev ? true : false;
+    } else {
+        if (mIndev) {
+            lv_indev_delete(mIndev);
+            mIndev = NULL;
+        }
+        return true;
+    }
+    return false;
+}
 
 void LVGLDriverProxy::updateResolution(int32_t width, int32_t height) {
     lv_disp_set_res(mDisp, width, height);
@@ -144,6 +158,9 @@ static lv_disp_t* _disp_init(LVGLDriverProxy* proxy) {
         return NULL;
     }
 
+    lv_timer_del(disp->refr_timer);
+    disp->refr_timer = NULL;
+
     uint32_t px_size = lv_color_format_get_size(lv_disp_get_color_format(disp));
     uint32_t buf_size = width * height * px_size;
 
@@ -163,6 +180,46 @@ static lv_disp_t* _disp_init(LVGLDriverProxy* proxy) {
     return disp;
 }
 
+static void _indev_read(lv_indev_t* drv, lv_indev_data_t* data) {
+    LVGLDriverProxy* proxy = reinterpret_cast<LVGLDriverProxy*>(drv->user_data);
+    if (proxy == NULL) {
+        return;
+    }
+
+    InputMessage message;
+    bool ret = proxy->readEvent(&message);
+
+    if (ret) {
+        dumpInputMessage(&message);
+        if (message.type == INPUT_MESSAGE_TYPE_POINTER) {
+            if (message.state == INPUT_MESSAGE_STATE_PRESSED) {
+                const lv_disp_t* disp_drv = proxy->mDisp;
+                lv_coord_t ver_max = disp_drv->ver_res - 1;
+                lv_coord_t hor_max = disp_drv->hor_res - 1;
+
+                data->point.x = LV_CLAMP(0, message.pointer.raw_x, hor_max);
+                data->point.y = LV_CLAMP(0, message.pointer.raw_y, ver_max);
+                proxy->mLastEventState = LV_INDEV_STATE_PRESSED;
+            } else if (message.state == INPUT_MESSAGE_STATE_RELEASED) {
+                proxy->mLastEventState = LV_INDEV_STATE_RELEASED;
+            }
+
+            data->continue_reading = true;
+        }
+    }
+    data->state = proxy->mLastEventState;
+}
+
+static lv_indev_t* _indev_init(LVGLDriverProxy* proxy) {
+    lv_indev_t* indev = lv_indev_create();
+    if (indev == NULL) {
+        return NULL;
+    }
+    indev->type = LV_INDEV_TYPE_POINTER;
+    indev->read_cb = _indev_read;
+    indev->user_data = proxy;
+    return indev;
+}
 #endif
 
 } // namespace wm

@@ -24,16 +24,10 @@
 namespace os {
 namespace wm {
 
-DummyDriverProxy::DummyDriverProxy(std::shared_ptr<BaseWindow> win) : UIDriverProxy(win) {
-    initUIInstance();
-}
+DummyDriverProxy::DummyDriverProxy(std::shared_ptr<BaseWindow> win)
+      : UIDriverProxy(win), mEventCallback(NULL), mActive(false) {}
 
 DummyDriverProxy::~DummyDriverProxy() {}
-
-bool DummyDriverProxy::initUIInstance() {
-    mActive = false;
-    return true;
-}
 
 void DummyDriverProxy::drawFrame(BufferItem* bufItem) {
     WM_PROFILER_BEGIN();
