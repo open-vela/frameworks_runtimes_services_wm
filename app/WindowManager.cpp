@@ -60,6 +60,7 @@ WindowManager::WindowManager() : mTimerInited(false) {
     UIInit();
 #endif
 }
+
 WindowManager::~WindowManager() {
     toBackground();
 #if LVGL_VERSION_MAJOR >= 9
