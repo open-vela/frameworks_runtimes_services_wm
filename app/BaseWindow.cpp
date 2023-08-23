@@ -89,6 +89,13 @@ static void eventCallback(int fd, int status, int events, void* data) {
     }
 }
 
+bool BaseWindow::readEvent(InputMessage* message) {
+    if (mEventFd < 0 || message == NULL) return false;
+
+    ssize_t size = mq_receive(mEventFd, (char*)message, sizeof(InputMessage), NULL);
+    return size == sizeof(InputMessage) ? true : false;
+}
+
 BaseWindow::~BaseWindow() {
     if (mPoll) {
         uv_poll_stop(mPoll);
@@ -103,7 +110,7 @@ BaseWindow::BaseWindow(::os::app::Context* context)
         mWindowManager(nullptr),
         mPoll(nullptr),
         mVsyncRequest(VsyncRequest::VSYNC_REQ_NONE),
-        mAppVisible(false),
+        mVisible(false),
         mFrameDone(true) {
     mAttrs = LayoutParams();
     mAttrs.mToken = context->getToken();
@@ -138,26 +145,30 @@ std::shared_ptr<BufferProducer> BaseWindow::getBufferProducer() {
     if (mSurfaceControl.get() != nullptr && mSurfaceControl->isValid()) {
         return std::static_pointer_cast<BufferProducer>(mSurfaceControl->bufferQueue());
     }
-    FLOGI("no valid SurfaceControl when window is %svisible!", getAppVisible() ? "" : "not ");
+    FLOGI("no valid SurfaceControl when window is %svisible!", isVisible() ? "" : "not ");
     return nullptr;
 }
 
 void BaseWindow::doDie() {
-    // TODO destory lvglDriver
-    mInputChannel.reset();
+    setInputChannel(nullptr);
     mSurfaceControl.reset();
+    mUIProxy.reset();
 }
 
 void BaseWindow::setInputChannel(InputChannel* inputChannel) {
     if (inputChannel != nullptr && inputChannel->isValid()) {
         mInputChannel.reset(inputChannel);
-        mPoll = new uv_poll_t;
-        mPoll->data = this;
-        uv_poll_init(mContext->getMainLoop()->get(), mPoll, mInputChannel->getEventFd());
-        uv_poll_start(mPoll, UV_READABLE, [](uv_poll_t* handle, int status, int events) {
-            eventCallback(handle->io_watcher.fd, status, events, handle->data);
-        });
-    } else {
+        mEventFd = mInputChannel->getEventFd();
+        if (!mUIProxy->enableInput(true)) {
+            mPoll = new uv_poll_t;
+            mPoll->data = this;
+            uv_poll_init(mContext->getMainLoop()->get(), mPoll, mEventFd);
+            uv_poll_start(mPoll, UV_READABLE, [](uv_poll_t* handle, int status, int events) {
+                eventCallback(handle->io_watcher.fd, status, events, handle->data);
+            });
+        }
+    } else if (mInputChannel && mInputChannel->isValid()) {
+        mEventFd = -1;
         mInputChannel.reset();
     }
 }
@@ -215,13 +226,14 @@ void BaseWindow::bufferReleased(int32_t bufKey) {
 }
 
 void BaseWindow::handleAppVisibility(bool visible) {
-    FLOGI("visible:%d,mAppVisible:%d", visible, mAppVisible);
-    if (mAppVisible == visible) {
+    FLOGI("visible from %d to %d", mVisible, visible);
+
+    if (mVisible == visible) {
         return;
     }
 
     WM_PROFILER_BEGIN();
-    mAppVisible = visible;
+    mVisible = visible;
     mWindowManager->relayoutWindow(shared_from_this());
     if (mSurfaceControl.get() != nullptr && mSurfaceControl->isValid()) {
         updateOrCreateBufferQueue();
@@ -238,7 +250,7 @@ void BaseWindow::handleAppVisibility(bool visible) {
 }
 
 void BaseWindow::handleOnFrame(int32_t seq) {
-    if (!this->getAppVisible()) {
+    if (!isVisible()) {
         FLOGD("window is not visible now.");
         return;
     }
