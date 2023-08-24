@@ -86,7 +86,7 @@ public:
 
     virtual void handleMessage(const Message& message) {
         if (message.what == MSG_DO_FRAME) {
-            Looper::getForThread()->sendMessageDelayed(CONFIG_WINDOW_REFRESH_PERIOD * 1000000, this,
+            Looper::getForThread()->sendMessageDelayed(CONFIG_LV_DEF_REFR_PERIOD * 1000000, this,
                                                        Message(MSG_DO_FRAME));
             handleUIEvent(0, 0, mService);
         }

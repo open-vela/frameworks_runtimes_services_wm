@@ -76,7 +76,7 @@ bool RootContainer::init() {
 
     lv_timer_t* timer = _lv_disp_get_refr_timer(mDisp);
     if (timer) {
-        lv_timer_set_period(timer, CONFIG_WINDOW_REFRESH_PERIOD);
+        lv_timer_set_period(timer, CONFIG_LV_DEF_REFR_PERIOD);
     }
 
 #else
