@@ -159,8 +159,8 @@ int32_t WindowManager::attachIWindow(std::shared_ptr<BaseWindow> window) {
 
 #if LVGL_VERSION_MAJOR >= 9
         if (mTimerInited && mEventTimer.timer_cb == NULL) {
-            uv_timer_start(&mEventTimer, _lv_timer_cb, CONFIG_WINDOW_REFRESH_PERIOD,
-                           CONFIG_WINDOW_REFRESH_PERIOD);
+            uv_timer_start(&mEventTimer, _lv_timer_cb, CONFIG_LV_DEF_REFR_PERIOD,
+                           CONFIG_LV_DEF_REFR_PERIOD);
         }
 #endif
     } else {
