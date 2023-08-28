@@ -28,7 +28,7 @@ public:
 
     void* getRoot() override;
     void* getWindow() override;
-    void handleEvent(InputMessage& message) override;
+    void handleEvent() override;
     void drawFrame(BufferItem* bufItem) override;
 
     void setEventCallback(const MOCKUI_EVENT_CALLBACK& cb) override {

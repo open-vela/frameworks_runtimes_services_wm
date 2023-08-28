@@ -75,16 +75,10 @@ static void eventCallback(int fd, int status, int events, void* data) {
     }
 
     if (events & UV_READABLE) {
-        InputMessage msg;
-        ssize_t size = mq_receive(fd, (char*)&msg, sizeof(InputMessage), NULL);
-        if (size != sizeof(InputMessage)) {
-            return;
-        }
-
         BaseWindow* win = reinterpret_cast<BaseWindow*>(data);
         if (win) {
             auto proxy = win->getUIProxy();
-            if (proxy.get() != nullptr) proxy->handleEvent(msg);
+            if (proxy.get() != nullptr) proxy->handleEvent();
         }
     }
 }
@@ -158,16 +152,16 @@ void BaseWindow::setInputChannel(InputChannel* inputChannel) {
     if (inputChannel != nullptr && inputChannel->isValid()) {
         mInputChannel.reset(inputChannel);
         mEventFd = mInputChannel->getEventFd();
-        if (!mUIProxy->enableInput(true)) {
-            mPoll = new uv_poll_t;
-            mPoll->data = this;
-            uv_poll_init(mContext->getMainLoop()->get(), mPoll, mEventFd);
-            uv_poll_start(mPoll, UV_READABLE, [](uv_poll_t* handle, int status, int events) {
-                eventCallback(handle->io_watcher.fd, status, events, handle->data);
-            });
-        }
+        mUIProxy->enableInput(true);
+        mPoll = new uv_poll_t;
+        mPoll->data = this;
+        uv_poll_init(mContext->getMainLoop()->get(), mPoll, mEventFd);
+        uv_poll_start(mPoll, UV_READABLE, [](uv_poll_t* handle, int status, int events) {
+            eventCallback(handle->io_watcher.fd, status, events, handle->data);
+        });
     } else if (mInputChannel && mInputChannel->isValid()) {
         mEventFd = -1;
+        mUIProxy->enableInput(false);
         mInputChannel.reset();
     }
 }
