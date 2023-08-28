@@ -51,12 +51,9 @@ public:
         return mBufferItem;
     }
 
-    /* Return true for event timer read, false for event fd poll*/
-    virtual bool enableInput(bool enable);
-    /* for event timer */
+    virtual void handleEvent() = 0;
     bool readEvent(InputMessage* message);
-    /* for event fd */
-    virtual void handleEvent(InputMessage& message) = 0;
+    virtual bool enableInput(bool enable);
 
     virtual void updateResolution(int32_t width, int32_t height);
 
