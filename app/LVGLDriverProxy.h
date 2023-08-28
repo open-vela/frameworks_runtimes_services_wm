@@ -32,7 +32,7 @@ public:
     void drawFrame(BufferItem* bufItem) override;
 
     void updateResolution(int32_t width, int32_t height) override;
-    void handleEvent(InputMessage& message) override;
+    void handleEvent() override;
 
     bool enableInput(bool enable) override;
 

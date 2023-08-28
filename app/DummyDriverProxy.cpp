@@ -48,9 +48,11 @@ void DummyDriverProxy::drawFrame(BufferItem* bufItem) {
     WM_PROFILER_END();
 }
 
-void DummyDriverProxy::handleEvent(InputMessage& message) {
-    dumpInputMessage(&message);
+void DummyDriverProxy::handleEvent() {
+    InputMessage message;
+    if (!readEvent(&message)) return;
 
+    dumpInputMessage(&message);
     switch (message.type) {
         case INPUT_MESSAGE_TYPE_POINTER: {
             if (message.state == INPUT_MESSAGE_STATE_PRESSED) {

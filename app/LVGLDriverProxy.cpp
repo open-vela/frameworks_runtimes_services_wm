@@ -43,7 +43,10 @@ LVGLDriverProxy::LVGLDriverProxy(std::shared_ptr<BaseWindow> win)
 }
 
 LVGLDriverProxy::~LVGLDriverProxy() {
-    enableInput(false);
+    if (mIndev) {
+        lv_indev_delete(mIndev);
+        mIndev = NULL;
+    }
 }
 
 void LVGLDriverProxy::drawFrame(BufferItem* bufItem) {
@@ -61,8 +64,8 @@ void LVGLDriverProxy::drawFrame(BufferItem* bufItem) {
     _lv_disp_refr_timer(NULL);
 }
 
-void LVGLDriverProxy::handleEvent(InputMessage& message) {
-    dumpInputMessage(&message);
+void LVGLDriverProxy::handleEvent() {
+    if (mIndev) lv_indev_read(mIndev);
 }
 
 void* LVGLDriverProxy::getRoot() {
@@ -87,14 +90,13 @@ bool LVGLDriverProxy::enableInput(bool enable) {
 #else
 
 bool LVGLDriverProxy::enableInput(bool enable) {
-    if (enable) {
+    if (enable && !mIndev) {
         mIndev = _indev_init(this);
         return mIndev ? true : false;
-    } else {
-        if (mIndev) {
-            lv_indev_delete(mIndev);
-            mIndev = NULL;
-        }
+    }
+
+    if (mIndev) {
+        lv_indev_enable(mIndev, enable);
         return true;
     }
     return false;
@@ -159,8 +161,10 @@ static void* _virt_disp_buffer = NULL;
 static uint32_t _virt_buf_size = 0;
 
 static lv_disp_t* _disp_init(LVGLDriverProxy* proxy) {
-    uint32_t width = 1, height = 1;
-    WindowManager::getInstance()->getDisplayInfo(&width, &height);
+    static uint32_t width = 0, height = 0;
+    if (width == 0) {
+        WindowManager::getInstance()->getDisplayInfo(&width, &height);
+    }
 
     lv_disp_t* disp = lv_disp_create(width, height);
     if (disp == NULL) {
@@ -230,6 +234,9 @@ static lv_indev_t* _indev_init(LVGLDriverProxy* proxy) {
     indev->type = LV_INDEV_TYPE_POINTER;
     indev->read_cb = _indev_read;
     indev->user_data = proxy;
+
+    lv_timer_del(indev->read_timer);
+    indev->read_timer = NULL;
     return indev;
 }
 #endif
