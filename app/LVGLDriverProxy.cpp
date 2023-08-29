@@ -65,7 +65,9 @@ void LVGLDriverProxy::drawFrame(BufferItem* bufItem) {
 }
 
 void LVGLDriverProxy::handleEvent() {
+#if LVGL_VERSION_MAJOR >= 9
     if (mIndev) lv_indev_read(mIndev);
+#endif
 }
 
 void* LVGLDriverProxy::getRoot() {
