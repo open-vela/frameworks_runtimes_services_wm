@@ -66,6 +66,9 @@ public:
         return mContainer;
     }
 
+    bool registerFd(int fd, Looper_callbackFunc cb, void* data);
+    void unregisterFd(int fd);
+
 private:
     int32_t createSurfaceControl(SurfaceControl* outSurfaceControl, WindowState* win);
 
@@ -73,10 +76,9 @@ private:
     WindowStateMap mWindowMap;
 
     RootContainer* mContainer;
-    int mRootFd;
     sp<Looper> mLooper;
 
-    sp<MessageHandler> mFrameHandler;
+    sp<MessageHandler> mTimerHandler;
 };
 
 } // namespace wm

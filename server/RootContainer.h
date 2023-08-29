@@ -21,6 +21,7 @@
 
 namespace os {
 namespace wm {
+class WindowManagerService;
 
 typedef enum {
     DSM_TIMER = 0,
@@ -29,7 +30,7 @@ typedef enum {
 
 class RootContainer {
 public:
-    RootContainer();
+    RootContainer(WindowManagerService* service);
     ~RootContainer();
 
     lv_disp_t* getRoot();
@@ -37,21 +38,18 @@ public:
     lv_obj_t* getSysLayer();
     lv_obj_t* getTopLayer();
 
-    bool drawFrame();
-    DispSyncMode getSyncMode() {
-        return mSyncMode;
-    }
     bool getDisplayInfo(DisplayInfo* info);
 
-    int getFdInfo(int* fd, int* events);
-    bool handleEvent(int fd, int events);
+    void processVsyncEvent(bool fromEvent);
+    void processInputEvent();
 
 private:
     bool init();
-
+    WindowManagerService* mService;
     lv_disp_t* mDisp;
-    DispSyncMode mSyncMode;
-    int32_t mVsyncEvent;
+    lv_indev_t* mIndev;
+    int32_t mInputFd;
+    int32_t mDispFd;
 };
 
 } // namespace wm
