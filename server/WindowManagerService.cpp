@@ -65,30 +65,22 @@ static inline bool createSharedBuffer(int32_t size, BufferId* id) {
     return true;
 }
 
-static inline int handleUIEvent(int /*fd*/, int /*events*/, void* data) {
-    WM_PROFILER_BEGIN();
-    WindowManagerService* service = static_cast<WindowManagerService*>(data);
-    service->getRootContainer()->drawFrame();
-    service->responseVsync();
-    WM_PROFILER_END();
-    return 1;
-}
-
 enum {
-    MSG_DO_FRAME = 1001,
+    MSG_DO_TIMER = 1001,
 };
 
-class UIFrameHandler : public MessageHandler {
+class UITimerHandler : public MessageHandler {
 public:
-    UIFrameHandler(WindowManagerService* service) {
+    UITimerHandler(WindowManagerService* service) {
         mService = service;
     }
 
     virtual void handleMessage(const Message& message) {
-        if (message.what == MSG_DO_FRAME) {
-            Looper::getForThread()->sendMessageDelayed(CONFIG_LV_DEF_REFR_PERIOD * 1000000, this,
-                                                       Message(MSG_DO_FRAME));
-            handleUIEvent(0, 0, mService);
+        if (message.what == MSG_DO_TIMER) {
+            Looper::getForThread()->sendMessageDelayed(CONFIG_LV_DEF_REFR_PERIOD * 1000000 * 2,
+                                                       this, Message(MSG_DO_TIMER));
+            mService->getRootContainer()->processVsyncEvent(false);
+            mService->responseVsync();
         }
     }
 
@@ -96,32 +88,33 @@ private:
     WindowManagerService* mService;
 };
 
-WindowManagerService::WindowManagerService() : mRootFd(-1) {
+WindowManagerService::WindowManagerService() {
     mLooper = Looper::getForThread();
-    mContainer = new RootContainer();
+    mContainer = new RootContainer(this);
     FLOGI("WMS init");
     if (mLooper) {
-        if (mContainer->getSyncMode() == DSM_TIMER) {
-            mFrameHandler = new UIFrameHandler(this);
-            mLooper->sendMessageDelayed(16 * 1000000, mFrameHandler, Message(MSG_DO_FRAME));
-        } else {
-            int events;
-            if (mContainer->getFdInfo(&mRootFd, &events) == 0) {
-                mLooper->addFd(mRootFd, android::Looper::POLL_CALLBACK, events, handleUIEvent,
-                               (void*)this);
-            }
-        }
+        mTimerHandler = new UITimerHandler(this);
+        mLooper->sendMessageDelayed(16 * 1000000, mTimerHandler, Message(MSG_DO_TIMER));
     }
 }
 
 WindowManagerService::~WindowManagerService() {
-    if (mRootFd != -1) {
-        mLooper->removeFd(mRootFd);
-    } else {
-        mFrameHandler.clear();
-    }
-
+    mTimerHandler.clear();
     delete mContainer;
+}
+
+bool WindowManagerService::registerFd(int fd, Looper_callbackFunc cb, void* data) {
+    if (fd > 0 && mLooper) {
+        int ret = mLooper->addFd(fd, android::Looper::POLL_CALLBACK, Looper::EVENT_INPUT, cb, data);
+        return ret > 0 ? true : false;
+    }
+    return false;
+}
+
+void WindowManagerService::unregisterFd(int fd) {
+    if (fd > 0 && mLooper) {
+        mLooper->removeFd(fd);
+    }
 }
 
 Status WindowManagerService::getPhysicalDisplayInfo(int32_t displayId, DisplayInfo* info,

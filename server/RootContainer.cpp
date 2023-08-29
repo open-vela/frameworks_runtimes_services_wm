@@ -18,29 +18,33 @@
 
 #include "RootContainer.h"
 
+#include <lvgl/lvgl.h>
+
 #include "wm/UIInstance.h"
 
-#if LVGL_VERSION_MAJOR < 9
+#if LVGL_VERSION_MAJOR >= 9
+#include <lvgl/src/lvgl_private.h>
+#else
 #include <lv_porting/lv_porting.h>
 #endif
 
-#include <lvgl/lvgl.h>
 #include <utils/Log.h>
+
+#include "../system_server/BaseProfiler.h"
+#include "WindowManagerService.h"
 
 namespace os {
 namespace wm {
 
-RootContainer::RootContainer() : mDisp(nullptr), mSyncMode(DSM_TIMER) {
-#ifdef CONFIG_FB_SYNC
-    mVsyncEvent = 0;
-#else
-    mVsyncEvent = -1;
-#endif
+RootContainer::RootContainer(WindowManagerService* service)
+      : mService(service), mDisp(nullptr), mIndev(nullptr), mInputFd(-1), mDispFd(-1) {
     init();
 }
 
 RootContainer::~RootContainer() {
-    mDisp = nullptr;
+    if (mDispFd > 0) mService->unregisterFd(mDispFd);
+    if (mInputFd > 0) mService->unregisterFd(mInputFd);
+    mService = nullptr;
     UIDeinit();
 }
 
@@ -60,24 +64,69 @@ lv_obj_t* RootContainer::getTopLayer() {
     return lv_disp_get_layer_top(mDisp);
 }
 
+static inline int vsyncCallback(int fd, int events, void* data) {
+    RootContainer* container = static_cast<RootContainer*>(data);
+    if (container) {
+        container->processVsyncEvent(true);
+    }
+    return 1;
+}
+
+static inline int inputCallback(int fd, int events, void* data) {
+#if LVGL_VERSION_MAJOR >= 9
+    lv_indev_read((lv_indev_t*)data);
+#endif
+    return 1;
+}
+
+void RootContainer::processVsyncEvent(bool fromEvent) {
+    WM_PROFILER_BEGIN();
+    if (fromEvent) {
+        _lv_disp_get_refr_timer(NULL);
+        if (mService) mService->responseVsync();
+    } else {
+        lv_timer_handler();
+    }
+    WM_PROFILER_END();
+}
+
+void RootContainer::processInputEvent() {
+    lv_indev_read(mIndev);
+}
+
 bool RootContainer::init() {
     UIInit();
 
 #if LVGL_VERSION_MAJOR >= 9
+
 #ifdef CONFIG_LV_USE_LINUX_FBDEV
-    lv_linux_fbdev_set_file(lv_linux_fbdev_create(), CONFIG_LV_FBDEV_INTERFACE_DEFAULT_DEVICEPATH);
-#endif
+    mDisp = lv_linux_fbdev_create();
+    lv_linux_fbdev_set_file(mDisp, CONFIG_LV_FBDEV_INTERFACE_DEFAULT_DEVICEPATH);
 
-#ifdef CONFIG_LV_USE_NUTTX_TOUCHSCREEN
-    lv_nuttx_touchscreen_create(CONFIG_LV_TOUCHPAD_INTERFACE_DEFAULT_DEVICEPATH);
+    // int fd = (int32_t)lv_disp_get_user_data(mDisp);
+    // if (fd > 0) {
+    //     if (mService->registerFd(fd, vsyncCallback, (void*)this)) {
+    //         lv_timer_del(mDisp->refr_timer);
+    //         mDisp->refr_timer = NULL;
+    //     }
+    //     mDispFd = fd;
+    // }
 #endif
-
-    mDisp = lv_disp_get_default();
 
     lv_timer_t* timer = _lv_disp_get_refr_timer(mDisp);
     if (timer) {
         lv_timer_set_period(timer, CONFIG_LV_DEF_REFR_PERIOD);
     }
+
+#ifdef CONFIG_LV_USE_NUTTX_TOUCHSCREEN
+    mIndev = lv_nuttx_touchscreen_create(CONFIG_LV_TOUCHPAD_INTERFACE_DEFAULT_DEVICEPATH);
+
+    mInputFd = (int32_t)lv_indev_get_user_data(mIndev);
+    if (mInputFd > 0 && mService->registerFd(mInputFd, inputCallback, (void*)mIndev)) {
+        lv_timer_del(mIndev->read_timer);
+        mIndev->read_timer = NULL;
+    }
+#endif
 
 #else
     lv_porting_init();
@@ -85,31 +134,6 @@ bool RootContainer::init() {
 #endif
 
     return mDisp ? true : false;
-}
-
-bool RootContainer::drawFrame() {
-    lv_timer_handler();
-    return true;
-}
-
-bool RootContainer::handleEvent(int fd, int events) {
-    if (events == mVsyncEvent) {
-        return drawFrame();
-    }
-    return false;
-}
-
-int RootContainer::getFdInfo(int* fd, int* events) {
-    if (mSyncMode == DSM_VSYNC) {
-        if (fd) {
-            *fd = -1; // TODO: update it
-        }
-        if (events) {
-            *events = mVsyncEvent;
-        }
-        return 0;
-    }
-    return -1;
 }
 
 bool RootContainer::getDisplayInfo(DisplayInfo* info) {
