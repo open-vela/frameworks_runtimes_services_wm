@@ -59,7 +59,8 @@ public:
 
     Status applyTransaction(const vector<LayerState>& state);
     Status requestVsync(const sp<IWindow>& window, VsyncRequest freq);
-    void responseVsync();
+    bool responseVsync();
+    void postTimerMessage(int32_t delay);
 
     // public methods
     RootContainer* getRootContainer() {
@@ -79,6 +80,7 @@ private:
     sp<Looper> mLooper;
 
     sp<MessageHandler> mTimerHandler;
+    bool mTimerStopped;
 };
 
 } // namespace wm
