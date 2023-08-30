@@ -81,7 +81,7 @@ std::shared_ptr<InputChannel> WindowState::createInputChannel(const std::string 
 
 bool WindowState::sendInputMessage(const InputMessage* ie) {
     if (mInputChannel != nullptr) return mInputChannel->sendMessage(ie);
-    FLOGD("input message: invalid input channel!");
+    FLOGI("input message: invalid input channel!");
     return false;
 }
 
@@ -99,9 +99,14 @@ void WindowState::setVisibility(bool visibility) {
 
 void WindowState::sendAppVisibilityToClients() {
     WM_PROFILER_BEGIN();
-    FLOGD("");
 
-    setVisibility(mToken->isClientVisible());
+    bool visible = mToken->isClientVisible();
+    if (visible == mVisibility) {
+        return;
+    }
+
+    setVisibility(visible);
+    FLOGI("mToken %p,mVisibility=%d", mToken.get(), mVisibility);
     mClient->dispatchAppVisibility(isVisible());
     WM_PROFILER_END();
 }
@@ -109,7 +114,7 @@ void WindowState::sendAppVisibilityToClients() {
 std::shared_ptr<SurfaceControl> WindowState::createSurfaceControl(vector<BufferId> ids) {
     WM_PROFILER_BEGIN();
     setHasSurface(false);
-    FLOGD("");
+    FLOGI("");
 
     sp<IBinder> handle = new BBinder();
     mSurfaceControl =
@@ -128,30 +133,34 @@ std::shared_ptr<SurfaceControl> WindowState::createSurfaceControl(vector<BufferI
 }
 
 void WindowState::destorySurfaceControl() {
-    FLOGD("");
-
-    mNode->updateBuffer(nullptr, nullptr);
-    scheduleVsync(VsyncRequest::VSYNC_REQ_NONE);
-#ifdef CONFIG_ENABLE_BUFFER_QUEUE_BY_NAME
-    if (mSurfaceControl.get() != nullptr) {
-        std::unordered_map<BufferKey, BufferId> bufferIds = mSurfaceControl->bufferIds();
-        for (const auto& entry : bufferIds) {
-            shm_unlink(entry.second.mName.c_str());
+    FLOGI("");
+    if (mHasSurface) {
+        setHasSurface(false);
+        if (mNode != nullptr) {
+            mNode->updateBuffer(nullptr, nullptr);
         }
-    }
+        scheduleVsync(VsyncRequest::VSYNC_REQ_NONE);
+#ifdef CONFIG_ENABLE_BUFFER_QUEUE_BY_NAME
+        if (mSurfaceControl.get() != nullptr) {
+            std::unordered_map<BufferKey, BufferId> bufferIds = mSurfaceControl->bufferIds();
+            for (const auto& entry : bufferIds) {
+                shm_unlink(entry.second.mName.c_str());
+            }
+        }
 #endif
-    mSurfaceControl.reset();
+        mSurfaceControl.reset();
+    }
 }
 
 void WindowState::destoryInputChannel() {
-    FLOGD("");
-
-    mInputChannel->release();
-    mInputChannel.reset();
+    FLOGI("");
+    if (mInputChannel.get() != nullptr) {
+        mInputChannel->release();
+    }
 }
 
 void WindowState::applyTransaction(LayerState layerState) {
-    FLOGD("(%p)", this);
+    // FLOGD("(%p)", this);
     WM_PROFILER_BEGIN();
 
     BufferItem* buffItem = nullptr;
@@ -193,7 +202,7 @@ bool WindowState::onVsync() {
     if (mVsyncRequest == VsyncRequest::VSYNC_REQ_NONE || !isVisible()) return false;
     WM_PROFILER_BEGIN();
 
-    FLOGD("(%p) send vsync to client", this);
+    // FLOGD("(%p) send vsync to client", this);
     mVsyncRequest = nextVsyncState(mVsyncRequest);
     mClient->onFrame(++mFrameReq);
     WM_PROFILER_END();
@@ -202,12 +211,8 @@ bool WindowState::onVsync() {
 }
 
 void WindowState::removeIfPossible() {
-    destorySurfaceControl();
     destoryInputChannel();
-    mToken.reset();
-    mNode = nullptr;
-
-    FLOGD("");
+    FLOGI("");
 }
 
 BufferItem* WindowState::acquireBuffer() {

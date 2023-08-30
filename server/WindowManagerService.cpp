@@ -145,7 +145,7 @@ Status WindowManagerService::getPhysicalDisplayInfo(int32_t displayId, DisplayIn
     *_aidl_return = 0;
     if (mContainer) {
         mContainer->getDisplayInfo(info);
-        FLOGD("width:%d,height:%d", info->width, info->height);
+        FLOGI("width:%d,height:%d", info->width, info->height);
     }
     WM_PROFILER_END();
 
@@ -156,7 +156,7 @@ Status WindowManagerService::addWindow(const sp<IWindow>& window, const LayoutPa
                                        int32_t visibility, int32_t displayId, int32_t userId,
                                        InputChannel* outInputChannel, int32_t* _aidl_return) {
     WM_PROFILER_BEGIN();
-    FLOGD("visibility:%d,w:%d,h:%d", visibility, attrs.mWidth, attrs.mHeight);
+    FLOGI("visibility:%d,w:%d,h:%d", visibility, attrs.mWidth, attrs.mHeight);
 
     if (mWindowMap.size() >= CONFIG_ENABLE_WINDOW_LIMIT_MAX) {
         ALOGE("failure, exceed maximum window limit!");
@@ -260,7 +260,7 @@ Status WindowManagerService::isWindowToken(const sp<IBinder>& binder, bool* _aid
         *_aidl_return = false;
     }
     WM_PROFILER_END();
-    FLOGD("isWindowToken = %d", *_aidl_return);
+    FLOGI("isWindowToken = %d", *_aidl_return);
 
     return Status::ok();
 }
@@ -287,10 +287,10 @@ Status WindowManagerService::removeWindowToken(const sp<IBinder>& token, int32_t
     auto it = mTokenMap.find(token);
     if (it != mTokenMap.end()) {
         it->second->removeAllWindowsIfPossible();
+        mTokenMap.erase(token);
     } else {
         return Status::fromExceptionCode(1, "can't find token in map");
     }
-    mTokenMap.erase(token);
     WM_PROFILER_END();
 
     return Status::ok();
@@ -299,12 +299,12 @@ Status WindowManagerService::removeWindowToken(const sp<IBinder>& token, int32_t
 Status WindowManagerService::updateWindowTokenVisibility(const sp<IBinder>& token,
                                                          int32_t visibility) {
     WM_PROFILER_BEGIN();
-    FLOGD("token:%p,visibility:%d", token.get(), visibility);
+    FLOGI("token:%p,visibility:%d", token.get(), visibility);
     auto it = mTokenMap.find(token);
     if (it != mTokenMap.end()) {
         it->second->setClientVisible(visibility == LayoutParams::WINDOW_VISIBLE ? true : false);
     } else {
-        FLOGW("can't find token in map");
+        FLOGW("can't find token %p in map", token.get());
         return Status::fromExceptionCode(1, "can't find token in map");
     }
     WM_PROFILER_END();
