@@ -41,7 +41,7 @@ void WindowToken::addWindow(WindowState* win) {
         }
     }
     mChildren.push_back(win);
-    FLOGD("add to Children list done");
+    FLOGI("add to Children list done");
 }
 
 bool WindowToken::isClientVisible() {
@@ -63,11 +63,12 @@ void WindowToken::removeAllWindowsIfPossible() {
     std::vector<WindowState*>::iterator iter = mChildren.begin();
     while (iter != mChildren.end()) {
         (*iter)->removeIfPossible();
+        delete *iter;
         FLOGW("removeAllWindows in the mChildren\n");
         ++iter;
     }
     mChildren.clear();
-    FLOGD("removeAllWindows done");
+    FLOGI("removeAllWindows done");
 }
 
 } // namespace wm
