@@ -69,6 +69,7 @@ enum {
     MSG_DO_TIMER = 1001,
 };
 
+static int32_t last_tick = 0, last_delay = 0;
 class UITimerHandler : public MessageHandler {
 public:
     UITimerHandler(WindowManagerService* service) {
@@ -76,26 +77,47 @@ public:
     }
 
     virtual void handleMessage(const Message& message) {
+        WM_PROFILER_BEGIN();
         if (message.what == MSG_DO_TIMER) {
-            Looper::getForThread()->sendMessageDelayed(CONFIG_LV_DEF_REFR_PERIOD * 1000000 * 2,
-                                                       this, Message(MSG_DO_TIMER));
-            mService->getRootContainer()->processVsyncEvent(false);
-            mService->responseVsync();
+            int32_t interval = lv_tick_get() - last_tick;
+            last_tick += interval;
+            FLOGD("resume timer after %d ms, last delay: %d, gap: %d", last_delay, interval,
+                  interval - last_delay);
+
+            auto container = mService->getRootContainer();
+            if (container) {
+                last_delay = container->handleTimer();
+                mService->postTimerMessage(last_delay);
+                mService->responseVsync();
+            }
         }
+        WM_PROFILER_END();
     }
 
 private:
     WindowManagerService* mService;
 };
 
-WindowManagerService::WindowManagerService() {
+void WindowManagerService::postTimerMessage(int32_t delay) {
+    if (delay < 0) {
+        FLOGW("WMS, remove timer message");
+        mTimerStopped = true;
+        return;
+    }
+
+    FLOGD("send message delay (%d) ms", delay);
+
+    if (mTimerStopped) mTimerStopped = false;
+
+    mLooper->sendMessageDelayed(delay * 1000000, mTimerHandler, Message(MSG_DO_TIMER));
+}
+
+WindowManagerService::WindowManagerService() : mTimerStopped(true) {
+    FLOGI("WMS init");
     mLooper = Looper::getForThread();
     mContainer = new RootContainer(this);
-    FLOGI("WMS init");
-    if (mLooper) {
-        mTimerHandler = new UITimerHandler(this);
-        mLooper->sendMessageDelayed(16 * 1000000, mTimerHandler, Message(MSG_DO_TIMER));
-    }
+    mTimerHandler = new UITimerHandler(this);
+    postTimerMessage(DEF_REFR_PERIOD);
 }
 
 WindowManagerService::~WindowManagerService() {
@@ -318,12 +340,13 @@ Status WindowManagerService::requestVsync(const sp<IWindow>& window, VsyncReques
     return Status::ok();
 }
 
-void WindowManagerService::responseVsync() {
+bool WindowManagerService::responseVsync() {
     WM_PROFILER_BEGIN();
     for (const auto& [key, state] : mWindowMap) {
         if (state->isVisible()) state->onVsync();
     }
     WM_PROFILER_END();
+    return mTimerStopped;
 }
 
 int32_t WindowManagerService::createSurfaceControl(SurfaceControl* outSurfaceControl,

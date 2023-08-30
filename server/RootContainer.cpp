@@ -67,31 +67,48 @@ lv_obj_t* RootContainer::getTopLayer() {
 static inline int vsyncCallback(int fd, int events, void* data) {
     RootContainer* container = static_cast<RootContainer*>(data);
     if (container) {
-        container->processVsyncEvent(true);
+        container->processVsyncEvent();
     }
     return 1;
 }
 
 static inline int inputCallback(int fd, int events, void* data) {
-#if LVGL_VERSION_MAJOR >= 9
-    lv_indev_read((lv_indev_t*)data);
-#endif
+    RootContainer* container = static_cast<RootContainer*>(data);
+    if (container) {
+        container->processInputEvent();
+    }
     return 1;
 }
 
-void RootContainer::processVsyncEvent(bool fromEvent) {
+void RootContainer::processVsyncEvent() {
     WM_PROFILER_BEGIN();
-    if (fromEvent) {
-        _lv_disp_get_refr_timer(NULL);
-        if (mService) mService->responseVsync();
-    } else {
-        lv_timer_handler();
+
+    _lv_disp_get_refr_timer(NULL);
+    if (mService && mService->responseVsync()) {
+        uint32_t delay = lv_timer_get_time_until_next();
+        if (delay != LV_NO_TIMER_READY) {
+            FLOGI("resume ui timer!");
+            mService->postTimerMessage(delay);
+        }
     }
+
     WM_PROFILER_END();
 }
 
+int32_t RootContainer::handleTimer() {
+    WM_PROFILER_BEGIN();
+    uint32_t delay = lv_timer_handler();
+    int32_t result = delay == LV_NO_TIMER_READY ? -1 : delay;
+    WM_PROFILER_END();
+    return result;
+}
+
 void RootContainer::processInputEvent() {
+    WM_PROFILER_BEGIN();
+#if LVGL_VERSION_MAJOR >= 9
     lv_indev_read(mIndev);
+#endif
+    WM_PROFILER_END();
 }
 
 bool RootContainer::init() {
@@ -115,7 +132,7 @@ bool RootContainer::init() {
 
     lv_timer_t* timer = _lv_disp_get_refr_timer(mDisp);
     if (timer) {
-        lv_timer_set_period(timer, CONFIG_LV_DEF_REFR_PERIOD);
+        lv_timer_set_period(timer, DEF_REFR_PERIOD);
     }
 
 #ifdef CONFIG_LV_USE_NUTTX_TOUCHSCREEN
