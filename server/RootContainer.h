@@ -19,6 +19,11 @@
 #include <lvgl/lvgl.h>
 #include <os/wm/DisplayInfo.h>
 
+#ifdef LV_DEF_REFR_PERIOD
+#define DEF_REFR_PERIOD LV_DEF_REFR_PERIOD
+#else
+#define DEF_REFR_PERIOD 16
+#endif
 namespace os {
 namespace wm {
 class WindowManagerService;
@@ -40,8 +45,9 @@ public:
 
     bool getDisplayInfo(DisplayInfo* info);
 
-    void processVsyncEvent(bool fromEvent);
     void processInputEvent();
+    void processVsyncEvent();
+    int32_t handleTimer();
 
 private:
     bool init();
