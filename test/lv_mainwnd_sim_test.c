@@ -24,13 +24,13 @@
  *********************/
 #include "../server/lvgl/lv_mainwnd.h"
 
-#if LVGL_VERSION_MAJOR < 9
 /*********************
  *      DEFINES
  *********************/
 
 #define BUFFER_WIDTH 200
 #define BUFFER_HEIGHT 200
+#define CANVAS_RECT_SIDE 150
 
 /**********************
  *      TYPEDEFS
@@ -68,6 +68,10 @@ void lv_mainwnd_sim_test(void) {
     rect_dsc.bg_grad.dir = LV_GRAD_DIR_HOR;
     rect_dsc.bg_grad.stops[0].color = lv_palette_main(LV_PALETTE_YELLOW);
     rect_dsc.bg_grad.stops[1].color = lv_palette_main(LV_PALETTE_BLUE);
+#if LV_VERSION_CHECK(9, 0, 0)
+    rect_dsc.bg_grad.stops[0].opa = LV_OPA_COVER;
+    rect_dsc.bg_grad.stops[1].opa = LV_OPA_COVER;
+#endif
     rect_dsc.border_width = 2;
     rect_dsc.border_opa = LV_OPA_90;
     rect_dsc.border_color = lv_color_white();
@@ -76,15 +80,34 @@ void lv_mainwnd_sim_test(void) {
     rect_dsc.shadow_ofs_y = 5;
 
     lv_obj_t *canvas = lv_canvas_create(lv_scr_act());
-    lv_canvas_set_buffer(canvas, cbuf, BUFFER_WIDTH, BUFFER_HEIGHT, LV_IMG_CF_TRUE_COLOR);
     lv_obj_align(canvas, LV_ALIGN_TOP_RIGHT, 0, 0);
-    lv_canvas_draw_rect(canvas, (BUFFER_WIDTH - 150) / 2, (BUFFER_HEIGHT - 150) / 2, 150, 150,
+#if LV_VERSION_CHECK(9, 0, 0)
+    lv_canvas_set_buffer(canvas, cbuf, BUFFER_WIDTH, BUFFER_HEIGHT,
+                         LV_COLOR_FORMAT_NATIVE_WITH_ALPHA);
+    lv_layer_t layer;
+    lv_canvas_init_layer(canvas, &layer);
+
+    lv_area_t coords = {(BUFFER_WIDTH - CANVAS_RECT_SIDE) / 2,
+                        (BUFFER_HEIGHT - CANVAS_RECT_SIDE) / 2, CANVAS_RECT_SIDE, CANVAS_RECT_SIDE};
+
+    lv_draw_rect(&layer, &rect_dsc, &coords);
+
+    lv_canvas_finish_layer(canvas, &layer);
+#else
+    lv_canvas_set_buffer(canvas, cbuf, BUFFER_WIDTH, BUFFER_HEIGHT, LV_IMG_CF_TRUE_COLOR);
+    lv_canvas_draw_rect(canvas, (BUFFER_WIDTH - CANVAS_RECT_SIDE) / 2,
+                        (BUFFER_HEIGHT - CANVAS_RECT_SIDE) / 2, CANVAS_RECT_SIDE, CANVAS_RECT_SIDE,
                         &rect_dsc);
+#endif
 
     lv_obj_t *app_label = lv_label_create(canvas);
     lv_label_set_text(app_label, "app buffer");
 
+#if LV_VERSION_CHECK(9, 0, 0)
+    lv_sim_t *sim_data = lv_malloc(sizeof(lv_sim_t));
+#else
     lv_sim_t *sim_data = lv_mem_alloc(sizeof(lv_sim_t));
+#endif
     if (!sim_data) {
         LV_LOG_WARN("lv_mainwnd_sim_test: failed to allocate memory for lv_sim_t");
         return;
@@ -94,11 +117,19 @@ void lv_mainwnd_sim_test(void) {
     sim_data->id = 2023;
     sim_data->w = BUFFER_WIDTH;
     sim_data->h = BUFFER_HEIGHT;
+#if LV_VERSION_CHECK(9, 0, 0)
+    sim_data->cf = LV_COLOR_FORMAT_NATIVE_WITH_ALPHA;
+    lv_mainwnd_metainfo_t *meta_info = lv_malloc(sizeof(lv_mainwnd_metainfo_t));
+#else
     sim_data->cf = LV_IMG_CF_TRUE_COLOR;
-
     lv_mainwnd_metainfo_t *meta_info = lv_mem_alloc(sizeof(lv_mainwnd_metainfo_t));
+#endif
     if (!meta_info) {
+#if LV_VERSION_CHECK(9, 0, 0)
+        lv_free(sim_data);
+#else
         lv_mem_free(sim_data);
+#endif
         LV_LOG_WARN("lv_mainwnd_sim_test: failed to allocate memory for lv_mainwnd_metainfo_t");
         return;
     }
@@ -124,7 +155,11 @@ static bool acquire_buffer(lv_mainwnd_metainfo_t *meta, lv_mainwnd_buf_dsc_t *bu
     lv_sim_t *sim_data = (lv_sim_t *)(meta->info);
     buf_dsc->id = sim_data->id;
     buf_dsc->img_dsc.data = sim_data->info;
+#if LV_VERSION_CHECK(9, 0, 0)
+    buf_dsc->img_dsc.data_size = LV_IMG_BUF_SIZE_ALPHA_4BIT(sim_data->w, sim_data->h);
+#else
     buf_dsc->img_dsc.data_size = sim_data->w * sim_data->h * LV_IMG_PX_SIZE_ALPHA_BYTE;
+#endif
     buf_dsc->img_dsc.header.w = sim_data->w;
     buf_dsc->img_dsc.header.h = sim_data->h;
     buf_dsc->img_dsc.header.cf = sim_data->cf;
@@ -153,4 +188,3 @@ static void metainfo_init(lv_mainwnd_metainfo_t *meta_info) {
     meta_info->send_input_event = send_input_event;
     meta_info->on_destroy = on_destroy;
 }
-#endif
