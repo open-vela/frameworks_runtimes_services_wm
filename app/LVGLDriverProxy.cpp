@@ -34,19 +34,23 @@ static lv_disp_t* _disp_init(LVGLDriverProxy* proxy);
 static lv_indev_t* _indev_init(LVGLDriverProxy* proxy);
 
 LVGLDriverProxy::LVGLDriverProxy(std::shared_ptr<BaseWindow> win)
-      : UIDriverProxy(win),
-        mIndev(nullptr),
-        mEventFd(-1),
-        mLastEventState(LV_INDEV_STATE_RELEASED) {
+      : UIDriverProxy(win), mIndev(NULL), mEventFd(-1), mLastEventState(LV_INDEV_STATE_RELEASED) {
     mDisp = _disp_init(this);
     lv_disp_set_default(mDisp);
 }
 
 LVGLDriverProxy::~LVGLDriverProxy() {
+    if (mDisp) {
+        lv_disp_remove(mDisp);
+        mDisp = NULL;
+    }
+
     if (mIndev) {
         lv_indev_delete(mIndev);
         mIndev = NULL;
     }
+    mEventFd = -1;
+    mLastEventState = LV_INDEV_STATE_RELEASED;
 }
 
 void LVGLDriverProxy::drawFrame(BufferItem* bufItem) {
@@ -132,7 +136,7 @@ static void _disp_event_cb(lv_event_t* e) {
             }
             void* buffer = proxy->onDequeueBuffer();
             if (buffer) {
-                FLOGD("%p Render Start", proxy);
+                FLOGD("%p render start", proxy);
                 proxy->mDisp->buf_act = (uint8_t*)buffer;
             }
             break;
@@ -146,7 +150,7 @@ static void _disp_event_cb(lv_event_t* e) {
 
             bool periodic = lv_anim_get_timer()->paused ? false : true;
             if (proxy->onInvalidate(periodic)) {
-                FLOGD("%p Invalidate area", proxy);
+                FLOGD("%p invalidate area", proxy);
             }
             break;
         }
@@ -155,10 +159,15 @@ static void _disp_event_cb(lv_event_t* e) {
             FLOGD("Resolution changed");
             break;
 
+        case LV_EVENT_DELETE:
+            FLOGD("try to delete window");
+            break;
+
         default:
             break;
     }
 }
+
 static void* _virt_disp_buffer = NULL;
 static uint32_t _virt_buf_size = 0;
 
