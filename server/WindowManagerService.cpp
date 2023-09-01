@@ -209,10 +209,10 @@ Status WindowManagerService::removeWindow(const sp<IWindow>& window) {
     auto itState = mWindowMap.find(client);
     if (itState != mWindowMap.end()) {
         itState->second->removeIfPossible();
+        mWindowMap.erase(client);
     } else {
         return Status::fromExceptionCode(1, "can't find winstate in map");
     }
-    mWindowMap.erase(client);
     WM_PROFILER_END();
 
     return Status::ok();
@@ -242,6 +242,7 @@ Status WindowManagerService::relayout(const sp<IWindow>& window, const LayoutPar
         *_aidl_return = createSurfaceControl(outSurfaceControl, win);
     } else {
         win->destorySurfaceControl();
+        outSurfaceControl = nullptr;
     }
     win->setVisibility(visibility);
 
@@ -338,6 +339,14 @@ Status WindowManagerService::requestVsync(const sp<IWindow>& window, VsyncReques
     WM_PROFILER_END();
 
     return Status::ok();
+}
+
+void WindowManagerService::doRemoveWindow(const sp<IWindow>& window) {
+    sp<IBinder> binder = IInterface::asBinder(window);
+    auto itState = mWindowMap.find(binder);
+    if (itState != mWindowMap.end()) {
+        mWindowMap.erase(binder);
+    }
 }
 
 bool WindowManagerService::responseVsync() {
