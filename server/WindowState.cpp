@@ -55,7 +55,8 @@ WindowState::~WindowState() {
     // TODO: clear members
     mClient = nullptr;
     mToken = nullptr;
-    delete mNode;
+    mInputChannel->release();
+    if (mNode) delete mNode;
 }
 
 std::shared_ptr<BufferConsumer> WindowState::getBufferConsumer() {
@@ -107,7 +108,7 @@ void WindowState::sendAppVisibilityToClients() {
 
     setVisibility(visible);
     FLOGI("mToken %p,mVisibility=%d", mToken.get(), mVisibility);
-    mClient->dispatchAppVisibility(isVisible());
+    mClient->dispatchAppVisibility(visible);
     WM_PROFILER_END();
 }
 
@@ -211,8 +212,8 @@ bool WindowState::onVsync() {
 }
 
 void WindowState::removeIfPossible() {
-    destoryInputChannel();
     FLOGI("");
+    mService->doRemoveWindow(mClient);
 }
 
 BufferItem* WindowState::acquireBuffer() {

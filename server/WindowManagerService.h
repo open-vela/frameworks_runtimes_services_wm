@@ -70,6 +70,8 @@ public:
     bool registerFd(int fd, Looper_callbackFunc cb, void* data);
     void unregisterFd(int fd);
 
+    void doRemoveWindow(const sp<IWindow>& window);
+
 private:
     int32_t createSurfaceControl(SurfaceControl* outSurfaceControl, WindowState* win);
 

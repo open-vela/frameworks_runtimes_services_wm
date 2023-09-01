@@ -126,7 +126,6 @@ WindowNode::WindowNode(WindowState* state, lv_obj_t* parent, const Rect& rect, b
 WindowNode::~WindowNode() {
     if (mWidget) lv_obj_del(mWidget);
     releaseBuffer();
-    mState.reset();
 }
 
 bool WindowNode::updateBuffer(BufferItem* item, Rect* rect) {

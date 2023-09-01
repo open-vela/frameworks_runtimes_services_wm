@@ -38,7 +38,7 @@ public:
         return mRect;
     }
 
-    std::shared_ptr<WindowState> getState() {
+    WindowState* getState() {
         return mState;
     }
 
@@ -47,7 +47,7 @@ public:
     DISALLOW_COPY_AND_ASSIGN(WindowNode);
 
 private:
-    std::shared_ptr<WindowState> mState;
+    WindowState* mState;
     BufferItem* mBuffer;
     lv_obj_t* mWidget;
     Rect mRect;
