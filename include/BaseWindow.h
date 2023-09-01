@@ -64,6 +64,8 @@ public:
         Status onFrame(int32_t seq) override;
         Status bufferReleased(int32_t bufKey) override;
 
+        void clear();
+
     private:
         BaseWindow* mBaseWindow;
     };

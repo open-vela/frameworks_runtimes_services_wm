@@ -68,6 +68,10 @@ Status BaseWindow::W::bufferReleased(int32_t bufKey) {
     return Status::ok();
 }
 
+void BaseWindow::W::clear() {
+    mBaseWindow = nullptr;
+}
+
 static void eventCallback(int fd, int status, int events, void* data) {
     if (status < 0) {
         FLOGE("Poll error: %s ", uv_strerror(status));
@@ -108,7 +112,6 @@ BaseWindow::BaseWindow(::os::app::Context* context)
         mFrameDone(true) {
     mAttrs = LayoutParams();
     mAttrs.mToken = context->getToken();
-
     mIWindow = sp<W>::make(this);
 }
 
@@ -146,6 +149,7 @@ void BaseWindow::doDie() {
     setInputChannel(nullptr);
     mSurfaceControl.reset();
     mUIProxy.reset();
+    mIWindow->clear();
 }
 
 void BaseWindow::setInputChannel(InputChannel* inputChannel) {
@@ -168,7 +172,7 @@ void BaseWindow::setInputChannel(InputChannel* inputChannel) {
 
 void BaseWindow::setSurfaceControl(SurfaceControl* surfaceControl) {
     mSurfaceControl.reset(surfaceControl);
-    if (surfaceControl) {
+    if (surfaceControl != nullptr) {
         mUIProxy->updateResolution(surfaceControl->getWidth(), surfaceControl->getHeight());
     }
 
@@ -187,7 +191,8 @@ void BaseWindow::setSurfaceControl(SurfaceControl* surfaceControl) {
 
 void BaseWindow::dispatchAppVisibility(bool visible) {
     WM_PROFILER_BEGIN();
-    FLOGI("visible:%d", visible);
+
+    FLOGI("%p visible:%d", this, visible);
     mContext->getMainLoop()->postTask(
             [this, visible](void*) { this->handleAppVisibility(visible); });
     WM_PROFILER_END();
