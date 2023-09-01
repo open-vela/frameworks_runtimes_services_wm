@@ -116,9 +116,9 @@ bool RootContainer::init() {
 
 #if LVGL_VERSION_MAJOR >= 9
 
-#ifdef CONFIG_LV_USE_LINUX_FBDEV
-    mDisp = lv_linux_fbdev_create();
-    lv_linux_fbdev_set_file(mDisp, CONFIG_LV_FBDEV_INTERFACE_DEFAULT_DEVICEPATH);
+#if LV_USE_NUTTX_FBDEV
+    mDisp = lv_nuttx_fbdev_create();
+    lv_nuttx_fbdev_set_file(mDisp, CONFIG_LV_FBDEV_INTERFACE_DEFAULT_DEVICEPATH);
 
     // int fd = (int32_t)lv_disp_get_user_data(mDisp);
     // if (fd > 0) {
@@ -135,7 +135,7 @@ bool RootContainer::init() {
         lv_timer_set_period(timer, DEF_REFR_PERIOD);
     }
 
-#ifdef CONFIG_LV_USE_NUTTX_TOUCHSCREEN
+#if LV_USE_NUTTX_TOUCHSCREEN
     mIndev = lv_nuttx_touchscreen_create(CONFIG_LV_TOUCHPAD_INTERFACE_DEFAULT_DEVICEPATH);
 
     mInputFd = (int32_t)lv_indev_get_user_data(mIndev);
