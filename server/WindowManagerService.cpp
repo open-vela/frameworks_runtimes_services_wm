@@ -125,9 +125,9 @@ WindowManagerService::~WindowManagerService() {
     delete mContainer;
 }
 
-bool WindowManagerService::registerFd(int fd, Looper_callbackFunc cb, void* data) {
+bool WindowManagerService::registerFd(int fd, int events, Looper_callbackFunc cb, void* data) {
     if (fd > 0 && mLooper) {
-        int ret = mLooper->addFd(fd, android::Looper::POLL_CALLBACK, Looper::EVENT_INPUT, cb, data);
+        int ret = mLooper->addFd(fd, android::Looper::POLL_CALLBACK, events, cb, data);
         return ret > 0 ? true : false;
     }
     return false;

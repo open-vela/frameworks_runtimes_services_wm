@@ -37,13 +37,30 @@ namespace os {
 namespace wm {
 
 RootContainer::RootContainer(WindowManagerService* service)
-      : mService(service), mDisp(nullptr), mIndev(nullptr), mInputFd(-1), mDispFd(-1) {
+      : mService(service), mDisp(NULL), mIndev(NULL), mInputFd(-1), mDispFd(-1) {
     init();
 }
 
 RootContainer::~RootContainer() {
-    if (mDispFd > 0) mService->unregisterFd(mDispFd);
-    if (mInputFd > 0) mService->unregisterFd(mInputFd);
+    if (mDispFd > 0) {
+        mService->unregisterFd(mDispFd);
+        close(mDispFd);
+        mDispFd = -1;
+    }
+    if (mInputFd > 0) {
+        mService->unregisterFd(mInputFd);
+        mInputFd = -1;
+    }
+
+    lv_anim_del_all();
+    if (mDisp) {
+        lv_disp_remove(mDisp);
+        mDisp = NULL;
+    }
+    if (mIndev) {
+        lv_indev_delete(mIndev);
+        mIndev = NULL;
+    }
     mService = nullptr;
     UIDeinit();
 }
@@ -120,13 +137,12 @@ bool RootContainer::init() {
     mDisp = lv_nuttx_fbdev_create();
     lv_nuttx_fbdev_set_file(mDisp, CONFIG_LV_FBDEV_INTERFACE_DEFAULT_DEVICEPATH);
 
-    // int fd = (int32_t)lv_disp_get_user_data(mDisp);
-    // if (fd > 0) {
-    //     if (mService->registerFd(fd, vsyncCallback, (void*)this)) {
+    mDispFd = open(CONFIG_LV_FBDEV_INTERFACE_DEFAULT_DEVICEPATH, O_WRONLY);
+    // if (mDispFd > 0) {
+    //     if (mService->registerFd(fd, POLL_EVENT_OUTPUT, vsyncCallback, (void*)this)) {
     //         lv_timer_del(mDisp->refr_timer);
     //         mDisp->refr_timer = NULL;
     //     }
-    //     mDispFd = fd;
     // }
 #endif
 
@@ -139,7 +155,8 @@ bool RootContainer::init() {
     mIndev = lv_nuttx_touchscreen_create(CONFIG_LV_TOUCHPAD_INTERFACE_DEFAULT_DEVICEPATH);
 
     mInputFd = (int32_t)lv_indev_get_user_data(mIndev);
-    if (mInputFd > 0 && mService->registerFd(mInputFd, inputCallback, (void*)mIndev)) {
+    if (mInputFd > 0 &&
+        mService->registerFd(mInputFd, POLL_EVENT_INPUT, inputCallback, (void*)mIndev)) {
         lv_timer_del(mIndev->read_timer);
         mIndev->read_timer = NULL;
     }
