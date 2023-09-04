@@ -29,14 +29,14 @@
 #include "SurfaceTransaction.h"
 #include "uv.h"
 
-#if LVGL_VERSION_MAJOR >= 9
+#if LV_VERSION_CHECK(9, 0, 0)
 #include "wm/UIInstance.h"
 #endif
 
 #include <nuttx/tls.h>
 
 static void _lv_timer_cb(uv_timer_t*) {
-#if LVGL_VERSION_MAJOR >= 9
+#if LV_VERSION_CHECK(9, 0, 0)
     lv_timer_handler();
 #endif
 }
@@ -64,14 +64,14 @@ WindowManager::WindowManager() : mTimerInited(false) {
     mDispWidth = displayInfo.width;
     mDispHeight = displayInfo.height;
 
-#if LVGL_VERSION_MAJOR >= 9
+#if LV_VERSION_CHECK(9, 0, 0)
     UIInit();
 #endif
 }
 
 WindowManager::~WindowManager() {
     toBackground();
-#if LVGL_VERSION_MAJOR >= 9
+#if LV_VERSION_CHECK(9, 0, 0)
     UIDeinit();
 #endif
     mService = nullptr;
@@ -115,7 +115,7 @@ std::shared_ptr<BaseWindow> WindowManager::newWindow(::os::app::Context* context
     window->setWindowManager(this);
     mWindows.push_back(window);
 
-#if LVGL_VERSION_MAJOR >= 9
+#if LV_VERSION_CHECK(9, 0, 0)
     // for lvgl driver
     auto proxy = std::make_shared<::os::wm::LVGLDriverProxy>(window);
     window->setUIProxy(std::dynamic_pointer_cast<::os::wm::UIDriverProxy>(proxy));
@@ -157,7 +157,7 @@ int32_t WindowManager::attachIWindow(std::shared_ptr<BaseWindow> window) {
     if (status.isOk()) {
         window->setInputChannel(outInputChannel);
 
-#if LVGL_VERSION_MAJOR >= 9
+#if LV_VERSION_CHECK(9, 0, 0)
         if (mTimerInited && mEventTimer.timer_cb == NULL) {
             uv_timer_start(&mEventTimer, _lv_timer_cb, CONFIG_LV_DEF_REFR_PERIOD,
                            CONFIG_LV_DEF_REFR_PERIOD);
@@ -197,7 +197,7 @@ bool WindowManager::removeWindow(std::shared_ptr<BaseWindow> window) {
     if (it != mWindows.end()) {
         mWindows.erase(it);
     }
-#if LVGL_VERSION_MAJOR >= 9
+#if LV_VERSION_CHECK(9, 0, 0)
     if (mWindows.size() == 0) {
         toBackground();
     }
