@@ -241,7 +241,7 @@ Status WindowManagerService::relayout(const sp<IWindow>& window, const LayoutPar
         win->setRequestedSize(requestedWidth, requestedHeight);
         *_aidl_return = createSurfaceControl(outSurfaceControl, win);
     } else {
-        win->destorySurfaceControl();
+        win->destroySurfaceControl();
         outSurfaceControl = nullptr;
     }
     win->setVisibility(visibility);
