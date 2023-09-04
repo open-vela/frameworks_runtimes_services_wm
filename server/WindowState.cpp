@@ -55,7 +55,6 @@ WindowState::~WindowState() {
     // TODO: clear members
     mClient = nullptr;
     mToken = nullptr;
-    mInputChannel->release();
     if (mNode) delete mNode;
 }
 
@@ -133,7 +132,7 @@ std::shared_ptr<SurfaceControl> WindowState::createSurfaceControl(vector<BufferI
     return mSurfaceControl;
 }
 
-void WindowState::destorySurfaceControl() {
+void WindowState::destroySurfaceControl() {
     FLOGI("");
     if (mHasSurface) {
         setHasSurface(false);
@@ -153,7 +152,7 @@ void WindowState::destorySurfaceControl() {
     }
 }
 
-void WindowState::destoryInputChannel() {
+void WindowState::destroyInputChannel() {
     FLOGI("");
     if (mInputChannel.get() != nullptr) {
         mInputChannel->release();
@@ -200,10 +199,10 @@ bool WindowState::scheduleVsync(VsyncRequest vsyncReq) {
 }
 
 bool WindowState::onVsync() {
-    if (mVsyncRequest == VsyncRequest::VSYNC_REQ_NONE || !isVisible()) return false;
+    if (mVsyncRequest == VsyncRequest::VSYNC_REQ_NONE) return false;
     WM_PROFILER_BEGIN();
 
-    // FLOGD("(%p) send vsync to client", this);
+    FLOGD("(%p) send vsync to client", this);
     mVsyncRequest = nextVsyncState(mVsyncRequest);
     mClient->onFrame(++mFrameReq);
     WM_PROFILER_END();
@@ -213,6 +212,8 @@ bool WindowState::onVsync() {
 
 void WindowState::removeIfPossible() {
     FLOGI("");
+    destroySurfaceControl();
+    destroyInputChannel();
     mService->doRemoveWindow(mClient);
 }
 
