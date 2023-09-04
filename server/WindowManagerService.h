@@ -33,6 +33,14 @@ class WindowToken;
 typedef map<sp<IBinder>, WindowToken*> WindowTokenMap;
 typedef map<sp<IBinder>, WindowState*> WindowStateMap;
 
+enum {
+    POLL_EVENT_INPUT = Looper::EVENT_INPUT,
+    POLL_EVENT_OUTPUT = Looper::EVENT_OUTPUT,
+    POLL_EVENT_ERROR = Looper::EVENT_ERROR,
+    POLL_EVENT_HANGUP = Looper::EVENT_HANGUP,
+    POLL_EVENT_INVALID = Looper::EVENT_INVALID
+};
+
 class WindowManagerService : public BnWindowManager {
 public:
     WindowManagerService();
@@ -67,7 +75,7 @@ public:
         return mContainer;
     }
 
-    bool registerFd(int fd, Looper_callbackFunc cb, void* data);
+    bool registerFd(int fd, int events, Looper_callbackFunc cb, void* data);
     void unregisterFd(int fd);
 
     void doRemoveWindow(const sp<IWindow>& window);
