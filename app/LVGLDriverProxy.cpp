@@ -18,7 +18,7 @@
 
 #include "LVGLDriverProxy.h"
 
-#if LVGL_VERSION_MAJOR >= 9
+#if LV_VERSION_CHECK(9, 0, 0)
 #include <lvgl/src/lvgl_private.h>
 
 #include "wm/UIInstance.h"
@@ -69,7 +69,7 @@ void LVGLDriverProxy::drawFrame(BufferItem* bufItem) {
 }
 
 void LVGLDriverProxy::handleEvent() {
-#if LVGL_VERSION_MAJOR >= 9
+#if LV_VERSION_CHECK(9, 0, 0)
     if (mIndev) lv_indev_read(mIndev);
 #endif
 }

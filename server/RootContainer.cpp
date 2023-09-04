@@ -22,7 +22,7 @@
 
 #include "wm/UIInstance.h"
 
-#if LVGL_VERSION_MAJOR >= 9
+#if LV_VERSION_CHECK(9, 0, 0)
 #include <lvgl/src/lvgl_private.h>
 #else
 #include <lv_porting/lv_porting.h>
@@ -122,7 +122,7 @@ int32_t RootContainer::handleTimer() {
 
 void RootContainer::processInputEvent() {
     WM_PROFILER_BEGIN();
-#if LVGL_VERSION_MAJOR >= 9
+#if LV_VERSION_CHECK(9, 0, 0)
     lv_indev_read(mIndev);
 #endif
     WM_PROFILER_END();
@@ -131,7 +131,7 @@ void RootContainer::processInputEvent() {
 bool RootContainer::init() {
     UIInit();
 
-#if LVGL_VERSION_MAJOR >= 9
+#if LV_VERSION_CHECK(9, 0, 0)
 
 #if LV_USE_NUTTX_FBDEV
     mDisp = lv_nuttx_fbdev_create();

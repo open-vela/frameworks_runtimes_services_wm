@@ -18,7 +18,7 @@
 
 #include <lvgl/lvgl.h>
 
-#if LVGL_VERSION_MAJOR >= 9
+#if LV_VERSION_CHECK(9, 0, 0)
 
 #include <nuttx/tls.h>
 

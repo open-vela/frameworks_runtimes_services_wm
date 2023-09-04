@@ -66,7 +66,7 @@ static inline void reset_buf_dsc(lv_obj_t* obj) {
 
     mainwnd->buf_dsc.img_dsc.data = NULL;
     mainwnd->buf_dsc.img_dsc.data_size = 0;
-#if LVGL_VERSION_MAJOR >= 9
+#if LV_VERSION_CHECK(9, 0, 0)
     mainwnd->buf_dsc.img_dsc.header.cf = LV_COLOR_FORMAT_UNKNOWN;
 #else
     mainwnd->buf_dsc.img_dsc.header.cf = LV_IMG_CF_UNKNOWN;
@@ -215,7 +215,7 @@ static void lv_mainwnd_destructor(const lv_obj_class_t* class_p, lv_obj_t* obj) 
 static inline void draw_buffer(lv_obj_t* obj, lv_event_t* e) {
     WM_PROFILER_BEGIN();
 
-#if LVGL_VERSION_MAJOR >= 9
+#if LV_VERSION_CHECK(9, 0, 0)
     lv_layer_t* layer = lv_event_get_layer(e);
 #else
     lv_draw_ctx_t* draw_ctx = lv_event_get_draw_ctx(e);
@@ -251,7 +251,7 @@ static inline void draw_buffer(lv_obj_t* obj, lv_event_t* e) {
     win_coords.y2 = win_coords.y1 + img_h - 1;
 
     LV_LOG_TRACE("draw (%p) with (%d)", mainwnd, mainwnd->buf_dsc.id);
-#if LVGL_VERSION_MAJOR >= 9
+#if LV_VERSION_CHECK(9, 0, 0)
     img_dsc.src = &mainwnd->buf_dsc.img_dsc;
     lv_draw_img(layer, &img_dsc, &win_coords);
 #else
@@ -276,7 +276,7 @@ static inline void dump_input_event(lv_mainwnd_input_event_t* ie) {
 static inline void send_input_event(lv_mainwnd_t* mainwnd, lv_event_code_t code,
                                     lv_indev_t* indev) {
     lv_mainwnd_input_event_t ie;
-#if LVGL_VERSION_MAJOR >= 9
+#if LV_VERSION_CHECK(9, 0, 0)
     ie.type = lv_indev_get_type(indev);
     ie.state = lv_indev_get_state(indev);
 #else
@@ -296,7 +296,7 @@ static inline void send_input_event(lv_mainwnd_t* mainwnd, lv_event_code_t code,
         ie.pointer.raw_x = point.x;
         ie.pointer.raw_y = point.y;
         // raw x, y
-#if LVGL_VERSION_MAJOR >= 9
+#if LV_VERSION_CHECK(9, 0, 0)
         ie.pointer.x = point.x - lv_obj_get_x((lv_obj_t*)mainwnd);
         ie.pointer.y = point.y - lv_obj_get_y((lv_obj_t*)mainwnd);
 #else
