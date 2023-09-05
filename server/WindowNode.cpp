@@ -88,7 +88,7 @@ static bool sendInputEvent(struct _lv_mainwnd_metainfo_t* meta, lv_mainwnd_input
     }
     WindowNode* node = toWindowNode(meta);
     if (node == nullptr) {
-        FLOGW("input event: no valid window, cann't send it!");
+        FLOGW("input event: no valid window, can't send it!");
         return false;
     }
 
