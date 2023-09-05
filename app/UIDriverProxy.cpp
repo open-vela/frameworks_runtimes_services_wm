@@ -30,7 +30,7 @@ UIDriverProxy::~UIDriverProxy() {}
 bool UIDriverProxy::onInvalidate(bool periodic) {
     if (!mBaseWindow.expired()) {
         return mBaseWindow.lock()->scheduleVsync(periodic ? VsyncRequest::VSYNC_REQ_PERIODIC
-                                                          : VsyncRequest::VSYNC_REQ_SINGLE);
+                                                          : VsyncRequest::VSYNC_REQ_SINGLESUPPRESS);
     }
     return false;
 }

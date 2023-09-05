@@ -46,7 +46,7 @@ BufferItem* BufferQueue::getBuffer(BufferKey bufKey) {
     return nullptr;
 }
 
-// after dequeue or acqure buffer, allow to cancel buffer
+// after dequeue or acquire buffer, allow to cancel buffer
 bool BufferQueue::cancelBuffer(BufferItem* item) {
     return toState(item, BSTATE_FREE);
 }
