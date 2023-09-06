@@ -25,7 +25,7 @@ namespace os {
 namespace wm {
 
 DummyDriverProxy::DummyDriverProxy(std::shared_ptr<BaseWindow> win)
-      : UIDriverProxy(win), mEventCallback(NULL), mActive(false) {}
+      : UIDriverProxy(win), mActive(false) {}
 
 DummyDriverProxy::~DummyDriverProxy() {}
 
@@ -41,8 +41,9 @@ void DummyDriverProxy::drawFrame(BufferItem* bufItem) {
     }
 
     void* buffer = onDequeueBuffer();
-    if (buffer && mEventCallback) {
-        mEventCallback(buffer, bufItem->mSize, MOCKUI_EVENT_DRAW);
+    WindowEventListener* listener = getEventListener();
+    if (buffer && listener) {
+        listener->onDraw(buffer, bufItem->mSize);
     }
     onQueueBuffer();
     WM_PROFILER_END();
@@ -63,7 +64,10 @@ void DummyDriverProxy::handleEvent() {
                 }
 
                 mActive = false;
-                if (mEventCallback) mEventCallback(NULL, 0, MOCKUI_EVENT_CLICK);
+                WindowEventListener* listener = getEventListener();
+                if (listener) {
+                    listener->onTouch(message.pointer.x, message.pointer.y);
+                }
             }
             break;
         }
