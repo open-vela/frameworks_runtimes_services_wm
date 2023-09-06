@@ -36,6 +36,8 @@ static lv_indev_t* _indev_init(LVGLDriverProxy* proxy);
 LVGLDriverProxy::LVGLDriverProxy(std::shared_ptr<BaseWindow> win)
       : UIDriverProxy(win), mIndev(NULL), mEventFd(-1), mLastEventState(LV_INDEV_STATE_RELEASED) {
     mDisp = _disp_init(this);
+    mDispW = mDisp->hor_res;
+    mDispH = mDisp->ver_res;
     lv_disp_set_default(mDisp);
 }
 
@@ -82,7 +84,7 @@ void* LVGLDriverProxy::getWindow() {
     return lv_disp_get_scr_act(mDisp);
 }
 
-#if LVGL_VERSION_MAJOR < 9
+#if !LV_VERSION_CHECK(9, 0, 0)
 
 void LVGLDriverProxy::updateResolution(int32_t width, int32_t height) {}
 
@@ -155,9 +157,25 @@ static void _disp_event_cb(lv_event_t* e) {
             break;
         }
 
-        case LV_EVENT_RESOLUTION_CHANGED:
-            FLOGD("Resolution changed");
+        case LV_EVENT_RESOLUTION_CHANGED: {
+            lv_disp_t* disp = (lv_disp_t*)lv_event_get_target(e);
+            FLOGI("Resolution changed to (%dx%d)", disp->hor_res, disp->ver_res);
+
+            LVGLDriverProxy* proxy = reinterpret_cast<LVGLDriverProxy*>(lv_event_get_user_data(e));
+            if (proxy == NULL) {
+                return;
+            }
+            WindowEventListener* listener = proxy->getEventListener();
+            if (listener) {
+                lv_coord_t oldW = proxy->mDispW;
+                lv_coord_t oldH = proxy->mDispH;
+                proxy->mDispW = disp->hor_res;
+                proxy->mDispH = disp->ver_res;
+                listener->onSizeChanged(disp->hor_res, disp->ver_res, oldW, oldH);
+            }
+
             break;
+        }
 
         case LV_EVENT_DELETE:
             FLOGD("try to delete window");
@@ -168,9 +186,7 @@ static void _disp_event_cb(lv_event_t* e) {
     }
 }
 
-static void* _virt_disp_buffer = NULL;
-static uint32_t _virt_buf_size = 0;
-
+static char _virt_disp_buffer[4];
 static lv_disp_t* _disp_init(LVGLDriverProxy* proxy) {
     static uint32_t width = 0, height = 0;
     if (width == 0) {
@@ -185,21 +201,10 @@ static lv_disp_t* _disp_init(LVGLDriverProxy* proxy) {
     lv_timer_del(disp->refr_timer);
     disp->refr_timer = NULL;
 
-    if (_virt_disp_buffer == NULL) {
-        uint32_t px_size = lv_color_format_get_size(lv_disp_get_color_format(disp));
-        _virt_buf_size = width * height * px_size;
-
-        void* draw_buf = lv_malloc(_virt_buf_size);
-        if (draw_buf == NULL) {
-            LV_LOG_ERROR("display draw_buf malloc failure!");
-            return NULL;
-        }
-        _virt_disp_buffer = draw_buf;
-    }
-
+    uint32_t buf_size = sizeof(_virt_disp_buffer);
     lv_disp_render_mode_t render_mode = LV_DISP_RENDER_MODE_FULL;
     // LV_DISP_RENDER_MODE_DIRECT
-    lv_disp_set_draw_buffers(disp, _virt_disp_buffer, NULL, _virt_buf_size, render_mode);
+    lv_disp_set_draw_buffers(disp, _virt_disp_buffer, NULL, buf_size, render_mode);
     lv_disp_set_flush_cb(disp, _disp_flush_cb);
     lv_event_add(&disp->event_list, _disp_event_cb, LV_EVENT_ALL, proxy);
     lv_disp_set_user_data(disp, proxy);
