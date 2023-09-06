@@ -29,6 +29,7 @@
 #include "os/wm/VsyncRequest.h"
 #include "wm/InputMessage.h"
 #include "wm/LayoutParams.h"
+#include "wm/WindowEventListener.h"
 #include "wm/WindowFrames.h"
 namespace os {
 namespace wm {
@@ -122,7 +123,7 @@ public:
     void setSurfaceControl(SurfaceControl* surfaceControl);
     bool readEvent(InputMessage* message);
 
-    void setMockUIEventCallback(const MOCKUI_EVENT_CALLBACK& cb);
+    void setEventListener(WindowEventListener* listener);
 
     DISALLOW_COPY_AND_ASSIGN(BaseWindow);
 

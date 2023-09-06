@@ -23,9 +23,12 @@ namespace os {
 namespace wm {
 
 UIDriverProxy::UIDriverProxy(std::shared_ptr<BaseWindow> win)
-      : mBaseWindow(win), mBufferItem(nullptr), mFlags(0) {}
+      : mBaseWindow(win), mBufferItem(nullptr), mFlags(0), mEventListener(nullptr) {}
 
-UIDriverProxy::~UIDriverProxy() {}
+UIDriverProxy::~UIDriverProxy() {
+    mBufferItem = nullptr;
+    mEventListener = nullptr;
+}
 
 bool UIDriverProxy::onInvalidate(bool periodic) {
     if (!mBaseWindow.expired()) {
@@ -78,12 +81,6 @@ bool UIDriverProxy::readEvent(InputMessage* message) {
 }
 
 void UIDriverProxy::updateResolution(int32_t width, int32_t height) {}
-
-void UIDriverProxy::setEventCallback(const MOCKUI_EVENT_CALLBACK& cb) {}
-
-MOCKUI_EVENT_CALLBACK UIDriverProxy::getEventCallback() {
-    return nullptr;
-}
 
 } // namespace wm
 } // namespace os

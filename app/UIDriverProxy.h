@@ -57,19 +57,23 @@ public:
 
     virtual void updateResolution(int32_t width, int32_t height);
 
-    virtual void setEventCallback(const MOCKUI_EVENT_CALLBACK& cb);
-    virtual MOCKUI_EVENT_CALLBACK getEventCallback();
-
     enum {
         UIP_BUFFER_UPDATE = 1,
         UIP_BUFFER_RECT_UPDATE = 2,
     };
+    void setEventListener(WindowEventListener* listener) {
+        mEventListener = listener;
+    }
+    WindowEventListener* getEventListener() {
+        return mEventListener;
+    }
 
 private:
     std::weak_ptr<BaseWindow> mBaseWindow;
     BufferItem* mBufferItem;
     Rect mRectCrop;
     int8_t mFlags;
+    WindowEventListener* mEventListener;
 };
 
 } // namespace wm
