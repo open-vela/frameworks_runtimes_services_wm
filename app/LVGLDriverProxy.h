@@ -35,6 +35,9 @@ public:
     void handleEvent() override;
 
     bool enableInput(bool enable) override;
+    lv_disp_render_mode_t renderMode() {
+        return mRenderMode;
+    }
 
     lv_disp_t* mDisp;
     lv_coord_t mDispW;
@@ -42,6 +45,7 @@ public:
     lv_indev_t* mIndev;
     int mEventFd;
     lv_indev_state_t mLastEventState;
+    lv_disp_render_mode_t mRenderMode;
 };
 
 } // namespace wm
