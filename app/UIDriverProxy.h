@@ -68,6 +68,10 @@ public:
         return mEventListener;
     }
 
+    void resetBuffer() {
+        mBufferItem = nullptr;
+    }
+
 private:
     std::weak_ptr<BaseWindow> mBaseWindow;
     BufferItem* mBufferItem;
