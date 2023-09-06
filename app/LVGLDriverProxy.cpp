@@ -34,7 +34,11 @@ static lv_disp_t* _disp_init(LVGLDriverProxy* proxy);
 static lv_indev_t* _indev_init(LVGLDriverProxy* proxy);
 
 LVGLDriverProxy::LVGLDriverProxy(std::shared_ptr<BaseWindow> win)
-      : UIDriverProxy(win), mIndev(NULL), mEventFd(-1), mLastEventState(LV_INDEV_STATE_RELEASED) {
+      : UIDriverProxy(win),
+        mIndev(NULL),
+        mEventFd(-1),
+        mLastEventState(LV_INDEV_STATE_RELEASED),
+        mRenderMode(LV_DISP_RENDER_MODE_FULL) {
     mDisp = _disp_init(this);
     mDispW = mDisp->hor_res;
     mDispH = mDisp->ver_res;
@@ -56,13 +60,26 @@ LVGLDriverProxy::~LVGLDriverProxy() {
 }
 
 void LVGLDriverProxy::drawFrame(BufferItem* bufItem) {
+    FLOGD("");
+
     BufferItem* oldItem = getBufferItem();
-    if (oldItem) {
-        // TODO: copy old item buffer to current buffer
+    UIDriverProxy::drawFrame(bufItem);
+    if (!bufItem) {
+        return;
     }
 
-    UIDriverProxy::drawFrame(bufItem);
-    FLOGD("");
+    if (oldItem && mRenderMode == LV_DISP_RENDER_MODE_DIRECT) {
+        lv_coord_t stride =
+                lv_draw_buf_width_to_stride(lv_disp_get_hor_res(mDisp), mDisp->color_format);
+        lv_area_t scr_area;
+        scr_area.x1 = 0;
+        scr_area.y1 = 0;
+        scr_area.x2 = lv_disp_get_hor_res(mDisp) - 1;
+        scr_area.y2 = lv_disp_get_ver_res(mDisp) - 1;
+
+        lv_draw_buf_copy(bufItem->mBuffer, stride, &scr_area, oldItem->mBuffer, stride, &scr_area,
+                         mDisp->color_format);
+    }
 
     if (lv_disp_get_default() != mDisp) {
         lv_disp_set_default(mDisp);
@@ -136,6 +153,7 @@ static void _disp_event_cb(lv_event_t* e) {
             if (proxy == NULL) {
                 return;
             }
+
             void* buffer = proxy->onDequeueBuffer();
             if (buffer) {
                 FLOGD("%p render start", proxy);
@@ -148,6 +166,18 @@ static void _disp_event_cb(lv_event_t* e) {
             LVGLDriverProxy* proxy = reinterpret_cast<LVGLDriverProxy*>(lv_event_get_user_data(e));
             if (proxy == NULL) {
                 return;
+            }
+
+            if (code == LV_EVENT_INVALIDATE_AREA && !proxy->getBufferItem()) {
+                /* need to invalidate the whole screen*/
+                lv_disp_t* disp = (lv_disp_t*)lv_event_get_target(e);
+                lv_area_t* area = (lv_area_t*)lv_event_get_param(e);
+                if (area) {
+                    area->x1 = 0;
+                    area->y1 = 0;
+                    area->x2 = lv_disp_get_hor_res(disp) - 1;
+                    area->y2 = lv_disp_get_ver_res(disp) - 1;
+                }
             }
 
             bool periodic = lv_anim_get_timer()->paused ? false : true;
@@ -202,9 +232,7 @@ static lv_disp_t* _disp_init(LVGLDriverProxy* proxy) {
     disp->refr_timer = NULL;
 
     uint32_t buf_size = sizeof(_virt_disp_buffer);
-    lv_disp_render_mode_t render_mode = LV_DISP_RENDER_MODE_FULL;
-    // LV_DISP_RENDER_MODE_DIRECT
-    lv_disp_set_draw_buffers(disp, _virt_disp_buffer, NULL, buf_size, render_mode);
+    lv_disp_set_draw_buffers(disp, _virt_disp_buffer, NULL, buf_size, proxy->renderMode());
     lv_disp_set_flush_cb(disp, _disp_flush_cb);
     lv_event_add(&disp->event_list, _disp_event_cb, LV_EVENT_ALL, proxy);
     lv_disp_set_user_data(disp, proxy);

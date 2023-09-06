@@ -172,6 +172,8 @@ void BaseWindow::setInputChannel(InputChannel* inputChannel) {
 }
 
 void BaseWindow::setSurfaceControl(SurfaceControl* surfaceControl) {
+    /*reset current buffer when surface changed*/
+    mUIProxy->resetBuffer();
     mSurfaceControl.reset(surfaceControl);
     if (surfaceControl != nullptr && surfaceControl->isValid()) {
         mUIProxy->updateResolution(surfaceControl->getWidth(), surfaceControl->getHeight());
