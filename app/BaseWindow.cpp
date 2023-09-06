@@ -101,6 +101,7 @@ BaseWindow::~BaseWindow() {
                  [](uv_handle_t* handle) { delete reinterpret_cast<uv_poll_t*>(handle); });
         mPoll = NULL;
     }
+    mIWindow = nullptr;
 }
 
 BaseWindow::BaseWindow(::os::app::Context* context)
@@ -172,7 +173,7 @@ void BaseWindow::setInputChannel(InputChannel* inputChannel) {
 
 void BaseWindow::setSurfaceControl(SurfaceControl* surfaceControl) {
     mSurfaceControl.reset(surfaceControl);
-    if (surfaceControl != nullptr) {
+    if (surfaceControl != nullptr && surfaceControl->isValid()) {
         mUIProxy->updateResolution(surfaceControl->getWidth(), surfaceControl->getHeight());
     }
 
@@ -298,10 +299,11 @@ void BaseWindow::handleOnFrame(int32_t seq) {
         FLOGD("frame(%p) %d apply transaction\n", this, seq);
         transaction->apply();
 
-        auto callback = mUIProxy->getEventCallback();
-        if (callback) {
-            callback(this, 0, MOCKUI_EVENT_POSTDRAW);
+        WindowEventListener* listener = mUIProxy->getEventListener();
+        if (listener) {
+            listener->onPostDraw();
         }
+
         WM_PROFILER_END();
     }
 }
@@ -332,10 +334,8 @@ void BaseWindow::updateOrCreateBufferQueue() {
     FLOGI("updateOrCreateBufferQueue done!");
 }
 
-void BaseWindow::setMockUIEventCallback(const MOCKUI_EVENT_CALLBACK& cb) {
-    if (mUIProxy.get() == nullptr) return;
-    mUIProxy->setEventCallback(cb);
+void BaseWindow::setEventListener(WindowEventListener* listener) {
+    if (mUIProxy && mUIProxy.get()) mUIProxy->setEventListener(listener);
 }
-
 } // namespace wm
 } // namespace os

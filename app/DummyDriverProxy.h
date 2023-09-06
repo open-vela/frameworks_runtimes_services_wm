@@ -31,16 +31,7 @@ public:
     void handleEvent() override;
     void drawFrame(BufferItem* bufItem) override;
 
-    void setEventCallback(const MOCKUI_EVENT_CALLBACK& cb) override {
-        mEventCallback = cb;
-    }
-
-    MOCKUI_EVENT_CALLBACK getEventCallback() override {
-        return mEventCallback;
-    }
-
 private:
-    MOCKUI_EVENT_CALLBACK mEventCallback;
     bool mActive;
 };
 

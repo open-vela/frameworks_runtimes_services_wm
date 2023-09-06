@@ -16,32 +16,26 @@
 
 #pragma once
 
-#include "UIDriverProxy.h"
-#include "lvgl/lvgl.h"
+#include <stdio.h>
 
 namespace os {
 namespace wm {
 
-class LVGLDriverProxy : public UIDriverProxy {
+class WindowEventListener {
 public:
-    LVGLDriverProxy(std::shared_ptr<BaseWindow> win);
-    ~LVGLDriverProxy();
+    WindowEventListener(void* data);
+    virtual ~WindowEventListener();
+    virtual void onSizeChanged(uint32_t w, uint32_t h, uint32_t oldw, uint32_t olh);
 
-    void* getRoot() override;
-    void* getWindow() override;
-    void drawFrame(BufferItem* bufItem) override;
+    virtual void onTouch(int32_t x, int32_t y);
+    virtual void onDraw(void* buffer, uint32_t size);
+    virtual void onPostDraw();
+    void* getData() {
+        return mData;
+    }
 
-    void updateResolution(int32_t width, int32_t height) override;
-    void handleEvent() override;
-
-    bool enableInput(bool enable) override;
-
-    lv_disp_t* mDisp;
-    lv_coord_t mDispW;
-    lv_coord_t mDispH;
-    lv_indev_t* mIndev;
-    int mEventFd;
-    lv_indev_state_t mLastEventState;
+private:
+    void* mData;
 };
 
 } // namespace wm

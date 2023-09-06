@@ -14,35 +14,25 @@
  * limitations under the License.
  */
 
-#pragma once
+#include "wm/WindowEventListener.h"
 
-#include "UIDriverProxy.h"
-#include "lvgl/lvgl.h"
+#include "LogUtils.h"
 
 namespace os {
 namespace wm {
 
-class LVGLDriverProxy : public UIDriverProxy {
-public:
-    LVGLDriverProxy(std::shared_ptr<BaseWindow> win);
-    ~LVGLDriverProxy();
+WindowEventListener::WindowEventListener(void* data) : mData(data) {}
 
-    void* getRoot() override;
-    void* getWindow() override;
-    void drawFrame(BufferItem* bufItem) override;
+WindowEventListener::~WindowEventListener() {}
 
-    void updateResolution(int32_t width, int32_t height) override;
-    void handleEvent() override;
+void WindowEventListener::onSizeChanged(uint32_t w, uint32_t h, uint32_t oldw, uint32_t oldh) {
+    FLOGI(" %dx%d from %dx%d ", w, h, oldw, oldh);
+}
 
-    bool enableInput(bool enable) override;
-
-    lv_disp_t* mDisp;
-    lv_coord_t mDispW;
-    lv_coord_t mDispH;
-    lv_indev_t* mIndev;
-    int mEventFd;
-    lv_indev_state_t mLastEventState;
-};
+/*for mock ui*/
+void WindowEventListener::onTouch(int32_t x, int32_t y) {}
+void WindowEventListener::onDraw(void* buffer, uint32_t size) {}
+void WindowEventListener::onPostDraw() {}
 
 } // namespace wm
 } // namespace os
