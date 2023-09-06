@@ -43,7 +43,7 @@ protected:
 
         mLooper = ::os::app::UvLoop();
         mApplication->setMainLoop(&mLooper);
-        mContext = new ::os::app::ContextImpl(mApplication, mToken);
+        mContext = new ::os::app::ContextImpl(mApplication, mToken, &mLooper);
 
         mLayoutParam = LayoutParams();
         mLayoutParam.mToken = mToken;
