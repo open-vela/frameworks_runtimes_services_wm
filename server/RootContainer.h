@@ -49,6 +49,8 @@ public:
     void processVsyncEvent();
     int32_t handleTimer();
 
+    void showToast(const char* text, uint32_t duration);
+
 private:
     bool init();
     WindowManagerService* mService;
