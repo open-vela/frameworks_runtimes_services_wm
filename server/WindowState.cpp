@@ -94,7 +94,7 @@ void WindowState::setVisibility(bool visibility) {
         scheduleVsync(VsyncRequest::VSYNC_REQ_SINGLE);
     }
 
-    // TODO: NOTIFY WIN NODE
+    mNode->enableInput(visibility);
 }
 
 void WindowState::sendAppVisibilityToClients() {
