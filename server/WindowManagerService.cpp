@@ -161,6 +161,7 @@ Status WindowManagerService::addWindow(const sp<IWindow>& window, const LayoutPa
     if (mWindowMap.size() >= CONFIG_ENABLE_WINDOW_LIMIT_MAX) {
         ALOGE("failure, exceed maximum window limit!");
         *_aidl_return = -1;
+        mContainer->showToast("Warn: exceed maximum window limit!", 1500);
         return Status::fromExceptionCode(1, "exceed maximum window limit!");
     }
 
