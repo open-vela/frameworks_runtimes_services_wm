@@ -28,10 +28,8 @@
 #include <lv_porting/lv_porting.h>
 #endif
 
-#include <utils/Log.h>
-
-#include "../system_server/BaseProfiler.h"
 #include "WindowManagerService.h"
+#include "WindowUtils.h"
 
 namespace os {
 namespace wm {

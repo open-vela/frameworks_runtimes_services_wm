@@ -18,8 +18,7 @@
 
 #include "DummyDriverProxy.h"
 
-#include "../system_server/BaseProfiler.h"
-#include "LogUtils.h"
+#include "WindowUtils.h"
 
 namespace os {
 namespace wm {

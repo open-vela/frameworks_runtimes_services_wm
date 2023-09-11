@@ -18,8 +18,7 @@
 
 #include "wm/SurfaceControl.h"
 
-#include "LogUtils.h"
-#include "ParcelUtils.h"
+#include "WindowUtils.h"
 
 namespace os {
 namespace wm {
