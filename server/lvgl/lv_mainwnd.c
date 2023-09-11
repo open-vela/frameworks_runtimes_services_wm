@@ -25,7 +25,7 @@
 
 #include "lv_mainwnd.h"
 
-#include "../../../system_server/BaseProfiler.h"
+#include "WindowTrace.h"
 
 /*********************
  *      DEFINES

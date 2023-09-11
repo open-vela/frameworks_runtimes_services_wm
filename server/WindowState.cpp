@@ -21,10 +21,9 @@
 #include <sys/mman.h>
 #include <utils/RefBase.h>
 
-#include "../system_server/BaseProfiler.h"
-#include "LogUtils.h"
 #include "RootContainer.h"
 #include "WindowManagerService.h"
+#include "WindowUtils.h"
 #include "wm/LayerState.h"
 #include "wm/VsyncRequestOps.h"
 

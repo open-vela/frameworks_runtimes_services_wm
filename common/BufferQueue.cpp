@@ -18,7 +18,7 @@
 
 #include <sys/mman.h>
 
-#include "LogUtils.h"
+#include "WindowUtils.h"
 #include "wm/SurfaceControl.h"
 
 namespace os {
