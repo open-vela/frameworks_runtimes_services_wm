@@ -19,14 +19,13 @@
 
 #include <mqueue.h>
 
-#include "LogUtils.h"
 #include "SurfaceTransaction.h"
+#include "WindowUtils.h"
 #ifdef CONFIG_ENABLE_BUFFER_QUEUE_BY_NAME
 #include <sys/mman.h>
 #include <sys/stat.h>
 #endif
 
-#include "../system_server/BaseProfiler.h"
 #include "UIDriverProxy.h"
 #include "uv.h"
 #include "wm/InputChannel.h"

@@ -22,7 +22,7 @@
 
 #include <nuttx/tls.h>
 
-#include "LogUtils.h"
+#include "WindowUtils.h"
 #include "lv_porting/lv_tick_interface.h"
 
 #if LV_ENABLE_GLOBAL_CUSTOM == 0

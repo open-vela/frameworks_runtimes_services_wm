@@ -22,11 +22,10 @@
 #include <binder/IServiceManager.h>
 #include <utils/RefBase.h>
 
-#include "../system_server/BaseProfiler.h"
 #include "DummyDriverProxy.h"
 #include "LVGLDriverProxy.h"
-#include "LogUtils.h"
 #include "SurfaceTransaction.h"
+#include "WindowUtils.h"
 #include "uv.h"
 
 #if LV_VERSION_CHECK(9, 0, 0)

@@ -14,25 +14,9 @@
  * limitations under the License.
  */
 
-#include "wm/WindowEventListener.h"
+#pragma once
 
-#include "WindowUtils.h"
+#include <nuttx/trace.h>
 
-namespace os {
-namespace wm {
-
-WindowEventListener::WindowEventListener(void* data) : mData(data) {}
-
-WindowEventListener::~WindowEventListener() {}
-
-void WindowEventListener::onSizeChanged(uint32_t w, uint32_t h, uint32_t oldw, uint32_t oldh) {
-    FLOGI(" %dx%d from %dx%d ", w, h, oldw, oldh);
-}
-
-/*for mock ui*/
-void WindowEventListener::onTouch(int32_t x, int32_t y) {}
-void WindowEventListener::onDraw(void* buffer, uint32_t size) {}
-void WindowEventListener::onPostDraw() {}
-
-} // namespace wm
-} // namespace os
+#define WM_PROFILER_BEGIN() graphics_trace_begin();
+#define WM_PROFILER_END() graphics_trace_end();
