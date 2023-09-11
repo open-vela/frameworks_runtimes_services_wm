@@ -23,11 +23,10 @@
 #include <sys/stat.h>
 #include <utils/Log.h>
 
-#include "../system_server/BaseProfiler.h"
-#include "LogUtils.h"
 #include "RootContainer.h"
 #include "WindowState.h"
 #include "WindowToken.h"
+#include "WindowUtils.h"
 #include "wm/SurfaceControl.h"
 
 static const std::string graphicsPath = "/data/graphics/";

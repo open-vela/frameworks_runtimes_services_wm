@@ -18,7 +18,7 @@
 
 #include <utils/Log.h>
 
-#include "LogUtils.h"
+#include "WindowUtils.h"
 
 #define MAX_MSG 50
 

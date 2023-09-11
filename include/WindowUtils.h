@@ -16,7 +16,11 @@
 
 #pragma once
 
+#include <nuttx/config.h>
 #include <utils/Log.h>
+
+#include "ParcelUtils.h"
+#include "WindowTrace.h"
 
 #define FLOGA(fmt, ...) ALOGA("%s: " fmt, __FUNCTION__, ##__VA_ARGS__)
 #define FLOGE(fmt, ...) ALOGE("%s: " fmt, __FUNCTION__, ##__VA_ARGS__)
