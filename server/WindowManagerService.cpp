@@ -76,7 +76,6 @@ public:
     }
 
     virtual void handleMessage(const Message& message) {
-        WM_PROFILER_BEGIN();
         if (message.what == MSG_DO_TIMER) {
             int32_t interval = lv_tick_get() - last_tick;
             last_tick += interval;
@@ -90,7 +89,6 @@ public:
                 mService->responseVsync();
             }
         }
-        WM_PROFILER_END();
     }
 
 private:
@@ -314,7 +312,6 @@ Status WindowManagerService::updateWindowTokenVisibility(const sp<IBinder>& toke
 
 Status WindowManagerService::applyTransaction(const vector<LayerState>& state) {
     WM_PROFILER_BEGIN();
-
     for (const auto& layerState : state) {
         if (mWindowMap.find(layerState.mToken) != mWindowMap.end()) {
             mWindowMap[layerState.mToken]->applyTransaction(layerState);
