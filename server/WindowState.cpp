@@ -175,6 +175,7 @@ void WindowState::applyTransaction(LayerState layerState) {
     if (layerState.mFlags & LayerState::LAYER_BUFFER_CHANGED) {
         std::shared_ptr<BufferConsumer> consumer = getBufferConsumer();
         if (consumer == nullptr) {
+            WM_PROFILER_END();
             return;
         }
         buffItem = consumer->syncQueuedState(layerState.mBufferKey);
