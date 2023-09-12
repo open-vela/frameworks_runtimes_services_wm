@@ -259,12 +259,10 @@ void BaseWindow::handleOnFrame(int32_t seq) {
     FLOGD("frame(%p) %d", this, seq);
 
     if (mSurfaceControl.get() == nullptr) {
-        WM_PROFILER_BEGIN();
         mWindowManager->relayoutWindow(shared_from_this());
         if (mSurfaceControl->isValid()) {
             updateOrCreateBufferQueue();
         }
-        WM_PROFILER_END();
     } else {
         if (mUIProxy.get() == nullptr) {
             return;
@@ -273,21 +271,19 @@ void BaseWindow::handleOnFrame(int32_t seq) {
         std::shared_ptr<BufferProducer> buffProducer = getBufferProducer();
         if (buffProducer.get() == nullptr) {
             FLOGD("buffProducer is invalid!");
-            WM_PROFILER_END();
             return;
         }
         BufferItem* item = buffProducer->dequeueBuffer();
         if (!item) {
             FLOGD("onFrame, no valid buffer!\n");
-            WM_PROFILER_END();
             return;
         }
 
         WM_PROFILER_BEGIN();
         mUIProxy->drawFrame(item);
+        WM_PROFILER_END();
         if (!mUIProxy->finishDrawing()) {
             buffProducer->cancelBuffer(item);
-            WM_PROFILER_END();
             return;
         }
         buffProducer->queueBuffer(item);
@@ -304,8 +300,6 @@ void BaseWindow::handleOnFrame(int32_t seq) {
         if (listener) {
             listener->onPostDraw();
         }
-
-        WM_PROFILER_END();
     }
 }
 
