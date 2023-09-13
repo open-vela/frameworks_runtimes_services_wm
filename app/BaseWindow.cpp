@@ -209,12 +209,11 @@ void BaseWindow::onFrame(int32_t seq) {
     }
 
     mFrameDone.exchange(false, std::memory_order_release);
-
+    WM_PROFILER_END();
     mContext->getMainLoop()->postTask([this, seq](void*) {
         this->handleOnFrame(seq);
         mFrameDone.exchange(true, std::memory_order_release);
     });
-    WM_PROFILER_END();
 }
 
 void BaseWindow::bufferReleased(int32_t bufKey) {

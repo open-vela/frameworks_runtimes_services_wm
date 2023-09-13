@@ -84,8 +84,8 @@ SurfaceTransaction& SurfaceTransaction::apply() {
          it != mLayerStates.end(); ++it) {
         layerStates.push_back(it->second);
     }
-    mWindowManager->getService()->applyTransaction(layerStates);
     WM_PROFILER_END();
+    mWindowManager->getService()->applyTransaction(layerStates);
 
     return *this;
 }
