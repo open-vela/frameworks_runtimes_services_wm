@@ -196,7 +196,7 @@ void BaseWindow::dispatchAppVisibility(bool visible) {
 
     FLOGI("%p visible:%d", this, visible);
     mContext->getMainLoop()->postTask(
-            [this, visible](void*) { this->handleAppVisibility(visible); });
+            [this, visible] { this->handleAppVisibility(visible); });
     WM_PROFILER_END();
 }
 
@@ -210,7 +210,7 @@ void BaseWindow::onFrame(int32_t seq) {
 
     mFrameDone.exchange(false, std::memory_order_release);
     WM_PROFILER_END();
-    mContext->getMainLoop()->postTask([this, seq](void*) {
+    mContext->getMainLoop()->postTask([this, seq] {
         this->handleOnFrame(seq);
         mFrameDone.exchange(true, std::memory_order_release);
     });
@@ -220,7 +220,7 @@ void BaseWindow::bufferReleased(int32_t bufKey) {
     WM_PROFILER_BEGIN();
     FLOGD("bufKey:%d", bufKey);
     mContext->getMainLoop()->postTask(
-            [this, bufKey](void*) { this->handleBufferReleased(bufKey); });
+            [this, bufKey] { this->handleBufferReleased(bufKey); });
     WM_PROFILER_END();
 }
 
