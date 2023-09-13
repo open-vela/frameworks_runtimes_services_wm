@@ -146,7 +146,8 @@ std::shared_ptr<BufferProducer> BaseWindow::getBufferProducer() {
 }
 
 void BaseWindow::doDie() {
-    setInputChannel(nullptr);
+    mInputChannel->release();
+    mInputChannel.reset();
     mSurfaceControl.reset();
     mUIProxy.reset();
     mIWindow->clear();
