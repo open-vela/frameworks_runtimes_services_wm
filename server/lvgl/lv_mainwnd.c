@@ -125,7 +125,13 @@ bool lv_mainwnd_update_buffer(lv_obj_t* obj, lv_mainwnd_buf_dsc_t* buf_dsc, cons
         lv_obj_clear_flag(obj, LV_OBJ_FLAG_HIDDEN);
     }
 
+#if LV_VERSION_CHECK(9, 0, 0)
+    lv_cache_lock();
+    lv_cache_invalidate(lv_cache_find(&mainwnd->buf_dsc.img_dsc, LV_CACHE_SRC_TYPE_PTR, 0, 0));
+    lv_cache_unlock();
+#else
     lv_img_cache_invalidate_src(&mainwnd->buf_dsc.img_dsc);
+#endif
     mainwnd->buf_dsc.id = buf_dsc->id;
 
     mainwnd->buf_dsc.img_dsc.data = buf_dsc->img_dsc.data;
@@ -226,17 +232,24 @@ static inline void draw_buffer(lv_obj_t* obj, lv_event_t* e) {
     if (!mainwnd->buf_dsc.img_dsc.data) return;
     if (mainwnd->buf_dsc.img_dsc.header.w == 0 || mainwnd->buf_dsc.img_dsc.header.h == 0) return;
 
+#if LV_VERSION_CHECK(9, 0, 0)
+    lv_draw_image_dsc_t img_dsc;
+    lv_draw_image_dsc_init(&img_dsc);
+    lv_obj_init_draw_image_dsc(obj, LV_PART_MAIN, &img_dsc);
+    uint16_t zoom = LV_ZOOM_NONE;
+#else
     lv_draw_img_dsc_t img_dsc;
     lv_draw_img_dsc_init(&img_dsc);
     lv_obj_init_draw_img_dsc(obj, LV_PART_MAIN, &img_dsc);
+    uint16_t zoom = LV_IMG_ZOOM_NONE;
+#endif
 
     lv_coord_t img_w = mainwnd->buf_dsc.img_dsc.header.w;
     lv_coord_t img_h = mainwnd->buf_dsc.img_dsc.header.h;
 
-    uint16_t zoom = LV_IMG_ZOOM_NONE;
     if (mainwnd->flags & LV_MAINWND_FLAG_DRAW_SCALE) {
         lv_coord_t obj_w = lv_obj_get_width(obj);
-        zoom = LV_IMG_ZOOM_NONE * obj_w / img_w;
+        zoom *= obj_w / img_w;
     }
     img_dsc.zoom = zoom == 0 ? 1 : zoom;
     img_dsc.angle = 0;
@@ -253,7 +266,7 @@ static inline void draw_buffer(lv_obj_t* obj, lv_event_t* e) {
     LV_LOG_TRACE("draw (%p) with (%d)", mainwnd, mainwnd->buf_dsc.id);
 #if LV_VERSION_CHECK(9, 0, 0)
     img_dsc.src = &mainwnd->buf_dsc.img_dsc;
-    lv_draw_img(layer, &img_dsc, &win_coords);
+    lv_draw_image(layer, &img_dsc, &win_coords);
 #else
     lv_draw_img(draw_ctx, &img_dsc, &win_coords, &mainwnd->buf_dsc.img_dsc);
 #endif
