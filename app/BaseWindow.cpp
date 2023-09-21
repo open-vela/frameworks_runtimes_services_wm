@@ -146,9 +146,12 @@ std::shared_ptr<BufferProducer> BaseWindow::getBufferProducer() {
 }
 
 void BaseWindow::doDie() {
-    mInputChannel->release();
-    mInputChannel.reset();
-    mSurfaceControl.reset();
+    if (mInputChannel) {
+        mInputChannel->release();
+        mInputChannel.reset();
+    }
+    if (mSurfaceControl) mSurfaceControl.reset();
+
     mUIProxy.reset();
     mIWindow->clear();
 }
@@ -196,8 +199,7 @@ void BaseWindow::dispatchAppVisibility(bool visible) {
     WM_PROFILER_BEGIN();
 
     FLOGI("%p visible:%d", this, visible);
-    mContext->getMainLoop()->postTask(
-            [this, visible] { this->handleAppVisibility(visible); });
+    mContext->getMainLoop()->postTask([this, visible] { this->handleAppVisibility(visible); });
     WM_PROFILER_END();
 }
 
@@ -220,8 +222,7 @@ void BaseWindow::onFrame(int32_t seq) {
 void BaseWindow::bufferReleased(int32_t bufKey) {
     WM_PROFILER_BEGIN();
     FLOGD("bufKey:%d", bufKey);
-    mContext->getMainLoop()->postTask(
-            [this, bufKey] { this->handleBufferReleased(bufKey); });
+    mContext->getMainLoop()->postTask([this, bufKey] { this->handleBufferReleased(bufKey); });
     WM_PROFILER_END();
 }
 
