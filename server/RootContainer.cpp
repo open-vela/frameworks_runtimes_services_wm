@@ -20,7 +20,7 @@
 
 #include <lvgl/lvgl.h>
 
-#include "wm/UIInstance.h"
+#include "ext/lvgl_inst.h"
 
 #if LV_VERSION_CHECK(9, 0, 0)
 #include <lvgl/src/lvgl_private.h>
@@ -60,7 +60,7 @@ RootContainer::~RootContainer() {
         mIndev = NULL;
     }
     mService = nullptr;
-    UIDeinit();
+    lv_deinit();
 }
 
 lv_disp_t* RootContainer::getRoot() {
@@ -127,7 +127,8 @@ void RootContainer::processInputEvent() {
 }
 
 bool RootContainer::init() {
-    UIInit();
+    lv_init();
+    lv_tick_set_cb(millis);
 
 #if LV_VERSION_CHECK(9, 0, 0)
 
