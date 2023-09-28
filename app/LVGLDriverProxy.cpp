@@ -20,8 +20,6 @@
 
 #if LV_VERSION_CHECK(9, 0, 0)
 #include <lvgl/src/lvgl_private.h>
-
-#include "wm/UIInstance.h"
 #else
 #include <lv_porting/lv_porting.h>
 #endif
