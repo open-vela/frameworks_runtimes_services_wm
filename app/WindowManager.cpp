@@ -29,7 +29,7 @@
 #include "uv.h"
 
 #if LV_VERSION_CHECK(9, 0, 0)
-#include "wm/UIInstance.h"
+#include "ext/lvgl_inst.h"
 #endif
 
 #include <nuttx/tls.h>
@@ -64,14 +64,15 @@ WindowManager::WindowManager() : mTimerInited(false) {
     mDispHeight = displayInfo.height;
 
 #if LV_VERSION_CHECK(9, 0, 0)
-    UIInit();
+    lv_init();
+    lv_tick_set_cb(millis);
 #endif
 }
 
 WindowManager::~WindowManager() {
     toBackground();
 #if LV_VERSION_CHECK(9, 0, 0)
-    UIDeinit();
+    lv_deinit();
 #endif
     mService = nullptr;
     mWindows.clear();
