@@ -60,6 +60,9 @@ WindowManager::WindowManager() : mTimerInited(false) {
 
 #if LV_VERSION_CHECK(9, 0, 0)
     lv_init();
+#if LV_USE_NUTTX
+    lv_nuttx_init(NULL);
+#endif
 #endif
 }
 

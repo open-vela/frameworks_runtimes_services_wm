@@ -129,9 +129,22 @@ bool RootContainer::init() {
 
 #if LV_VERSION_CHECK(9, 0, 0)
 
-#if LV_USE_NUTTX_FBDEV
-    mDisp = lv_nuttx_fbdev_create();
-    lv_nuttx_fbdev_set_file(mDisp, CONFIG_LV_FBDEV_INTERFACE_DEFAULT_DEVICEPATH);
+#if LV_USE_NUTTX
+
+    lv_nuttx_t info;
+    info.fb_path = CONFIG_LV_FBDEV_INTERFACE_DEFAULT_DEVICEPATH;
+    info.input_path = CONFIG_LV_TOUCHPAD_INTERFACE_DEFAULT_DEVICEPATH;
+    info.need_wait_vsync = true;
+
+    mDisp = lv_nuttx_init(&info);
+
+    mIndev = lv_indev_get_next(NULL);
+    mInputFd = (int32_t)lv_indev_get_user_data(mIndev);
+    if (mInputFd > 0 &&
+        mService->registerFd(mInputFd, POLL_EVENT_INPUT, inputCallback, (void*)mIndev)) {
+        lv_timer_del(mIndev->read_timer);
+        mIndev->read_timer = NULL;
+    }
 
     mDispFd = open(CONFIG_LV_FBDEV_INTERFACE_DEFAULT_DEVICEPATH, O_WRONLY);
     // if (mDispFd > 0) {
@@ -146,18 +159,6 @@ bool RootContainer::init() {
     if (timer) {
         lv_timer_set_period(timer, DEF_REFR_PERIOD);
     }
-
-#if LV_USE_NUTTX_TOUCHSCREEN
-    mIndev = lv_nuttx_touchscreen_create(CONFIG_LV_TOUCHPAD_INTERFACE_DEFAULT_DEVICEPATH);
-
-    mInputFd = (int32_t)lv_indev_get_user_data(mIndev);
-    if (mInputFd > 0 &&
-        mService->registerFd(mInputFd, POLL_EVENT_INPUT, inputCallback, (void*)mIndev)) {
-        lv_timer_del(mIndev->read_timer);
-        mIndev->read_timer = NULL;
-    }
-#endif
-
 #else
     lv_porting_init();
     mDisp = lv_disp_get_default();
