@@ -252,7 +252,7 @@ static inline void draw_buffer(lv_obj_t* obj, lv_event_t* e) {
         zoom *= obj_w / img_w;
     }
     img_dsc.zoom = zoom == 0 ? 1 : zoom;
-    img_dsc.angle = 0;
+    img_dsc.rotation = 0;
     img_dsc.pivot.x = img_w / 2;
     img_dsc.pivot.y = img_h / 2;
     img_dsc.antialias = 0;
