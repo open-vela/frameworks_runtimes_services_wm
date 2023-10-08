@@ -20,6 +20,7 @@
 
 #include <binder/IInterface.h>
 #include <binder/IServiceManager.h>
+#include <nuttx/tls.h>
 #include <utils/RefBase.h>
 
 #include "DummyDriverProxy.h"
@@ -27,12 +28,6 @@
 #include "SurfaceTransaction.h"
 #include "WindowUtils.h"
 #include "uv.h"
-
-#if LV_VERSION_CHECK(9, 0, 0)
-#include "ext/lvgl_inst.h"
-#endif
-
-#include <nuttx/tls.h>
 
 static void _lv_timer_cb(uv_timer_t*) {
 #if LV_VERSION_CHECK(9, 0, 0)
@@ -65,7 +60,6 @@ WindowManager::WindowManager() : mTimerInited(false) {
 
 #if LV_VERSION_CHECK(9, 0, 0)
     lv_init();
-    lv_tick_set_cb(millis);
 #endif
 }
 

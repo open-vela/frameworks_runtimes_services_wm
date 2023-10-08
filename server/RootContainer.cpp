@@ -20,8 +20,6 @@
 
 #include <lvgl/lvgl.h>
 
-#include "ext/lvgl_inst.h"
-
 #if LV_VERSION_CHECK(9, 0, 0)
 #include <lvgl/src/lvgl_private.h>
 #else
@@ -128,7 +126,6 @@ void RootContainer::processInputEvent() {
 
 bool RootContainer::init() {
     lv_init();
-    lv_tick_set_cb(millis);
 
 #if LV_VERSION_CHECK(9, 0, 0)
 
