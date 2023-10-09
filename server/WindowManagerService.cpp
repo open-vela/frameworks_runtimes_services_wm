@@ -85,7 +85,7 @@ public:
             auto container = mService->getRootContainer();
             if (container) {
                 last_delay = container->handleTimer();
-                mService->postTimerMessage(last_delay);
+                mService->postTimerMessage(DEF_REFR_PERIOD);
                 mService->responseVsync();
             }
         }
