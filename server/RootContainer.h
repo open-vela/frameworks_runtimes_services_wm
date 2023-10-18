@@ -45,9 +45,8 @@ public:
 
     bool getDisplayInfo(DisplayInfo* info);
 
-    void processInputEvent();
+    void enableVsync(bool enable);
     void processVsyncEvent();
-    int32_t handleTimer();
 
     void showToast(const char* text, uint32_t duration);
 
@@ -56,8 +55,8 @@ private:
     WindowManagerService* mService;
     lv_disp_t* mDisp;
     lv_indev_t* mIndev;
-    int32_t mInputFd;
-    int32_t mDispFd;
+    lv_timer_t* mVsyncTimer;
+    void* mUvData;
 };
 
 } // namespace wm

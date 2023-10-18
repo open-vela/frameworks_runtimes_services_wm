@@ -16,13 +16,12 @@
 
 #pragma once
 
-#include <utils/Looper.h>
+#include <uv.h>
 
 #include <map>
 #include <vector>
 
 #include "os/wm/BnWindowManager.h"
-
 namespace os {
 namespace wm {
 
@@ -32,18 +31,9 @@ class WindowToken;
 
 typedef map<sp<IBinder>, WindowToken*> WindowTokenMap;
 typedef map<sp<IBinder>, WindowState*> WindowStateMap;
-
-enum {
-    POLL_EVENT_INPUT = Looper::EVENT_INPUT,
-    POLL_EVENT_OUTPUT = Looper::EVENT_OUTPUT,
-    POLL_EVENT_ERROR = Looper::EVENT_ERROR,
-    POLL_EVENT_HANGUP = Looper::EVENT_HANGUP,
-    POLL_EVENT_INVALID = Looper::EVENT_INVALID
-};
-
 class WindowManagerService : public BnWindowManager {
 public:
-    WindowManagerService();
+    WindowManagerService(uv_loop_t* looper);
     ~WindowManagerService();
 
     static inline const char* name() {
@@ -68,15 +58,15 @@ public:
     Status applyTransaction(const vector<LayerState>& state);
     Status requestVsync(const sp<IWindow>& window, VsyncRequest freq);
     bool responseVsync();
-    void postTimerMessage(int32_t delay);
 
     // public methods
     RootContainer* getRootContainer() {
         return mContainer;
     }
 
-    bool registerFd(int fd, int events, Looper_callbackFunc cb, void* data);
-    void unregisterFd(int fd);
+    uv_loop_t* getUvLooper() {
+        return mLooper;
+    }
 
     void doRemoveWindow(const sp<IWindow>& window);
 
@@ -87,10 +77,7 @@ private:
     WindowStateMap mWindowMap;
 
     RootContainer* mContainer;
-    sp<Looper> mLooper;
-
-    sp<MessageHandler> mTimerHandler;
-    bool mTimerStopped;
+    uv_loop_t* mLooper;
 };
 
 } // namespace wm

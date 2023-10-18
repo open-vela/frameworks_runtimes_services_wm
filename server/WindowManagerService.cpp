@@ -64,76 +64,13 @@ static inline bool createSharedBuffer(int32_t size, BufferId* id) {
     return true;
 }
 
-enum {
-    MSG_DO_TIMER = 1001,
-};
-
-static int32_t last_tick = 0, last_delay = 0;
-class UITimerHandler : public MessageHandler {
-public:
-    UITimerHandler(WindowManagerService* service) {
-        mService = service;
-    }
-
-    virtual void handleMessage(const Message& message) {
-        if (message.what == MSG_DO_TIMER) {
-            int32_t interval = lv_tick_get() - last_tick;
-            last_tick += interval;
-            FLOGD("resume timer after %d ms, last delay: %d, gap: %d", last_delay, interval,
-                  interval - last_delay);
-
-            auto container = mService->getRootContainer();
-            if (container) {
-                last_delay = container->handleTimer();
-                mService->postTimerMessage(last_delay);
-                mService->responseVsync();
-            }
-        }
-    }
-
-private:
-    WindowManagerService* mService;
-};
-
-void WindowManagerService::postTimerMessage(int32_t delay) {
-    if (delay < 0) {
-        FLOGW("WMS, remove timer message");
-        mTimerStopped = true;
-        return;
-    }
-
-    FLOGD("send message delay (%d) ms", delay);
-
-    if (mTimerStopped) mTimerStopped = false;
-
-    mLooper->sendMessageDelayed(delay * 1000000, mTimerHandler, Message(MSG_DO_TIMER));
-}
-
-WindowManagerService::WindowManagerService() : mTimerStopped(true) {
+WindowManagerService::WindowManagerService(uv_loop_t* looper) : mLooper(looper) {
     FLOGI("WMS init");
-    mLooper = Looper::getForThread();
     mContainer = new RootContainer(this);
-    mTimerHandler = new UITimerHandler(this);
-    postTimerMessage(DEF_REFR_PERIOD);
 }
 
 WindowManagerService::~WindowManagerService() {
-    mTimerHandler.clear();
     delete mContainer;
-}
-
-bool WindowManagerService::registerFd(int fd, int events, Looper_callbackFunc cb, void* data) {
-    if (fd > 0 && mLooper) {
-        int ret = mLooper->addFd(fd, android::Looper::POLL_CALLBACK, events, cb, data);
-        return ret > 0 ? true : false;
-    }
-    return false;
-}
-
-void WindowManagerService::unregisterFd(int fd) {
-    if (fd > 0 && mLooper) {
-        mLooper->removeFd(fd);
-    }
 }
 
 Status WindowManagerService::getPhysicalDisplayInfo(int32_t displayId, DisplayInfo* info,
@@ -326,6 +263,7 @@ Status WindowManagerService::requestVsync(const sp<IWindow>& window, VsyncReques
     FLOGD("freq:%d", (int)freq);
     sp<IBinder> client = IInterface::asBinder(window);
     auto it = mWindowMap.find(client);
+
     if (it != mWindowMap.end()) {
         if (!it->second->scheduleVsync(freq)) {
             FLOGD("scheduleVsync %d for %p failure!", (int)freq, it->second);
@@ -349,11 +287,23 @@ void WindowManagerService::doRemoveWindow(const sp<IWindow>& window) {
 
 bool WindowManagerService::responseVsync() {
     WM_PROFILER_BEGIN();
+
+    VsyncRequest nextVsync = VsyncRequest::VSYNC_REQ_NONE;
     for (const auto& [key, state] : mWindowMap) {
-        if (state->isVisible()) state->onVsync();
+        if (state->isVisible()) {
+            VsyncRequest result = state->onVsync();
+            if (result > nextVsync) {
+                nextVsync = result;
+            }
+        }
     }
+
+    if (nextVsync == VsyncRequest::VSYNC_REQ_NONE) {
+        mContainer->enableVsync(false);
+    }
+
     WM_PROFILER_END();
-    return mTimerStopped;
+    return true;
 }
 
 int32_t WindowManagerService::createSurfaceControl(SurfaceControl* outSurfaceControl,

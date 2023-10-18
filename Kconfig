@@ -19,7 +19,10 @@ config SYSTEM_WINDOW_SERVICE
 	depends on ANDROID_BINDER
 	depends on SYSTEM_SERVER
 	depends on FS_SHMFS
+	depends on GRAPHICS_LVGL
 	depends on LV_ENABLE_GLOBAL_CUSTOM
+	depends on LV_USE_NUTTX
+	depends on LV_USE_NUTTX_LIBUV
 
 if SYSTEM_WINDOW_SERVICE
 
