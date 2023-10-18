@@ -59,7 +59,7 @@ public:
 
     void applyTransaction(LayerState layerState);
     bool scheduleVsync(VsyncRequest vsyncReq);
-    bool onVsync();
+    VsyncRequest onVsync();
     bool sendInputMessage(const InputMessage* ie);
 
     std::shared_ptr<WindowToken> getToken() {
