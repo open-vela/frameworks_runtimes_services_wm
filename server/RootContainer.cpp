@@ -33,20 +33,12 @@ namespace os {
 namespace wm {
 
 RootContainer::RootContainer(WindowManagerService* service)
-      : mService(service), mDisp(NULL), mIndev(NULL), mInputFd(-1), mDispFd(-1) {
+      : mService(service), mDisp(NULL), mIndev(NULL), mVsyncTimer(NULL), mUvData(NULL) {
     init();
 }
 
 RootContainer::~RootContainer() {
-    if (mDispFd > 0) {
-        mService->unregisterFd(mDispFd);
-        close(mDispFd);
-        mDispFd = -1;
-    }
-    if (mInputFd > 0) {
-        mService->unregisterFd(mInputFd);
-        mInputFd = -1;
-    }
+    if (mVsyncTimer) lv_timer_del(mVsyncTimer);
 
     lv_anim_del_all();
     if (mDisp) {
@@ -58,6 +50,7 @@ RootContainer::~RootContainer() {
         mIndev = NULL;
     }
     mService = nullptr;
+    lv_nuttx_uv_deinit(&mUvData);
     lv_deinit();
 }
 
@@ -77,50 +70,44 @@ lv_obj_t* RootContainer::getTopLayer() {
     return lv_disp_get_layer_top(mDisp);
 }
 
-static inline int vsyncCallback(int fd, int events, void* data) {
-    RootContainer* container = static_cast<RootContainer*>(data);
+static void vsyncCallback(lv_timer_t* tmr) {
+    RootContainer* container = static_cast<RootContainer*>(lv_timer_get_user_data(tmr));
     if (container) {
         container->processVsyncEvent();
     }
-    return 1;
 }
 
-static inline int inputCallback(int fd, int events, void* data) {
-    RootContainer* container = static_cast<RootContainer*>(data);
-    if (container) {
-        container->processInputEvent();
+static void resetVsyncTimer(lv_event_t* e) {
+    lv_event_code_t code = lv_event_get_code(e);
+
+    if (code == LV_EVENT_REFR_FINISH) {
+        WM_PROFILER_BEGIN();
+        lv_timer_t* timer = (lv_timer_t*)(lv_event_get_user_data(e));
+        WM_PROFILER_END();
+
+        if (!timer->paused) {
+            lv_timer_reset(timer);
+            if (timer->timer_cb) timer->timer_cb(timer);
+        }
     }
-    return 1;
+}
+
+void RootContainer::enableVsync(bool enable) {
+    WM_PROFILER_BEGIN();
+    if (mVsyncTimer) {
+        if (enable && mVsyncTimer->paused) {
+            lv_timer_resume(mVsyncTimer);
+        } else if (!enable && !mVsyncTimer->paused) {
+            lv_timer_pause(mVsyncTimer);
+        }
+    }
+    WM_PROFILER_END();
 }
 
 void RootContainer::processVsyncEvent() {
     WM_PROFILER_BEGIN();
+    if (mService) mService->responseVsync();
 
-    _lv_disp_get_refr_timer(NULL);
-    if (mService && mService->responseVsync()) {
-        uint32_t delay = lv_timer_get_time_until_next();
-        if (delay != LV_NO_TIMER_READY) {
-            FLOGI("resume ui timer!");
-            mService->postTimerMessage(delay);
-        }
-    }
-
-    WM_PROFILER_END();
-}
-
-int32_t RootContainer::handleTimer() {
-    WM_PROFILER_BEGIN();
-    uint32_t delay = lv_timer_handler();
-    int32_t result = delay == LV_NO_TIMER_READY ? -1 : delay;
-    WM_PROFILER_END();
-    return result;
-}
-
-void RootContainer::processInputEvent() {
-    WM_PROFILER_BEGIN();
-#if LV_VERSION_CHECK(9, 0, 0)
-    lv_indev_read(mIndev);
-#endif
     WM_PROFILER_END();
 }
 
@@ -137,28 +124,20 @@ bool RootContainer::init() {
     info.need_wait_vsync = true;
 
     mDisp = lv_nuttx_init(&info);
-
     mIndev = lv_indev_get_next(NULL);
-    mInputFd = (int32_t)lv_indev_get_user_data(mIndev);
-    if (mInputFd > 0 &&
-        mService->registerFd(mInputFd, POLL_EVENT_INPUT, inputCallback, (void*)mIndev)) {
-        lv_timer_del(mIndev->read_timer);
-        mIndev->read_timer = NULL;
-    }
 
-    mDispFd = open(CONFIG_LV_FBDEV_INTERFACE_DEFAULT_DEVICEPATH, O_WRONLY);
-    // if (mDispFd > 0) {
-    //     if (mService->registerFd(fd, POLL_EVENT_OUTPUT, vsyncCallback, (void*)this)) {
-    //         lv_timer_del(mDisp->refr_timer);
-    //         mDisp->refr_timer = NULL;
-    //     }
-    // }
+#if LV_USE_NUTTX_LIBUV
+    lv_nuttx_uv_t uv_info = {
+            .loop = mService->getUvLooper(),
+            .disp = mDisp,
+            .fbpath = info.fb_path,
+    };
+    mUvData = lv_nuttx_uv_init(&uv_info);
+#endif
+    mVsyncTimer = lv_timer_create(vsyncCallback, DEF_REFR_PERIOD, this);
+    lv_event_add(&mDisp->event_list, resetVsyncTimer, LV_EVENT_REFR_FINISH, mVsyncTimer);
 #endif
 
-    lv_timer_t* timer = _lv_disp_get_refr_timer(mDisp);
-    if (timer) {
-        lv_timer_set_period(timer, DEF_REFR_PERIOD);
-    }
 #else
     lv_porting_init();
     mDisp = lv_disp_get_default();

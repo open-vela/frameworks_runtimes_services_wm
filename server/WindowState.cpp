@@ -89,8 +89,12 @@ void WindowState::setVisibility(bool visibility) {
 
     if (!visibility) {
         scheduleVsync(VsyncRequest::VSYNC_REQ_NONE);
-    } else if (mVsyncRequest == VsyncRequest::VSYNC_REQ_NONE) {
-        scheduleVsync(VsyncRequest::VSYNC_REQ_SINGLE);
+    } else {
+        if (mVsyncRequest == VsyncRequest::VSYNC_REQ_NONE) {
+            scheduleVsync(VsyncRequest::VSYNC_REQ_SINGLE);
+        } else {
+            scheduleVsync(mVsyncRequest);
+        }
     }
 
     mNode->enableInput(visibility);
@@ -192,14 +196,17 @@ void WindowState::applyTransaction(LayerState layerState) {
 bool WindowState::scheduleVsync(VsyncRequest vsyncReq) {
     FLOGD("vsyceReq:%d", (int)vsyncReq);
 
+    mService->getRootContainer()->enableVsync(true);
+
     if (mVsyncRequest == vsyncReq) return false;
 
     mVsyncRequest = vsyncReq;
+
     return true;
 }
 
-bool WindowState::onVsync() {
-    if (mVsyncRequest == VsyncRequest::VSYNC_REQ_NONE) return false;
+VsyncRequest WindowState::onVsync() {
+    if (mVsyncRequest == VsyncRequest::VSYNC_REQ_NONE) return mVsyncRequest;
     WM_PROFILER_BEGIN();
 
     FLOGD("(%p) send vsync to client", this);
@@ -207,7 +214,7 @@ bool WindowState::onVsync() {
     mClient->onFrame(++mFrameReq);
     WM_PROFILER_END();
 
-    return true;
+    return mVsyncRequest;
 }
 
 void WindowState::removeIfPossible() {
