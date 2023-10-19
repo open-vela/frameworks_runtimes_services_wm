@@ -66,11 +66,7 @@ static inline void reset_buf_dsc(lv_obj_t* obj) {
 
     mainwnd->buf_dsc.img_dsc.data = NULL;
     mainwnd->buf_dsc.img_dsc.data_size = 0;
-#if LV_VERSION_CHECK(9, 0, 0)
     mainwnd->buf_dsc.img_dsc.header.cf = LV_COLOR_FORMAT_UNKNOWN;
-#else
-    mainwnd->buf_dsc.img_dsc.header.cf = LV_IMG_CF_UNKNOWN;
-#endif
     mainwnd->buf_dsc.img_dsc.header.always_zero = 0;
     mainwnd->buf_dsc.img_dsc.header.w = 0;
     mainwnd->buf_dsc.img_dsc.header.h = 0;
@@ -125,13 +121,9 @@ bool lv_mainwnd_update_buffer(lv_obj_t* obj, lv_mainwnd_buf_dsc_t* buf_dsc, cons
         lv_obj_clear_flag(obj, LV_OBJ_FLAG_HIDDEN);
     }
 
-#if LV_VERSION_CHECK(9, 0, 0)
     lv_cache_lock();
     lv_cache_invalidate(lv_cache_find(&mainwnd->buf_dsc.img_dsc, LV_CACHE_SRC_TYPE_PTR, 0, 0));
     lv_cache_unlock();
-#else
-    lv_img_cache_invalidate_src(&mainwnd->buf_dsc.img_dsc);
-#endif
     mainwnd->buf_dsc.id = buf_dsc->id;
 
     mainwnd->buf_dsc.img_dsc.data = buf_dsc->img_dsc.data;
@@ -221,28 +213,16 @@ static void lv_mainwnd_destructor(const lv_obj_class_t* class_p, lv_obj_t* obj) 
 static inline void draw_buffer(lv_obj_t* obj, lv_event_t* e) {
     WM_PROFILER_BEGIN();
 
-#if LV_VERSION_CHECK(9, 0, 0)
     lv_layer_t* layer = lv_event_get_layer(e);
-#else
-    lv_draw_ctx_t* draw_ctx = lv_event_get_draw_ctx(e);
-#endif
-
     lv_mainwnd_t* mainwnd = (lv_mainwnd_t*)obj;
 
     if (!mainwnd->buf_dsc.img_dsc.data) return;
     if (mainwnd->buf_dsc.img_dsc.header.w == 0 || mainwnd->buf_dsc.img_dsc.header.h == 0) return;
 
-#if LV_VERSION_CHECK(9, 0, 0)
     lv_draw_image_dsc_t img_dsc;
     lv_draw_image_dsc_init(&img_dsc);
     lv_obj_init_draw_image_dsc(obj, LV_PART_MAIN, &img_dsc);
     uint16_t zoom = LV_ZOOM_NONE;
-#else
-    lv_draw_img_dsc_t img_dsc;
-    lv_draw_img_dsc_init(&img_dsc);
-    lv_obj_init_draw_img_dsc(obj, LV_PART_MAIN, &img_dsc);
-    uint16_t zoom = LV_IMG_ZOOM_NONE;
-#endif
 
     lv_coord_t img_w = mainwnd->buf_dsc.img_dsc.header.w;
     lv_coord_t img_h = mainwnd->buf_dsc.img_dsc.header.h;
@@ -264,12 +244,8 @@ static inline void draw_buffer(lv_obj_t* obj, lv_event_t* e) {
     win_coords.y2 = win_coords.y1 + img_h - 1;
 
     LV_LOG_TRACE("draw (%p) with (%d)", mainwnd, mainwnd->buf_dsc.id);
-#if LV_VERSION_CHECK(9, 0, 0)
     img_dsc.src = &mainwnd->buf_dsc.img_dsc;
     lv_draw_image(layer, &img_dsc, &win_coords);
-#else
-    lv_draw_img(draw_ctx, &img_dsc, &win_coords, &mainwnd->buf_dsc.img_dsc);
-#endif
     WM_PROFILER_END();
 }
 
@@ -289,13 +265,8 @@ static inline void dump_input_event(lv_mainwnd_input_event_t* ie) {
 static inline void send_input_event(lv_mainwnd_t* mainwnd, lv_event_code_t code,
                                     lv_indev_t* indev) {
     lv_mainwnd_input_event_t ie;
-#if LV_VERSION_CHECK(9, 0, 0)
     ie.type = lv_indev_get_type(indev);
     ie.state = lv_indev_get_state(indev);
-#else
-    ie.type = lv_indev_get_type(indev);
-    ie.state = indev->proc.state;
-#endif
 
     if (code == LV_EVENT_KEY) {
         ie.type = LV_MAINWND_EVENT_TYPE_KEYPAD;
@@ -309,13 +280,8 @@ static inline void send_input_event(lv_mainwnd_t* mainwnd, lv_event_code_t code,
         ie.pointer.raw_x = point.x;
         ie.pointer.raw_y = point.y;
         // raw x, y
-#if LV_VERSION_CHECK(9, 0, 0)
         ie.pointer.x = point.x - lv_obj_get_x((lv_obj_t*)mainwnd);
         ie.pointer.y = point.y - lv_obj_get_y((lv_obj_t*)mainwnd);
-#else
-        ie.pointer.x = point.x - ((lv_obj_t*)mainwnd)->coords.x1;
-        ie.pointer.y = point.y - ((lv_obj_t*)mainwnd)->coords.y1;
-#endif
         dump_input_event(&ie);
         mainwnd->meta_info.send_input_event(&(mainwnd->meta_info), &ie);
     }
@@ -340,12 +306,12 @@ static void lv_mainwnd_event(const lv_obj_class_t* class_p, lv_event_t* e) {
             }
 
             if (!mainwnd->meta_info.acquire_buffer) {
-                LV_LOG_WARN("no 'acquire_buffer' callback!");
+                LV_LOG_INFO("no 'acquire_buffer' callback!");
                 return;
             }
 
             if (!mainwnd->meta_info.acquire_buffer(&mainwnd->meta_info, &mainwnd->buf_dsc)) {
-                LV_LOG_WARN("acquire_buffer failure!");
+                LV_LOG_INFO("acquire_buffer failure!");
                 return;
             }
             draw_buffer(obj, e);
@@ -354,12 +320,12 @@ static void lv_mainwnd_event(const lv_obj_class_t* class_p, lv_event_t* e) {
 
         case LV_EVENT_PRESSED ... LV_EVENT_LEAVE: {
             if (!mainwnd->meta_info.send_input_event) {
-                LV_LOG_WARN("no 'send_input_event' callback!");
+                LV_LOG_INFO("no 'send_input_event' callback!");
                 return;
             }
             lv_indev_t* indev = lv_event_get_indev(e);
             if (!indev) {
-                LV_LOG_WARN("no valid input device!");
+                LV_LOG_INFO("no valid input device!");
                 return;
             }
             send_input_event(mainwnd, code, indev);

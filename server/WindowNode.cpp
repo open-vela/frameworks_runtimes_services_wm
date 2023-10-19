@@ -40,12 +40,7 @@ static inline void initBufDsc(lv_mainwnd_buf_dsc_t* buf_dsc, BufferKey id, int32
     buf_dsc->id = id;
     buf_dsc->img_dsc.header.w = w;
     buf_dsc->img_dsc.header.h = h;
-
-#if LV_VERSION_CHECK(9, 0, 0)
     buf_dsc->img_dsc.header.cf = LV_COLOR_FORMAT_NATIVE_WITH_ALPHA;
-#else
-    buf_dsc->img_dsc.header.cf = LV_IMG_CF_TRUE_COLOR_ALPHA;
-#endif
     buf_dsc->img_dsc.data_size = size;
     buf_dsc->img_dsc.data = (const uint8_t*)data;
 }
