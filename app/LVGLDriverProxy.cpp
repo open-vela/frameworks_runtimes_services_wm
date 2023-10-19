@@ -18,13 +18,8 @@
 
 #include "LVGLDriverProxy.h"
 
-#if LV_VERSION_CHECK(9, 0, 0)
-#include <lvgl/src/lvgl_private.h>
-#else
-#include <lv_porting/lv_porting.h>
-#endif
-
 #include <lvgl/lvgl.h>
+#include <lvgl/src/lvgl_private.h>
 
 namespace os {
 namespace wm {
@@ -86,9 +81,7 @@ void LVGLDriverProxy::drawFrame(BufferItem* bufItem) {
 }
 
 void LVGLDriverProxy::handleEvent() {
-#if LV_VERSION_CHECK(9, 0, 0)
     if (mIndev) lv_indev_read(mIndev);
-#endif
 }
 
 void* LVGLDriverProxy::getRoot() {
@@ -98,20 +91,6 @@ void* LVGLDriverProxy::getRoot() {
 void* LVGLDriverProxy::getWindow() {
     return lv_disp_get_scr_act(mDisp);
 }
-
-#if !LV_VERSION_CHECK(9, 0, 0)
-
-void LVGLDriverProxy::updateResolution(int32_t width, int32_t height) {}
-void LVGLDriverProxy::updateVisibility(bool visible) {}
-
-static lv_disp_t* _disp_init(LVGLDriverProxy* proxy) {
-    return NULL;
-}
-
-bool LVGLDriverProxy::enableInput(bool enable) {
-    return false;
-}
-#else
 
 bool LVGLDriverProxy::enableInput(bool enable) {
     if (enable && !mIndev) {
@@ -298,7 +277,6 @@ static lv_indev_t* _indev_init(LVGLDriverProxy* proxy) {
     indev->read_timer = NULL;
     return indev;
 }
-#endif
 
 } // namespace wm
 } // namespace os
