@@ -72,6 +72,8 @@ public:
         mBufferItem = nullptr;
     }
 
+    virtual void updateVisibility(bool visible);
+
 private:
     std::weak_ptr<BaseWindow> mBaseWindow;
     BufferItem* mBufferItem;

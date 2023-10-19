@@ -235,6 +235,9 @@ void BaseWindow::handleAppVisibility(bool visible) {
 
     WM_PROFILER_BEGIN();
     mVisible = visible;
+
+    mUIProxy->updateVisibility(visible);
+
     mWindowManager->relayoutWindow(shared_from_this());
     if (mSurfaceControl.get() != nullptr && mSurfaceControl->isValid()) {
         updateOrCreateBufferQueue();
