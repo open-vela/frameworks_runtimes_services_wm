@@ -38,6 +38,7 @@ public:
     lv_disp_render_mode_t renderMode() {
         return mRenderMode;
     }
+    void updateVisibility(bool visible);
 
     lv_disp_t* mDisp;
     lv_coord_t mDispW;

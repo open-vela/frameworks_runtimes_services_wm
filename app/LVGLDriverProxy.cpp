@@ -102,6 +102,7 @@ void* LVGLDriverProxy::getWindow() {
 #if !LV_VERSION_CHECK(9, 0, 0)
 
 void LVGLDriverProxy::updateResolution(int32_t width, int32_t height) {}
+void LVGLDriverProxy::updateVisibility(bool visible) {}
 
 static lv_disp_t* _disp_init(LVGLDriverProxy* proxy) {
     return NULL;
@@ -127,6 +128,22 @@ bool LVGLDriverProxy::enableInput(bool enable) {
 
 void LVGLDriverProxy::updateResolution(int32_t width, int32_t height) {
     lv_disp_set_res(mDisp, width, height);
+}
+
+void LVGLDriverProxy::updateVisibility(bool visible) {
+    if (visible) {
+        if (!lv_display_is_invalidation_enabled(mDisp)) lv_display_enable_invalidation(mDisp, true);
+
+        lv_area_t area;
+        area.x1 = 0;
+        area.y1 = 0;
+        area.x2 = lv_display_get_horizontal_resolution(mDisp) - 1;
+        area.y2 = lv_display_get_vertical_resolution(mDisp) - 1;
+        _lv_inv_area(mDisp, &area);
+
+    } else if (lv_display_is_invalidation_enabled(mDisp)) {
+        lv_display_enable_invalidation(mDisp, false);
+    }
 }
 
 static void _disp_flush_cb(lv_disp_t* disp, const lv_area_t* area_p, uint8_t* color_p) {
