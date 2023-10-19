@@ -19,12 +19,7 @@
 #include "RootContainer.h"
 
 #include <lvgl/lvgl.h>
-
-#if LV_VERSION_CHECK(9, 0, 0)
 #include <lvgl/src/lvgl_private.h>
-#else
-#include <lv_porting/lv_porting.h>
-#endif
 
 #include "WindowManagerService.h"
 #include "WindowUtils.h"
@@ -114,8 +109,6 @@ void RootContainer::processVsyncEvent() {
 bool RootContainer::init() {
     lv_init();
 
-#if LV_VERSION_CHECK(9, 0, 0)
-
 #if LV_USE_NUTTX
 
     lv_nuttx_t info;
@@ -136,11 +129,6 @@ bool RootContainer::init() {
 #endif
     mVsyncTimer = lv_timer_create(vsyncCallback, DEF_REFR_PERIOD, this);
     lv_event_add(&mDisp->event_list, resetVsyncTimer, LV_EVENT_REFR_FINISH, mVsyncTimer);
-#endif
-
-#else
-    lv_porting_init();
-    mDisp = lv_disp_get_default();
 #endif
 
     return mDisp ? true : false;
