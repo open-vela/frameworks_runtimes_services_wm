@@ -82,5 +82,6 @@ bool UIDriverProxy::readEvent(InputMessage* message) {
 
 void UIDriverProxy::updateResolution(int32_t width, int32_t height) {}
 
+void UIDriverProxy::updateVisibility(bool visible) {}
 } // namespace wm
 } // namespace os
