@@ -28,7 +28,7 @@ namespace os {
 namespace wm {
 
 RootContainer::RootContainer(WindowManagerService* service)
-      : mService(service), mDisp(NULL), mIndev(NULL), mVsyncTimer(NULL), mUvData(NULL) {
+      : mService(service), mDisp(NULL), mVsyncTimer(NULL), mUvData(NULL) {
     init();
 }
 
@@ -36,16 +36,16 @@ RootContainer::~RootContainer() {
     if (mVsyncTimer) lv_timer_del(mVsyncTimer);
 
     lv_anim_del_all();
+#if LV_USE_NUTTX_LIBUV
+    lv_nuttx_uv_deinit(&mUvData);
+#endif
+
     if (mDisp) {
         lv_disp_remove(mDisp);
         mDisp = NULL;
     }
-    if (mIndev) {
-        lv_indev_delete(mIndev);
-        mIndev = NULL;
-    }
+
     mService = nullptr;
-    lv_nuttx_uv_deinit(&mUvData);
     lv_deinit();
 }
 
@@ -110,20 +110,19 @@ bool RootContainer::init() {
     lv_init();
 
 #if LV_USE_NUTTX
+    lv_nuttx_dsc_t info;
+    lv_nuttx_result_t result;
 
-    lv_nuttx_t info;
     info.fb_path = CONFIG_LV_FBDEV_INTERFACE_DEFAULT_DEVICEPATH;
     info.input_path = CONFIG_LV_TOUCHPAD_INTERFACE_DEFAULT_DEVICEPATH;
-    info.need_wait_vsync = true;
-
-    mDisp = lv_nuttx_init(&info);
-    mIndev = lv_indev_get_next(NULL);
+    lv_nuttx_init(&info, &result);
+    mDisp = result.disp;
 
 #if LV_USE_NUTTX_LIBUV
     lv_nuttx_uv_t uv_info = {
             .loop = mService->getUvLooper(),
-            .disp = mDisp,
-            .fbpath = info.fb_path,
+            .disp = result.disp,
+            .indev = result.indev,
     };
     mUvData = lv_nuttx_uv_init(&uv_info);
 #endif

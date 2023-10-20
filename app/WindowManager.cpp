@@ -58,7 +58,7 @@ WindowManager::WindowManager() : mTimerInited(false) {
 
     lv_init();
 #if LV_USE_NUTTX
-    lv_nuttx_init(NULL);
+    lv_nuttx_init(NULL, NULL);
 #endif
 }
 
