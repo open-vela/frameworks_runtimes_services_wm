@@ -62,16 +62,17 @@ void LVGLDriverProxy::drawFrame(BufferItem* bufItem) {
     }
 
     if (oldItem && mRenderMode == LV_DISP_RENDER_MODE_DIRECT) {
-        lv_coord_t stride =
-                lv_draw_buf_width_to_stride(lv_disp_get_hor_res(mDisp), mDisp->color_format);
+        uint32_t hor_res = lv_display_get_horizontal_resolution(mDisp);
+        uint32_t ver_res = lv_display_get_vertical_resolution(mDisp);
         lv_area_t scr_area;
         scr_area.x1 = 0;
         scr_area.y1 = 0;
         scr_area.x2 = lv_disp_get_hor_res(mDisp) - 1;
         scr_area.y2 = lv_disp_get_ver_res(mDisp) - 1;
 
-        lv_draw_buf_copy(bufItem->mBuffer, stride, &scr_area, oldItem->mBuffer, stride, &scr_area,
-                         mDisp->color_format);
+        lv_draw_buf_copy(bufItem->mBuffer, hor_res, ver_res, &scr_area,
+                         oldItem->mBuffer, hor_res, ver_res, &scr_area,
+                         lv_display_get_color_format(mDisp));
     }
 
     if (lv_disp_get_default() != mDisp) {
