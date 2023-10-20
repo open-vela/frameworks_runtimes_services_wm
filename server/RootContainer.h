@@ -54,7 +54,6 @@ private:
     bool init();
     WindowManagerService* mService;
     lv_disp_t* mDisp;
-    lv_indev_t* mIndev;
     lv_timer_t* mVsyncTimer;
     void* mUvData;
 };
