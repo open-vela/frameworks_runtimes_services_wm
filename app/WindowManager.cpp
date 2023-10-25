@@ -20,8 +20,11 @@
 
 #include <binder/IInterface.h>
 #include <binder/IServiceManager.h>
+#include <lvgl/lvgl.h>
 #include <nuttx/tls.h>
 #include <utils/RefBase.h>
+
+#include <ext/lv_ext.h>
 
 #include "DummyDriverProxy.h"
 #include "LVGLDriverProxy.h"
@@ -60,6 +63,7 @@ WindowManager::WindowManager() : mTimerInited(false) {
 #if LV_USE_NUTTX
     lv_nuttx_init(NULL, NULL);
 #endif
+    lv_ext_init();
 }
 
 WindowManager::~WindowManager() {
