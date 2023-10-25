@@ -16,8 +16,9 @@
 
 #pragma once
 
+#include <lvgl/lvgl.h>
+
 #include "UIDriverProxy.h"
-#include "lvgl/lvgl.h"
 
 namespace os {
 namespace wm {
