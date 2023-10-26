@@ -89,15 +89,7 @@ void* LVGLDriverProxy::getRoot() {
 }
 
 void* LVGLDriverProxy::getWindow() {
-    lv_obj_t* screen = lv_display_get_screen_act(mDisp);
-    if (screen) {
-        uint32_t hor_res = lv_display_get_horizontal_resolution(mDisp);
-        uint32_t ver_res = lv_display_get_vertical_resolution(mDisp);
-
-        lv_obj_set_width(screen, hor_res);
-        lv_obj_set_height(screen, ver_res);
-    }
-    return screen;
+    return lv_display_get_screen_act(mDisp);
 }
 
 bool LVGLDriverProxy::enableInput(bool enable) {
@@ -245,6 +237,11 @@ static lv_display_t* _disp_init(LVGLDriverProxy* proxy) {
     lv_event_add(&disp->event_list, _disp_event_cb, LV_EVENT_ALL, proxy);
     lv_display_set_user_data(disp, proxy);
 
+    lv_obj_t* screen = lv_display_get_screen_act(disp);
+    if (screen) {
+        lv_obj_set_width(screen, width);
+        lv_obj_set_height(screen, height);
+    }
     return disp;
 }
 
