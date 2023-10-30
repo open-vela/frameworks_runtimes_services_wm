@@ -177,22 +177,23 @@ void BaseWindow::setInputChannel(InputChannel* inputChannel) {
 void BaseWindow::setSurfaceControl(SurfaceControl* surfaceControl) {
     /*reset current buffer when surface changed*/
     mUIProxy->resetBuffer();
+    mSurfaceControl.reset(surfaceControl);
+
     if (surfaceControl != nullptr && surfaceControl->isValid()) {
-        mSurfaceControl.reset(surfaceControl);
         mUIProxy->updateResolution(surfaceControl->getWidth(), surfaceControl->getHeight());
-    }
 
 #ifdef CONFIG_ENABLE_BUFFER_QUEUE_BY_NAME
-    vector<BufferId> ids;
-    std::unordered_map<BufferKey, BufferId> bufferIds = mSurfaceControl->bufferIds();
-    for (auto it = bufferIds.begin(); it != bufferIds.end(); ++it) {
-        FLOGI("reset SurfaceControl bufferId:%s,%d", it->second.mName.c_str(), it->second.mKey);
+        vector<BufferId> ids;
+        std::unordered_map<BufferKey, BufferId> bufferIds = mSurfaceControl->bufferIds();
+        for (auto it = bufferIds.begin(); it != bufferIds.end(); ++it) {
+            FLOGI("reset SurfaceControl bufferId:%s,%d", it->second.mName.c_str(), it->second.mKey);
 
-        int32_t fd = shm_open(it->second.mName.c_str(), O_RDWR, S_IRUSR | S_IWUSR);
-        ids.push_back({it->second.mName, it->second.mKey, fd});
-    }
-    mSurfaceControl->initBufferIds(ids);
+            int32_t fd = shm_open(it->second.mName.c_str(), O_RDWR, S_IRUSR | S_IWUSR);
+            ids.push_back({it->second.mName, it->second.mKey, fd});
+        }
+        mSurfaceControl->initBufferIds(ids);
 #endif
+    }
 }
 
 void BaseWindow::dispatchAppVisibility(bool visible) {
