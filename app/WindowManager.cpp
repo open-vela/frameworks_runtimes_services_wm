@@ -23,8 +23,9 @@
 #include <lvgl/lvgl.h>
 #include <nuttx/tls.h>
 #include <utils/RefBase.h>
-
+#ifdef CONFIG_LVGL_EXTENSION
 #include <ext/lv_ext.h>
+#endif
 
 #include "DummyDriverProxy.h"
 #include "LVGLDriverProxy.h"
@@ -32,8 +33,29 @@
 #include "WindowUtils.h"
 #include "uv.h"
 
-static void _lv_timer_cb(uv_timer_t*) {
-    lv_timer_handler();
+static void _wm_lv_timer_cb(uv_timer_t* handle) {
+    uint32_t sleep_ms = lv_timer_handler();
+
+    if (sleep_ms == LV_NO_TIMER_READY) {
+        FLOGD("stop timer event.");
+        uv_timer_stop(handle);
+        return;
+    }
+
+    /* Prevent busy loops. */
+
+    if (sleep_ms == 0) {
+        sleep_ms = 1;
+    }
+
+    FLOGD("sleep_ms = %" PRIu32, sleep_ms);
+    uv_timer_start(handle, _wm_lv_timer_cb, sleep_ms, 0);
+}
+
+static void _wm_lv_timer_resume(void* data) {
+    uv_timer_t* timer = (uv_timer_t*)data;
+    FLOGD("resume timer event.");
+    if (timer) uv_timer_start(timer, _wm_lv_timer_cb, 0, 0);
 }
 
 namespace os {
@@ -63,11 +85,17 @@ WindowManager::WindowManager() : mTimerInited(false) {
 #if LV_USE_NUTTX
     lv_nuttx_init(NULL, NULL);
 #endif
+
+#ifdef CONFIG_LVGL_EXTENSION
     lv_ext_init();
+#endif
 }
 
 WindowManager::~WindowManager() {
     toBackground();
+#ifdef CONFIG_LVGL_EXTENSION
+    lv_ext_deinit();
+#endif
     lv_deinit();
     mService = nullptr;
     mWindows.clear();
@@ -115,8 +143,12 @@ std::shared_ptr<BaseWindow> WindowManager::newWindow(::os::app::Context* context
     window->setUIProxy(std::dynamic_pointer_cast<::os::wm::UIDriverProxy>(proxy));
     if (!mTimerInited) {
         uv_timer_init(context->getMainLoop()->get(), &mEventTimer);
+        uv_timer_start(&mEventTimer, _wm_lv_timer_cb, LV_DEF_REFR_PERIOD, 0);
+        lv_timer_handler_set_resume_cb(_wm_lv_timer_resume, &mEventTimer);
+        FLOGD("init event timer.");
         mTimerInited = true;
     }
+
     WM_PROFILER_END();
 
     return window;
@@ -145,11 +177,6 @@ int32_t WindowManager::attachIWindow(std::shared_ptr<BaseWindow> window) {
     Status status = mService->addWindow(w, lp, 0, 0, 1, outInputChannel, &result);
     if (status.isOk()) {
         window->setInputChannel(outInputChannel);
-
-        if (mTimerInited && mEventTimer.timer_cb == NULL) {
-            uv_timer_start(&mEventTimer, _lv_timer_cb, CONFIG_LV_DEF_REFR_PERIOD,
-                           CONFIG_LV_DEF_REFR_PERIOD);
-        }
     } else {
         if (outInputChannel) delete outInputChannel;
         result = -1;
@@ -185,7 +212,12 @@ bool WindowManager::removeWindow(std::shared_ptr<BaseWindow> window) {
         mWindows.erase(it);
     }
     if (mWindows.size() == 0) {
-        toBackground();
+        if (mTimerInited) {
+            lv_timer_handler_set_resume_cb(NULL, NULL);
+            uv_close((uv_handle_t*)&mEventTimer, NULL);
+            mTimerInited = false;
+            FLOGD("close event timer.");
+        }
     }
     WM_PROFILER_END();
     FLOGD("done");
@@ -193,12 +225,7 @@ bool WindowManager::removeWindow(std::shared_ptr<BaseWindow> window) {
     return 0;
 }
 
-void WindowManager::toBackground() {
-    if (mTimerInited && mEventTimer.timer_cb) {
-        uv_timer_stop(&mEventTimer);
-        mEventTimer.timer_cb = NULL;
-    }
-}
+void WindowManager::toBackground() {}
 
 bool WindowManager::dumpWindows() {
     int number = 1;
