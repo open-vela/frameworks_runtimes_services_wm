@@ -43,6 +43,7 @@ public:
 
     void copyFrom(InputChannel& other) {
         mEventFd = other.mEventFd;
+        mEventName = other.mEventName;
     }
 
     bool isValid() {
@@ -58,6 +59,7 @@ public:
 
 private:
     int mEventFd;
+    std::string mEventName;
 };
 
 } // namespace wm
