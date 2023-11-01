@@ -31,11 +31,15 @@ InputChannel::~InputChannel() {}
 
 status_t InputChannel::writeToParcel(Parcel* out) const {
     status_t result = out->writeFileDescriptor(mEventFd);
+    SAFE_PARCEL(out->writeCString, mEventName.c_str());
+
     return result;
 }
 
 status_t InputChannel::readFromParcel(const Parcel* in) {
     mEventFd = dup(in->readFileDescriptor());
+    mEventName = in->readCString();
+
     return android::OK;
 }
 
@@ -60,6 +64,7 @@ bool InputChannel::create(const std::string name) {
         FLOGI("mq_open doesn't return success");
         return false;
     }
+    mEventName = name;
 
     return true;
 }
@@ -67,6 +72,8 @@ bool InputChannel::create(const std::string name) {
 void InputChannel::release() {
     if (isValid()) {
         mq_close(mEventFd);
+        mq_unlink(mEventName.c_str());
+        FLOGI("mq unlink:%s", mEventName.c_str());
         mEventFd = -1;
     }
 }
