@@ -117,7 +117,9 @@ bool RootContainer::init() {
     info.input_path = CONFIG_LV_TOUCHPAD_INTERFACE_DEFAULT_DEVICEPATH;
     lv_nuttx_init(&info, &result);
     mDisp = result.disp;
-
+#if defined(CONFIG_UINPUT_TOUCH)
+    lv_nuttx_touchscreen_create("/dev/utouch");
+#endif
 #if LV_USE_NUTTX_LIBUV
     lv_nuttx_uv_t uv_info = {
             .loop = mService->getUvLooper(),
