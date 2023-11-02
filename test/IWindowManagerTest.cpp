@@ -37,7 +37,7 @@ class DemoApplication : public ::os::app::Application {
 class IWindowManagerTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        mWindowManager = WindowManager::getInstance();
+        mWindowManager = new WindowManager();
         mToken = new BBinder();
         mApplication = new DemoApplication();
 
@@ -52,7 +52,9 @@ protected:
         mWindow->setLayoutParams(mLayoutParam);
         mWindow->setWindowManager(mWindowManager);
     }
-    void TearDown() override {}
+    void TearDown() override {
+        delete mWindowManager;
+    }
 
     WindowManager* mWindowManager;
     ::os::app::Context* mContext;

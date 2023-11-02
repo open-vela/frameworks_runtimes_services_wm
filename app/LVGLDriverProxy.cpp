@@ -23,7 +23,7 @@
 
 namespace os {
 namespace wm {
-static lv_display_t* _disp_init(LVGLDriverProxy* proxy);
+static lv_display_t* _disp_init(LVGLDriverProxy* proxy, uint32_t width, uint32_t height);
 static lv_indev_t* _indev_init(LVGLDriverProxy* proxy);
 
 LVGLDriverProxy::LVGLDriverProxy(std::shared_ptr<BaseWindow> win)
@@ -32,7 +32,11 @@ LVGLDriverProxy::LVGLDriverProxy(std::shared_ptr<BaseWindow> win)
         mEventFd(-1),
         mLastEventState(LV_INDEV_STATE_RELEASED),
         mRenderMode(LV_DISP_RENDER_MODE_FULL) {
-    mDisp = _disp_init(this);
+    uint32_t width = 0, height = 0;
+    auto wm = win->getWindowManager();
+    wm->getDisplayInfo(&width, &height);
+
+    mDisp = _disp_init(this, width, height);
     mDispW = mDisp->hor_res;
     mDispH = mDisp->ver_res;
     lv_display_set_default(mDisp);
@@ -217,12 +221,7 @@ static void _disp_event_cb(lv_event_t* e) {
 }
 
 static char _virt_disp_buffer[4];
-static lv_display_t* _disp_init(LVGLDriverProxy* proxy) {
-    static uint32_t width = 0, height = 0;
-    if (width == 0) {
-        WindowManager::getInstance()->getDisplayInfo(&width, &height);
-    }
-
+static lv_display_t* _disp_init(LVGLDriverProxy* proxy, uint32_t width, uint32_t height) {
     lv_display_t* disp = lv_display_create(width, height);
     if (disp == NULL) {
         return NULL;
