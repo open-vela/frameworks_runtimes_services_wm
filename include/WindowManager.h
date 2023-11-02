@@ -33,12 +33,12 @@ class BaseWindow;
 class SurfaceTransaction;
 class WindowManager {
 public:
+    WindowManager();
     ~WindowManager();
 
     static inline const char* name() {
         return "window";
     }
-    static WindowManager* getInstance();
     void destroy();
 
     std::shared_ptr<BaseWindow> newWindow(::os::app::Context* context);
@@ -55,13 +55,12 @@ public:
 
     void toBackground();
 
-    void getDisplayInfo(uint32_t* width, uint32_t* height) {
+    void getDisplayInfo(uint32_t* width, uint32_t* height) const {
         if (width) *width = mDispWidth;
         if (height) *height = mDispHeight;
     }
 
 private:
-    WindowManager();
     std::mutex mLock;
     vector<std::shared_ptr<BaseWindow>> mWindows;
     sp<IWindowManager> mService;

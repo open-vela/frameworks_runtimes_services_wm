@@ -61,14 +61,6 @@ static void _wm_lv_timer_resume(void* data) {
 namespace os {
 namespace wm {
 
-static void _wm_inst_free(FAR void* instance) {
-    FLOGI("free wm instance for thread(%d)", pthread_self());
-    if (instance) {
-        WindowManager* wm = (WindowManager*)instance;
-        delete wm;
-    }
-}
-
 WindowManager::WindowManager() : mTimerInited(false) {
     mTransaction = std::make_shared<SurfaceTransaction>();
     mTransaction->setWindowManager(this);
@@ -93,31 +85,15 @@ WindowManager::WindowManager() : mTimerInited(false) {
 
 WindowManager::~WindowManager() {
     toBackground();
+    mWindows.clear();
+    mService = nullptr;
+
 #ifdef CONFIG_LVGL_EXTENSION
     lv_ext_deinit();
 #endif
     lv_deinit();
-    mService = nullptr;
-    mWindows.clear();
-}
 
-WindowManager* WindowManager::getInstance() {
-    static int index = -1;
-    WindowManager* instance;
-
-    if (index < 0) {
-        index = task_tls_alloc(_wm_inst_free);
-    }
-
-    if (index >= 0) {
-        instance = (WindowManager*)task_tls_get_value(index);
-        if (instance == NULL) {
-            instance = new WindowManager();
-            task_tls_set_value(index, (uintptr_t)instance);
-            FLOGI("new wm instance for thread(%d)", pthread_self());
-        }
-    }
-    return instance;
+    FLOGD("WindowManager destructor");
 }
 
 sp<IWindowManager>& WindowManager::getService() {
