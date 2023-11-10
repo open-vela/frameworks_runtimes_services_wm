@@ -40,14 +40,24 @@ WindowState::WindowState(WindowManagerService* service, const sp<IWindow>& windo
         mVsyncRequest(VsyncRequest::VSYNC_REQ_NONE),
         mFrameReq(0),
         mHasSurface(false) {
+    lv_obj_t* layer = NULL;
     mAttrs = params;
     mVisibility = visibility != 0 ? true : false;
     mRequestedWidth = 0;
     mRequestedHeight = 0;
 
     Rect rect(params.mX, params.mY, params.mX + params.mWidth, params.mY + params.mHeight);
-    // TODO: config layer by type
-    mNode = new WindowNode(this, mService->getRootContainer()->getDefLayer(), rect, enableInput);
+
+    if (params.mType == LayoutParams::TYPE_APPLICATION) {
+        layer = mService->getRootContainer()->getDefLayer();
+    } else if (params.mType == LayoutParams::TYPE_SYSTEM_WINDOW) {
+        layer = mService->getRootContainer()->getSysLayer();
+    } else if (params.mType > LayoutParams::TYPE_SYSTEM_WINDOW) {
+        layer = mService->getRootContainer()->getTopLayer();
+    } else {
+        layer = mService->getRootContainer()->getDefLayer();
+    }
+    mNode = new WindowNode(this, layer, rect, enableInput);
 }
 
 WindowState::~WindowState() {
