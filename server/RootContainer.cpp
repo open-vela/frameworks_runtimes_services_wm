@@ -101,7 +101,9 @@ void RootContainer::enableVsync(bool enable) {
 
 void RootContainer::processVsyncEvent() {
     WM_PROFILER_BEGIN();
-    if (mService) mService->responseVsync();
+    if (mService) {
+        mService->responseVsync();
+    }
 
     WM_PROFILER_END();
 }
@@ -129,7 +131,7 @@ bool RootContainer::init() {
     mUvData = lv_nuttx_uv_init(&uv_info);
 #endif
     mVsyncTimer = lv_timer_create(vsyncCallback, DEF_REFR_PERIOD, this);
-    lv_event_add(&mDisp->event_list, resetVsyncTimer, LV_EVENT_REFR_FINISH, mVsyncTimer);
+    lv_display_add_event(mDisp, resetVsyncTimer, LV_EVENT_REFR_FINISH, mVsyncTimer);
 #endif
 
     return mDisp ? true : false;

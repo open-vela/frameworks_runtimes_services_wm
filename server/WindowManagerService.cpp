@@ -270,6 +270,7 @@ Status WindowManagerService::requestVsync(const sp<IWindow>& window, VsyncReques
         }
     } else {
         WM_PROFILER_END();
+        FLOGW("scheduleVsync %d for %p(not added)!", (int)freq, it->second);
         return Status::fromExceptionCode(1, "can't find winstate in map");
     }
     WM_PROFILER_END();
