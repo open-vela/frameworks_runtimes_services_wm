@@ -120,7 +120,7 @@ void BaseWindow::setWindowManager(WindowManager* wm) {
 }
 
 bool BaseWindow::scheduleVsync(VsyncRequest freq) {
-    if (mVsyncRequest == freq) {
+    if (!mVisible || mVsyncRequest == freq) {
         return false;
     }
 
@@ -247,6 +247,8 @@ void BaseWindow::handleAppVisibility(bool visible) {
 
     if (!visible) {
         mVsyncRequest = VsyncRequest::VSYNC_REQ_NONE;
+    } else {
+        scheduleVsync(VsyncRequest::VSYNC_REQ_SINGLE);
     }
 
     WM_PROFILER_END();
