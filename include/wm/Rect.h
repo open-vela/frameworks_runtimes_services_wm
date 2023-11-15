@@ -69,19 +69,19 @@ public:
         right = other.right;
         bottom = other.bottom;
     }
-    int32_t getLeft() {
+    int32_t getLeft() const {
         return left;
     }
 
-    int32_t getTop() {
+    int32_t getTop() const {
         return top;
     }
 
-    int32_t getWidth() {
+    int32_t getWidth() const {
         return right - left;
     }
 
-    int32_t getHeight() {
+    int32_t getHeight() const {
         return bottom - top;
     }
 

@@ -22,12 +22,15 @@
 #include <utils/RefBase.h>
 
 #include "InputDispatcher.h"
+#include "WindowConfig.h"
 #include "WindowManagerService.h"
 #include "WindowNode.h"
 #include "WindowToken.h"
 #include "os/wm/IWindowManager.h"
 #include "wm/LayoutParams.h"
-
+#ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
+#include "WindowAnimator.h"
+#endif
 namespace os {
 namespace wm {
 
@@ -47,7 +50,7 @@ public:
                 const LayoutParams& params, int32_t visibility, bool enableInput);
 
     bool isVisible();
-    void sendAppVisibilityToClients();
+    void sendAppVisibilityToClients(int32_t visibility);
     void setVisibility(int32_t visibility);
     void removeIfPossible();
 
@@ -75,6 +78,10 @@ public:
     void setLayoutParams(LayoutParams attrs);
     int32_t getSurfaceSize();
 
+#ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
+    void onAnimationFinished(WindowAnimStatus status);
+#endif
+
     DISALLOW_COPY_AND_ASSIGN(WindowState);
 
 private:
@@ -88,9 +95,18 @@ private:
     int32_t mFrameReq;
     int32_t mVisibility;
     bool mHasSurface;
-
+#ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
+    bool mFrameWaiting;
+    bool mAnimRunning;
+    WindowAnimator* mWinAnimator;
+#endif
+    bool mWindowRemoving;
     WindowNode* mNode;
 };
+
+#ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
+int parseAnimJsonFile(const char* filename);
+#endif
 
 } // namespace wm
 } // namespace os
