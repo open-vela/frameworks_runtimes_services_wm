@@ -1,0 +1,38 @@
+[
+    {
+        "id": 1,
+        "type": "enter",
+        "action": {
+            "fromState": {
+                "x": -640.0
+            },
+            "toState": {
+                "x": 0.0
+            },
+            "config": {
+                "ease": [
+                    "linear",
+                    2
+                ]
+            }
+        }
+    },
+    {
+        "id": 2,
+        "type": "exit",
+        "action": {
+            "fromState": {
+                "x": 0.0
+            },
+            "toState": {
+                "x": 640.0
+            },
+            "config": {
+                "ease": [
+                    "linear",
+                    2
+                ]
+            }
+        }
+    }
+]

@@ -109,14 +109,16 @@ static inline void setWidgetMetaInfo(lv_obj_t* obj, void* data, bool enableInput
 
 WindowNode::WindowNode(WindowState* state, void* parent, const Rect& rect, bool enableInput,
                        int32_t format)
-      : mState(state), mBuffer(nullptr), mRect(rect) {
+      : mState(state), mBuffer(nullptr) {
+    if (lv_obj_has_flag((lv_obj_t*)parent, LV_OBJ_FLAG_SCROLLABLE)) {
+        lv_obj_clear_flag((lv_obj_t*)parent, LV_OBJ_FLAG_SCROLLABLE);
+    }
     mWidget = lv_mainwnd_create((lv_obj_t*)parent);
 
     mColorFormat = getLvColorFormatType(format);
 
-    // init window position and size
-    lv_obj_set_pos(mWidget, mRect.left, mRect.top);
-    lv_obj_set_size(mWidget, mRect.right, mRect.bottom);
+    lv_mainwnd_update_flag(mWidget, LV_MAINWND_FLAG_DRAW_SCALE, true);
+    setRect(rect);
 
     // init window meta information
     setWidgetMetaInfo(mWidget, this, enableInput);
@@ -125,6 +127,10 @@ WindowNode::WindowNode(WindowState* state, void* parent, const Rect& rect, bool 
 WindowNode::~WindowNode() {
     if (mWidget) lv_obj_del(mWidget);
     releaseBuffer();
+}
+
+void WindowNode::resetOpaque() {
+    lv_obj_set_style_opa(mWidget, 0xFF, LV_PART_MAIN);
 }
 
 bool WindowNode::updateBuffer(BufferItem* item, Rect* rect) {
@@ -184,7 +190,7 @@ void WindowNode::enableInput(bool enable) {
     setWidgetMetaInfo(mWidget, this, enable);
 }
 
-void WindowNode::setRect(Rect& newRect) {
+void WindowNode::setRect(const Rect& newRect) {
     if (mWidget) {
         int32_t left = newRect.getLeft();
         int32_t top = newRect.getTop();
@@ -203,10 +209,12 @@ void WindowNode::setRect(Rect& newRect) {
 
         if (width != mRect.getWidth()) {
             lv_obj_set_width(mWidget, width);
+            lv_obj_set_style_transform_pivot_x(mWidget, width / 2, LV_PART_MAIN);
         }
 
         if (height != mRect.getHeight()) {
             lv_obj_set_height(mWidget, height);
+            lv_obj_set_style_transform_pivot_y(mWidget, height / 2, LV_PART_MAIN);
         }
     }
     mRect = newRect;

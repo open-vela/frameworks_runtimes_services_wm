@@ -29,12 +29,10 @@ WindowToken::WindowToken(WindowManagerService* service, const sp<IBinder>& token
       : mService(service),
         mToken(token),
         mType(type),
-        mClientVisible(false),
         mClientVisibility(LayoutParams::WINDOW_GONE),
         mClientPid(clientPid) {}
 
 WindowToken::~WindowToken() {
-    mToken = nullptr;
     mChildren.clear();
     mClientPid = -1;
 }
@@ -50,8 +48,13 @@ void WindowToken::addWindow(WindowState* win) {
     FLOGI("[%d] add window ok, now child count:%d", mClientPid, mChildren.size());
 }
 
-bool WindowToken::isClientVisible() {
-    return mClientVisible;
+void WindowToken::removeWindow(WindowState* win) {
+    for (auto it = mChildren.begin(); it != mChildren.end(); it++) {
+        if ((*it) == win) {
+            mChildren.erase(it);
+            return;
+        }
+    }
 }
 
 void WindowToken::setClientVisibility(int32_t visibility) {
@@ -59,31 +62,8 @@ void WindowToken::setClientVisibility(int32_t visibility) {
     FLOGI("[%d] %d => %d (0:visible, 1:hold, 2:gone)", mClientPid, mClientVisibility, visibility);
 
     mClientVisibility = visibility;
-    if (visibility == LayoutParams::WINDOW_HOLD)
-        return;
-
-    bool visible = visibility == LayoutParams::WINDOW_VISIBLE ? true : false;
-    setClientVisible(visible);
-}
-
-void WindowToken::setClientVisible(bool clientVisible) {
-    if (mClientVisible == clientVisible) {
-        return;
-    }
-    FLOGW("[%d] %s => %s", mClientPid, mClientVisible ? "visible" : "invisible",
-          clientVisible ? "visible" : "invisible");
-    mClientVisible = clientVisible;
     for (auto it = mChildren.begin(); it != mChildren.end(); it++) {
-        (*it)->sendAppVisibilityToClients();
-    }
-}
-
-void WindowToken::removeAllWindowsIfPossible() {
-    FLOGI("[%d]", mClientPid);
-    for (auto winState : mChildren) {
-        winState->removeIfPossible();
-        delete winState;
-        winState = nullptr;
+        (*it)->sendAppVisibilityToClients(mClientVisibility);
     }
 }
 
