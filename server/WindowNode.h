@@ -46,10 +46,15 @@ public:
         return mColorFormat;
     }
 
+    lv_obj_t* getWidget() {
+        return mWidget;
+    }
+
     void enableInput(bool enable);
 
-    void setRect(Rect& newRect);
+    void setRect(const Rect& newRect);
     void setParent(void* parent);
+    void resetOpaque();
 
     int32_t getSurfaceSize();
 

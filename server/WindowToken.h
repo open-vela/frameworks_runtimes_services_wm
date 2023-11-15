@@ -39,8 +39,7 @@ public:
     ~WindowToken();
 
     void addWindow(WindowState* win);
-    bool isClientVisible();
-    void removeAllWindowsIfPossible();
+    void removeWindow(WindowState* win);
 
     int32_t getClientVisibility() {
         return mClientVisibility;
@@ -51,13 +50,10 @@ public:
     }
 
 private:
-    void setClientVisible(bool clientVisible);
-
     WindowManagerService* mService;
     sp<IBinder> mToken;
     int32_t mType;
     std::vector<WindowState*> mChildren;
-    bool mClientVisible;
     int32_t mClientVisibility;
     int32_t mClientPid;
 };

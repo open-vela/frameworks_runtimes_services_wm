@@ -40,11 +40,16 @@ config SYSTEM_WINDOW_SERVICE_TEST
         depends on GOOGLE_TEST
 
 config ENABLE_BUFFER_QUEUE_BY_NAME
-	tristate "Enable buffer queue by name"
+	bool "Enable buffer queue by name"
 	default y
 
 config ENABLE_WINDOW_LIMIT_MAX
 	int "support max application window numbers"
 	default 10
+
+config ENABLE_TRANSITION_ANIMATION
+	bool "Enable window transition animation"
+	default n
+	depends on LVX_USE_ANIMENGINE_ADAPTER
 
 endif
