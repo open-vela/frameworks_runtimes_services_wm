@@ -267,7 +267,7 @@ void BaseWindow::handleOnFrame(int32_t seq) {
         mUIProxy->drawFrame(item);
         WM_PROFILER_END();
         if (!mUIProxy->finishDrawing()) {
-            FLOGI("no finish drawing!");
+            FLOGD("no finish drawing!");
             buffProducer->cancelBuffer(item);
             return;
         }

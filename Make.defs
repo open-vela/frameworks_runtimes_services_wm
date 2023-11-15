@@ -30,11 +30,18 @@ CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/base/am/include
 # binder
 CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/android/system/libbase/include
 # lvgl
-CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/graphics/lvgl
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/apps/graphics/lvgl
+CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/apps/graphics/lvgl
 
 ifneq ($(CONFIG_SYSTEM_WINDOW_SERVICE_TEST),)
 # gtest
 CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/googletest/googletest/googletest/include
+endif
+
+#animengine
+ifneq ($(CONFIG_ANIMATION_ENGINE),)
+CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/graphics/animengine/include
+CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/rapidjson/rapidjson/include
 endif
 
 endif

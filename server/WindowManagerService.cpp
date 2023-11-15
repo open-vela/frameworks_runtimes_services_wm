@@ -23,6 +23,12 @@
 #include <sys/stat.h>
 #include <utils/Log.h>
 
+#ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
+#include "WindowAnimEngine.h"
+#include "rapidjson/document.h"
+#include "rapidjson/stringbuffer.h"
+#include "rapidjson/writer.h"
+#endif
 #include "InputDispatcher.h"
 #include "RootContainer.h"
 #include "WindowState.h"
@@ -34,6 +40,45 @@ static const std::string graphicsPath = "/data/graphics/";
 
 namespace os {
 namespace wm {
+
+#ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
+static std::map<int, std::string> mAnimConfigMap;
+static const std::string animConfigPath = "/data/app/window_anim_config.json";
+static const std::string defaultEnterConfigJson =
+        R"({"fromState": {"opacity": 0.0},"toState": {"opacity": 1.0},"config": {"ease": ["cubicIn",0.2]}})";
+static const std::string defaultExitConfigJson =
+        R"({"fromState": {"opacity": 1.0},"toState": {"opacity": 0.0},"config": {"ease": ["cubicIn",0.2]}})";
+
+int parseAnimJsonFile(const char* filename) {
+    std::ifstream file(filename);
+    if (!file) {
+        FLOGE("Failed to open file %s", filename);
+        return android::NAME_NOT_FOUND;
+    }
+
+    std::string content((std::istreambuf_iterator<char>(file)), (std::istreambuf_iterator<char>()));
+    rapidjson::Document doc;
+    doc.Parse(content.c_str());
+
+    if (doc.IsArray()) {
+        for (rapidjson::SizeType i = 0; i < doc.Size(); i++) {
+            const rapidjson::Value& obj = doc[i];
+            if (obj.HasMember("id") && obj.HasMember("action")) {
+                int id = obj["id"].GetInt();
+                rapidjson::StringBuffer buffer;
+                rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+                obj["action"].Accept(writer);
+                std::string action = buffer.GetString();
+                mAnimConfigMap[id] = action;
+                FLOGI("mAnimConfigMap[%d] = %s", id, action.c_str());
+            }
+        }
+    }
+
+    return 0;
+}
+
+#endif
 
 static inline std::string getUniqueId() {
     return std::to_string(std::rand());
@@ -70,8 +115,8 @@ void WindowManagerService::WindowDeathRecipient::binderDied(const wp<IBinder>& w
     auto key = who.promote();
     auto it = mService->mWindowMap.find(key);
     if (it != mService->mWindowMap.end()) {
-        mService->mWindowMap.erase(key);
         it->second->removeIfPossible();
+        mService->mWindowMap.erase(key);
     }
 }
 
@@ -85,11 +130,22 @@ WindowManagerService::WindowManagerService(uv_loop_t* looper) : mLooper(looper) 
     mContainer = new RootContainer(this, looper);
     mWindowDeathRecipient = sp<WindowDeathRecipient>::make(this);
     mInputMonitorDeathRecipient = sp<InputMonitorDeathRecipient>::make(this);
+#ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
+    mWinAnimEngine = new WindowAnimEngine();
+    int ret = parseAnimJsonFile(animConfigPath.c_str());
+    if (ret < 0) {
+        ALOGE("read file %s failed,use default anim config", animConfigPath.c_str());
+    }
+#endif
 }
 
 WindowManagerService::~WindowManagerService() {
     mInputMonitorMap.clear();
     delete mContainer;
+#ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
+    delete mWinAnimEngine;
+    mAnimConfigMap.clear();
+#endif
 }
 
 Status WindowManagerService::getPhysicalDisplayInfo(int32_t displayId, DisplayInfo* info,
@@ -257,7 +313,7 @@ Status WindowManagerService::removeWindowToken(const sp<IBinder>& token, int32_t
 
     auto it = mTokenMap.find(token);
     if (it != mTokenMap.end()) {
-        it->second->removeAllWindowsIfPossible();
+        it->second = nullptr;
         mTokenMap.erase(token);
     } else {
         return Status::fromExceptionCode(1, "can't find token in map");
@@ -362,6 +418,8 @@ void WindowManagerService::doRemoveWindow(const sp<IWindow>& window) {
     sp<IBinder> binder = IInterface::asBinder(window);
     auto itState = mWindowMap.find(binder);
     if (itState != mWindowMap.end()) {
+        delete itState->second;
+        itState->second = nullptr;
         mWindowMap.erase(binder);
     }
 }
@@ -423,6 +481,18 @@ int32_t WindowManagerService::createSurfaceControl(SurfaceControl* outSurfaceCon
 
     return result;
 }
+
+#ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
+AnimEngineHandle WindowManagerService::getAnimEngine() {
+    return mWinAnimEngine->getEngine();
+}
+
+std::string WindowManagerService::getAnimConfig(bool animMode, WindowState* win) {
+    return (mAnimConfigMap.size() < 2)
+            ? ((animMode) ? defaultEnterConfigJson : defaultExitConfigJson)
+            : ((animMode) ? mAnimConfigMap[1] : mAnimConfigMap[2]);
+}
+#endif
 
 } // namespace wm
 } // namespace os

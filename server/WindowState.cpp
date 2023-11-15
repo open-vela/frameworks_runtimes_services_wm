@@ -21,12 +21,13 @@
 #include <sys/mman.h>
 #include <utils/RefBase.h>
 
+#include <map>
+
 #include "RootContainer.h"
 #include "WindowManagerService.h"
 #include "WindowUtils.h"
 #include "wm/LayerState.h"
 #include "wm/VsyncRequestOps.h"
-
 namespace os {
 namespace wm {
 
@@ -57,20 +58,31 @@ WindowState::WindowState(WindowManagerService* service, const sp<IWindow>& windo
         mInputDispatcher(nullptr),
         mVsyncRequest(VsyncRequest::VSYNC_REQ_NONE),
         mFrameReq(0),
-        mHasSurface(false) {
+        mHasSurface(false),
+        mWindowRemoving(false) {
     mAttrs = params;
     mVisibility = visibility;
 
     Rect rect(params.mX, params.mY, params.mX + params.mWidth, params.mY + params.mHeight);
     mNode = new WindowNode(this, getLayerByType(mService, params.mType), rect, enableInput,
                            mAttrs.mFormat);
+
+#ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
+    mFrameWaiting = true;
+    mAnimRunning = false;
+    mWinAnimator = new WindowAnimator(mService->getAnimEngine(), mNode->getWidget());
+#endif
 }
 
 WindowState::~WindowState() {
+    // TODO: clear members
     FLOGI("");
     mClient = nullptr;
     mToken = nullptr;
     if (mNode) delete mNode;
+#ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
+    if (mWinAnimator) delete mWinAnimator;
+#endif
 }
 
 std::shared_ptr<BufferConsumer> WindowState::getBufferConsumer() {
@@ -101,29 +113,58 @@ bool WindowState::sendInputMessage(const InputMessage* ie) {
 
 void WindowState::setVisibility(int32_t visibility) {
     mVisibility = visibility;
-    FLOGI("to %d (0:visible, 1:hold, 2:gone)", visibility);
+    FLOGI("%p to %d (0:visible, 1:hold, 2:gone)", this, visibility);
     mNode->enableInput(visibility == LayoutParams::WINDOW_VISIBLE);
 }
 
-void WindowState::sendAppVisibilityToClients() {
+void WindowState::sendAppVisibilityToClients(int32_t visibility) {
     WM_PROFILER_BEGIN();
 
-    bool visible = mToken->isClientVisible();
+    if (!isVisible() && visibility == LayoutParams::WINDOW_GONE) return;
+
+#ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
+    if (mAnimRunning) {
+        mWinAnimator->cancelAnimation();
+    }
+#endif
+    setVisibility(visibility);
+    bool visible = visibility == LayoutParams::WINDOW_VISIBLE ? true : false;
+
     if (!visible) {
         scheduleVsync(VsyncRequest::VSYNC_REQ_NONE);
+#ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
+        mAnimRunning = true;
+        mWinAnimator->startAnimation(mService->getAnimConfig(false, this),
+                                     [this](WindowAnimStatus status) {
+                                         this->onAnimationFinished(status);
+                                     });
+#endif
     } else {
         if (mVsyncRequest == VsyncRequest::VSYNC_REQ_NONE) {
             scheduleVsync(VsyncRequest::VSYNC_REQ_SINGLE);
         } else {
             scheduleVsync(mVsyncRequest);
         }
+        FLOGI("token(%p) update to %s", mToken.get(), visible ? "visible" : "invisible");
+        mClient->dispatchAppVisibility(visible);
+        WM_PROFILER_END();
     }
-
-    mNode->enableInput(visible);
-    FLOGI("token(%p) update to %s", mToken.get(), visible ? "visible" : "invisible");
-    mClient->dispatchAppVisibility(visible);
-    WM_PROFILER_END();
 }
+
+#ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
+void WindowState::onAnimationFinished(WindowAnimStatus status) {
+    if (status == WINDOW_ANIM_STATUS_FINISHED) {
+        mAnimRunning = false;
+        FLOGI("mToken %p,mVisibility=%d", mToken.get(), mVisibility);
+        if (mVisibility != LayoutParams::WINDOW_VISIBLE) {
+            mClient->dispatchAppVisibility(false);
+        }
+        if (mWindowRemoving) {
+            removeIfPossible();
+        }
+    }
+}
+#endif
 
 std::shared_ptr<SurfaceControl> WindowState::createSurfaceControl(vector<BufferId> ids) {
     WM_PROFILER_BEGIN();
@@ -151,7 +192,11 @@ void WindowState::destroySurfaceControl() {
     if (mHasSurface) {
         setHasSurface(false);
         if (mNode != nullptr) {
+            FLOGI("updateBuffer NULLPTR");
             mNode->updateBuffer(nullptr, nullptr);
+#ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
+            mFrameWaiting = true;
+#endif
         }
         scheduleVsync(VsyncRequest::VSYNC_REQ_NONE);
 #ifdef CONFIG_ENABLE_BUFFER_QUEUE_BY_NAME
@@ -192,6 +237,26 @@ void WindowState::applyTransaction(LayerState layerState) {
     if (layerState.mFlags & LayerState::LAYER_BUFFER_CROP_CHANGED) {
         rect = &layerState.mBufferCrop;
     }
+#ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
+    if (mFrameWaiting) {
+        mFrameWaiting = false;
+        if (mAnimRunning) {
+            mWinAnimator->cancelAnimation();
+        }
+        mAnimRunning = true;
+        mNode->resetOpaque();
+        mWinAnimator->startAnimation(mService->getAnimConfig(true, this),
+                                     [this](WindowAnimStatus status) {
+                                         this->onAnimationFinished(status);
+                                     });
+    }
+
+    if (mAnimRunning && (buffItem == nullptr)) {
+        FLOGW("%p anim running,drop the null buffer data", this);
+        return;
+    }
+
+#endif
 
     mNode->updateBuffer(buffItem, rect);
     WM_PROFILER_END();
@@ -223,12 +288,20 @@ VsyncRequest WindowState::onVsync() {
 }
 
 void WindowState::removeIfPossible() {
-    FLOGI("");
-    destroySurfaceControl();
-    if (mInputDispatcher.get() != nullptr) {
-        mInputDispatcher->release();
+    mWindowRemoving = true;
+#ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
+    if (!mAnimRunning)
+#endif
+    {
+        FLOGI("");
+        mWindowRemoving = false;
+        destroySurfaceControl();
+        if (mInputDispatcher.get() != nullptr) {
+            mInputDispatcher->release();
+        }
+        if (mToken) mToken->removeWindow(this);
+        mService->doRemoveWindow(mClient);
     }
-    mService->doRemoveWindow(mClient);
 }
 
 BufferItem* WindowState::acquireBuffer() {
@@ -277,7 +350,7 @@ int32_t WindowState::getSurfaceSize() {
 }
 
 bool WindowState::isVisible() {
-    return mToken->isClientVisible();
+    return mVisibility == LayoutParams::WINDOW_VISIBLE ? true : false;
 }
 
 } // namespace wm

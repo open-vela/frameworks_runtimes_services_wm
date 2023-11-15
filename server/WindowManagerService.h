@@ -15,18 +15,21 @@
  */
 
 #pragma once
-
 #include <uv.h>
 
 #include <map>
 #include <vector>
 
 #include "DeviceEventListener.h"
+#include "WindowConfig.h"
 #include "os/wm/BnWindowManager.h"
 
 namespace os {
 namespace wm {
 
+#ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
+class WindowAnimEngine;
+#endif
 class RootContainer;
 class WindowState;
 class WindowToken;
@@ -72,6 +75,11 @@ public:
         return mContainer;
     }
 
+#ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
+    AnimEngineHandle getAnimEngine();
+    std::string getAnimConfig(bool animMode, WindowState* win);
+#endif
+
     void doRemoveWindow(const sp<IWindow>& window);
 
 private:
@@ -107,6 +115,9 @@ private:
     InputMonitorMap mInputMonitorMap;
     sp<WindowDeathRecipient> mWindowDeathRecipient;
     sp<InputMonitorDeathRecipient> mInputMonitorDeathRecipient;
+#ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
+    WindowAnimEngine* mWinAnimEngine;
+#endif
 };
 
 } // namespace wm
