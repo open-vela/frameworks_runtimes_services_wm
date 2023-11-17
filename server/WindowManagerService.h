@@ -75,6 +75,15 @@ public:
     void doRemoveWindow(const sp<IWindow>& window);
 
 private:
+    class WindowDeathRecipient : public IBinder::DeathRecipient {
+    public:
+        WindowDeathRecipient(WindowManagerService* wms) : mWms(wms) {}
+        virtual void binderDied(const wp<IBinder>& who);
+
+    private:
+        WindowManagerService* mWms;
+    };
+
     int32_t createSurfaceControl(SurfaceControl* outSurfaceControl, WindowState* win);
 
     WindowTokenMap mTokenMap;
@@ -83,6 +92,7 @@ private:
     RootContainer* mContainer;
     uv_loop_t* mLooper;
     InputMonitorMap mInputMonitorMap;
+    sp<WindowDeathRecipient> mWindowDeathRecipient;
 };
 
 } // namespace wm

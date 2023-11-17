@@ -65,9 +65,19 @@ static inline bool createSharedBuffer(int32_t size, BufferId* id) {
     return true;
 }
 
+void WindowManagerService::WindowDeathRecipient::binderDied(const wp<IBinder>& who) {
+    FLOGI("IWindow binder Died");
+    auto itState = mWms->mWindowMap.find(who.promote());
+    if (itState != mWms->mWindowMap.end()) {
+        itState->second->removeIfPossible();
+        mWms->mWindowMap.erase(who.promote());
+    }
+}
+
 WindowManagerService::WindowManagerService(uv_loop_t* looper) : mLooper(looper) {
     FLOGI("WMS init");
     mContainer = new RootContainer(this, looper);
+    mWindowDeathRecipient = sp<WindowDeathRecipient>::make(this);
 }
 
 WindowManagerService::~WindowManagerService() {
@@ -101,6 +111,8 @@ Status WindowManagerService::addWindow(const sp<IWindow>& window, const LayoutPa
     }
 
     sp<IBinder> client = IInterface::asBinder(window);
+    client->linkToDeath(mWindowDeathRecipient);
+
     auto itState = mWindowMap.find(client);
     if (itState != mWindowMap.end()) {
         *_aidl_return = -1;
