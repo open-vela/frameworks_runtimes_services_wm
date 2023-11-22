@@ -41,9 +41,9 @@ protected:
         mToken = new BBinder();
         mApplication = new DemoApplication();
 
-        mLooper = ::os::app::UvLoop();
-        mApplication->setMainLoop(&mLooper);
-        mContext = new ::os::app::ContextImpl(mApplication, mToken, &mLooper);
+        mLooper = new ::os::app::UvLoop(false);
+        mApplication->setMainLoop(mLooper);
+        mContext = new ::os::app::ContextImpl(mApplication, "test", mToken, mLooper);
 
         mLayoutParam = LayoutParams();
         mLayoutParam.mToken = mToken;
@@ -62,7 +62,7 @@ protected:
     DemoApplication* mApplication;
     sp<IBinder> mToken;
     LayoutParams mLayoutParam;
-    ::os::app::UvLoop mLooper;
+    ::os::app::UvLoop* mLooper;
 };
 
 TEST_F(IWindowManagerTest, GetPhysicalDisplayInfo) {

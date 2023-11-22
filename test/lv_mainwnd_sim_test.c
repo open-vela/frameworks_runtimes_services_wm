@@ -133,7 +133,7 @@ static bool acquire_buffer(lv_mainwnd_metainfo_t *meta, lv_mainwnd_buf_dsc_t *bu
     lv_sim_t *sim_data = (lv_sim_t *)(meta->info);
     buf_dsc->id = sim_data->id;
     buf_dsc->img_dsc.data = sim_data->info;
-    buf_dsc->img_dsc.data_size = LV_IMG_BUF_SIZE_ALPHA_4BIT(sim_data->w, sim_data->h);
+    buf_dsc->img_dsc.data_size = LV_IMAGE_BUF_SIZE_ALPHA_4BIT(sim_data->w, sim_data->h);
     buf_dsc->img_dsc.header.w = sim_data->w;
     buf_dsc->img_dsc.header.h = sim_data->h;
     buf_dsc->img_dsc.header.cf = sim_data->cf;
