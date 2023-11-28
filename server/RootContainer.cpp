@@ -130,7 +130,7 @@ bool RootContainer::init() {
     };
     mUvData = lv_nuttx_uv_init(&uv_info);
 #endif
-    mVsyncTimer = lv_timer_create(vsyncCallback, DEF_REFR_PERIOD, this);
+    mVsyncTimer = lv_timer_create(vsyncCallback, LV_DEF_REFR_PERIOD, this);
     lv_display_add_event(mDisp, resetVsyncTimer, LV_EVENT_REFR_FINISH, mVsyncTimer);
 #endif
 

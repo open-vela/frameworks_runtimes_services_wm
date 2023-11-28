@@ -22,6 +22,7 @@
 
 #include <atomic>
 
+#include "InputMonitor.h"
 #include "WindowManager.h"
 #include "app/Context.h"
 #include "app/UvLoop.h"
@@ -136,13 +137,11 @@ private:
     LayoutParams mAttrs;
     sp<W> mIWindow;
     std::shared_ptr<SurfaceControl> mSurfaceControl;
-    std::shared_ptr<InputChannel> mInputChannel;
+    std::shared_ptr<InputMonitor> mInputMonitor;
     std::shared_ptr<UIDriverProxy> mUIProxy;
-    uv_poll_t* mPoll;
     VsyncRequest mVsyncRequest;
     bool mVisible;
     atomic_bool mFrameDone;
-    int mEventFd;
 };
 
 } // namespace wm

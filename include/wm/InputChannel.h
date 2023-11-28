@@ -21,7 +21,6 @@
 #include <binder/Parcelable.h>
 #include <binder/Status.h>
 #include <utils/RefBase.h>
-#include <wm/InputMessage.h>
 
 namespace os {
 namespace wm {
@@ -38,8 +37,12 @@ public:
 
     status_t writeToParcel(Parcel* out) const override;
     status_t readFromParcel(const Parcel* in) override;
-    int32_t getEventFd();
-    void setEventFd(int32_t fd);
+    int32_t getEventFd() {
+        return mEventFd;
+    }
+    void setEventFd(int32_t fd) {
+        mEventFd = fd;
+    }
 
     void copyFrom(InputChannel& other) {
         mEventFd = other.mEventFd;
@@ -52,8 +55,6 @@ public:
 
     bool create(const std::string name);
     void release();
-
-    bool sendMessage(const InputMessage* ie);
 
     DISALLOW_COPY_AND_ASSIGN(InputChannel);
 
