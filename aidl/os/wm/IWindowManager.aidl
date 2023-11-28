@@ -75,4 +75,6 @@ interface IWindowManager {
     oneway void applyTransaction(in LayerState[] state);
 
     oneway void requestVsync(IWindow window, VsyncRequest freq);
+
+    InputChannel monitorInput(IBinder token, @utf8InCpp String name, int displayId);
 }

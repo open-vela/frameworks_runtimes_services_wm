@@ -34,8 +34,8 @@ public:
 
     void updateResolution(int32_t width, int32_t height) override;
     void handleEvent() override;
+    void setInputMonitor(InputMonitor* monitor) override;
 
-    bool enableInput(bool enable) override;
     lv_disp_render_mode_t renderMode() {
         return mRenderMode;
     }

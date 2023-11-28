@@ -23,6 +23,7 @@
 #include <sys/stat.h>
 #include <utils/Log.h>
 
+#include "InputDispatcher.h"
 #include "RootContainer.h"
 #include "WindowState.h"
 #include "WindowToken.h"
@@ -126,8 +127,8 @@ Status WindowManagerService::addWindow(const sp<IWindow>& window, const LayoutPa
     if (outInputChannel != nullptr && attrs.hasInput()) {
         int32_t pid = IPCThreadState::self()->getCallingPid();
         std::string name = graphicsPath + std::to_string(pid) + "/event/" + getUniqueId();
-        std::shared_ptr<InputChannel> inputChannel = win->createInputChannel(name);
-        outInputChannel->copyFrom(*inputChannel);
+        std::shared_ptr<InputDispatcher> inputDispatcher = win->createInputDispatcher(name);
+        outInputChannel->copyFrom(inputDispatcher->getInputChannel());
     }
 
     *_aidl_return = 0;
@@ -275,6 +276,32 @@ Status WindowManagerService::requestVsync(const sp<IWindow>& window, VsyncReques
     }
     WM_PROFILER_END();
 
+    return Status::ok();
+}
+
+Status WindowManagerService::monitorInput(const sp<IBinder>& token, const ::std::string& name,
+                                          int32_t displayId, InputChannel* outInputChannel) {
+    if (outInputChannel == nullptr)
+        return Status::fromExceptionCode(binder::Status::EX_NULL_POINTER, "input channel is null!");
+
+    auto it = mInputMonitorMap.find(token);
+    if (it != mInputMonitorMap.end()) {
+        return Status::fromExceptionCode(1, "don't monitor input repeatly!");
+    }
+
+    int32_t pid = IPCThreadState::self()->getCallingPid();
+    std::string input_name = graphicsPath + "/monitor/" + std::to_string(pid) + "/" + name;
+
+    InputDispatcher* dispatcher = new InputDispatcher();
+    if (dispatcher == nullptr || !dispatcher->create(input_name)) {
+        return Status::fromExceptionCode(2, "monitor input is failure!");
+    }
+
+    /*TODO: bindDeath*/
+
+    mInputMonitorMap.emplace(token, dispatcher);
+
+    outInputChannel->copyFrom(dispatcher->getInputChannel());
     return Status::ok();
 }
 
