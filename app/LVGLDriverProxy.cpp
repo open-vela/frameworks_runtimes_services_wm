@@ -96,17 +96,16 @@ void* LVGLDriverProxy::getWindow() {
     return lv_display_get_screen_act(mDisp);
 }
 
-bool LVGLDriverProxy::enableInput(bool enable) {
-    if (enable && !mIndev) {
+void LVGLDriverProxy::setInputMonitor(InputMonitor* monitor) {
+    UIDriverProxy::setInputMonitor(monitor);
+
+    if (monitor && !mIndev) {
         mIndev = _indev_init(this);
-        return mIndev ? true : false;
     }
 
     if (mIndev) {
-        lv_indev_enable(mIndev, enable);
-        return true;
+        lv_indev_enable(mIndev, monitor ? true : false);
     }
-    return false;
 }
 
 void LVGLDriverProxy::updateResolution(int32_t width, int32_t height) {

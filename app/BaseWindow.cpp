@@ -71,45 +71,17 @@ void BaseWindow::W::clear() {
     mBaseWindow = nullptr;
 }
 
-static void eventCallback(int fd, int status, int events, void* data) {
-    if (status < 0) {
-        FLOGE("Poll error: %s ", uv_strerror(status));
-        return;
-    }
-
-    if (events & UV_READABLE) {
-        BaseWindow* win = reinterpret_cast<BaseWindow*>(data);
-        if (win) {
-            auto proxy = win->getUIProxy();
-            if (proxy.get() != nullptr) proxy->handleEvent();
-        }
-    }
-}
-
-bool BaseWindow::readEvent(InputMessage* message) {
-    if (mEventFd < 0 || message == NULL) return false;
-
-    ssize_t size = mq_receive(mEventFd, (char*)message, sizeof(InputMessage), NULL);
-    return size == sizeof(InputMessage) ? true : false;
-}
-
 BaseWindow::~BaseWindow() {
-    if (mPoll) {
-        uv_poll_stop(mPoll);
-        uv_close(reinterpret_cast<uv_handle_t*>(mPoll),
-                 [](uv_handle_t* handle) { delete reinterpret_cast<uv_poll_t*>(handle); });
-        mPoll = NULL;
-    }
     mIWindow = nullptr;
 }
 
 BaseWindow::BaseWindow(::os::app::Context* context)
       : mContext(context),
         mWindowManager(nullptr),
-        mPoll(nullptr),
         mVsyncRequest(VsyncRequest::VSYNC_REQ_NONE),
         mVisible(false),
         mFrameDone(true) {
+    mInputMonitor = std::make_shared<InputMonitor>();
     mAttrs = LayoutParams();
     mAttrs.mToken = context->getToken();
     mIWindow = sp<W>::make(this);
@@ -146,9 +118,8 @@ std::shared_ptr<BufferProducer> BaseWindow::getBufferProducer() {
 }
 
 void BaseWindow::doDie() {
-    if (mInputChannel) {
-        mInputChannel->release();
-        mInputChannel.reset();
+    if (mInputMonitor) {
+        mInputMonitor.reset();
     }
     if (mSurfaceControl) mSurfaceControl.reset();
 
@@ -158,19 +129,12 @@ void BaseWindow::doDie() {
 
 void BaseWindow::setInputChannel(InputChannel* inputChannel) {
     if (inputChannel != nullptr && inputChannel->isValid()) {
-        mInputChannel.reset(inputChannel);
-        mEventFd = mInputChannel->getEventFd();
-        mUIProxy->enableInput(true);
-        mPoll = new uv_poll_t;
-        mPoll->data = this;
-        uv_poll_init(mContext->getMainLoop()->get(), mPoll, mEventFd);
-        uv_poll_start(mPoll, UV_READABLE, [](uv_poll_t* handle, int status, int events) {
-            eventCallback(handle->io_watcher.fd, status, events, handle->data);
-        });
-    } else if (mInputChannel && mInputChannel->isValid()) {
-        mEventFd = -1;
-        mUIProxy->enableInput(false);
-        mInputChannel.reset();
+        mInputMonitor->setInputChannel(inputChannel);
+        mUIProxy->setInputMonitor(mInputMonitor.get());
+        mInputMonitor->start(mContext->getMainLoop()->get(), mUIProxy.get());
+    } else if (mInputMonitor && mInputMonitor->isValid()) {
+        mUIProxy->setInputMonitor(nullptr);
+        mInputMonitor.reset();
     }
 }
 

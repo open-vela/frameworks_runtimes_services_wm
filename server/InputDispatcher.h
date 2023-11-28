@@ -16,36 +16,35 @@
 
 #pragma once
 
-#include <lvgl/lvgl.h>
-#include <os/wm/DisplayInfo.h>
+#include <wm/InputChannel.h>
+#include <wm/InputMessage.h>
 
 namespace os {
 namespace wm {
-class WindowManagerService;
 
-class RootContainer {
+using namespace android;
+using namespace android::base;
+using namespace android::binder;
+using namespace std;
+
+class InputDispatcher {
 public:
-    RootContainer(WindowManagerService* service);
-    ~RootContainer();
+    InputDispatcher();
+    ~InputDispatcher();
 
-    lv_disp_t* getRoot();
-    lv_obj_t* getDefLayer();
-    lv_obj_t* getSysLayer();
-    lv_obj_t* getTopLayer();
+    bool create(const std::string name);
+    void release();
 
-    bool getDisplayInfo(DisplayInfo* info);
+    bool sendMessage(const InputMessage* ie);
 
-    void enableVsync(bool enable);
-    void processVsyncEvent();
+    DISALLOW_COPY_AND_ASSIGN(InputDispatcher);
 
-    void showToast(const char* text, uint32_t duration);
+    InputChannel& getInputChannel() {
+        return mInputChannel;
+    }
 
 private:
-    bool init();
-    WindowManagerService* mService;
-    lv_disp_t* mDisp;
-    lv_timer_t* mVsyncTimer;
-    void* mUvData;
+    InputChannel mInputChannel;
 };
 
 } // namespace wm

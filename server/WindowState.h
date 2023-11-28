@@ -24,8 +24,10 @@
 #include "WindowManagerService.h"
 #include "WindowNode.h"
 #include "WindowToken.h"
+#include "InputDispatcher.h"
 #include "os/wm/IWindowManager.h"
 #include "wm/LayoutParams.h"
+
 namespace os {
 namespace wm {
 
@@ -51,11 +53,10 @@ public:
     void setVisibility(bool visibility);
     void removeIfPossible();
 
-    std::shared_ptr<InputChannel> createInputChannel(const std::string name);
+    std::shared_ptr<InputDispatcher> createInputDispatcher(const std::string name);
     std::shared_ptr<SurfaceControl> createSurfaceControl(vector<BufferId> ids);
     std::shared_ptr<BufferConsumer> getBufferConsumer();
     void destroySurfaceControl();
-    void destroyInputChannel();
 
     void applyTransaction(LayerState layerState);
     bool scheduleVsync(VsyncRequest vsyncReq);
@@ -84,7 +85,7 @@ private:
     std::shared_ptr<WindowToken> mToken;
     WindowManagerService* mService;
     std::shared_ptr<SurfaceControl> mSurfaceControl;
-    std::shared_ptr<InputChannel> mInputChannel;
+    std::shared_ptr<InputDispatcher> mInputDispatcher;
     LayoutParams mAttrs;
     VsyncRequest mVsyncRequest;
     int32_t mFrameReq;

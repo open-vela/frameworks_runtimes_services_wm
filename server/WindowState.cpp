@@ -36,7 +36,7 @@ WindowState::WindowState(WindowManagerService* service, const sp<IWindow>& windo
       : mClient(window),
         mToken(token),
         mService(service),
-        mInputChannel(nullptr),
+        mInputDispatcher(nullptr),
         mVsyncRequest(VsyncRequest::VSYNC_REQ_NONE),
         mFrameReq(0),
         mHasSurface(false) {
@@ -74,23 +74,22 @@ std::shared_ptr<BufferConsumer> WindowState::getBufferConsumer() {
     return nullptr;
 }
 
-std::shared_ptr<InputChannel> WindowState::createInputChannel(const std::string name) {
-    if (mInputChannel != nullptr) {
-        FLOGE("mInputChannel is existed, create failed");
+std::shared_ptr<InputDispatcher> WindowState::createInputDispatcher(const std::string name) {
+    if (mInputDispatcher != nullptr) {
+        FLOGE("mInputDispatcher has existed, needn't create again.");
         return nullptr;
     }
     WM_PROFILER_BEGIN();
-    mInputChannel = std::make_shared<InputChannel>();
-    if (!mInputChannel->create(name)) {
-        mInputChannel = nullptr;
+    mInputDispatcher = std::make_shared<InputDispatcher>();
+    if (!mInputDispatcher->create(name)) {
+        mInputDispatcher = nullptr;
     }
     WM_PROFILER_END();
-    return mInputChannel;
+    return mInputDispatcher;
 }
 
 bool WindowState::sendInputMessage(const InputMessage* ie) {
-    if (mInputChannel != nullptr) return mInputChannel->sendMessage(ie);
-    FLOGI("input message: invalid input channel!");
+    if (mInputDispatcher != nullptr) return mInputDispatcher->sendMessage(ie);
     return false;
 }
 
@@ -165,13 +164,6 @@ void WindowState::destroySurfaceControl() {
     }
 }
 
-void WindowState::destroyInputChannel() {
-    FLOGI("");
-    if (mInputChannel.get() != nullptr) {
-        mInputChannel->release();
-    }
-}
-
 void WindowState::applyTransaction(LayerState layerState) {
     // FLOGD("(%p)", this);
     WM_PROFILER_BEGIN();
@@ -230,7 +222,9 @@ VsyncRequest WindowState::onVsync() {
 void WindowState::removeIfPossible() {
     FLOGI("");
     destroySurfaceControl();
-    destroyInputChannel();
+    if (mInputDispatcher.get() != nullptr) {
+        mInputDispatcher->release();
+    }
     mService->doRemoveWindow(mClient);
 }
 

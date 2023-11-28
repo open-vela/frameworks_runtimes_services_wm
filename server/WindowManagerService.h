@@ -28,9 +28,11 @@ namespace wm {
 class RootContainer;
 class WindowState;
 class WindowToken;
+class InputDispatcher;
 
 typedef map<sp<IBinder>, WindowToken*> WindowTokenMap;
 typedef map<sp<IBinder>, WindowState*> WindowStateMap;
+typedef map<sp<IBinder>, InputDispatcher*> InputMonitorMap;
 class WindowManagerService : public BnWindowManager {
 public:
     WindowManagerService(uv_loop_t* looper);
@@ -58,6 +60,8 @@ public:
     Status applyTransaction(const vector<LayerState>& state);
     Status requestVsync(const sp<IWindow>& window, VsyncRequest freq);
     bool responseVsync();
+    Status monitorInput(const sp<IBinder>& token, const ::std::string& name, int32_t displayId,
+                        InputChannel* outInputChannel);
 
     // public methods
     RootContainer* getRootContainer() {
@@ -78,6 +82,7 @@ private:
 
     RootContainer* mContainer;
     uv_loop_t* mLooper;
+    InputMonitorMap mInputMonitorMap;
 };
 
 } // namespace wm
