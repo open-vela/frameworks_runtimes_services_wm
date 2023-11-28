@@ -23,11 +23,16 @@ namespace os {
 namespace wm {
 
 UIDriverProxy::UIDriverProxy(std::shared_ptr<BaseWindow> win)
-      : mBaseWindow(win), mBufferItem(nullptr), mFlags(0), mEventListener(nullptr) {}
+      : mBaseWindow(win),
+        mBufferItem(nullptr),
+        mFlags(0),
+        mInputMonitor(nullptr),
+        mEventListener(nullptr) {}
 
 UIDriverProxy::~UIDriverProxy() {
     mBufferItem = nullptr;
     mEventListener = nullptr;
+    mInputMonitor = nullptr;
 }
 
 bool UIDriverProxy::onInvalidate(bool periodic) {
@@ -69,13 +74,13 @@ bool UIDriverProxy::finishDrawing() {
     return mFlags != 0 ? true : false;
 }
 
-bool UIDriverProxy::enableInput(bool enable) {
-    return false;
+void UIDriverProxy::setInputMonitor(InputMonitor* monitor) {
+    mInputMonitor = monitor;
 }
 
 bool UIDriverProxy::readEvent(InputMessage* message) {
-    if (message && !mBaseWindow.expired()) {
-        return mBaseWindow.lock()->readEvent(message);
+    if (message && mInputMonitor) {
+        return mInputMonitor->receiveMessage(message);
     }
     return false;
 }
@@ -83,5 +88,6 @@ bool UIDriverProxy::readEvent(InputMessage* message) {
 void UIDriverProxy::updateResolution(int32_t width, int32_t height) {}
 
 void UIDriverProxy::updateVisibility(bool visible) {}
+
 } // namespace wm
 } // namespace os

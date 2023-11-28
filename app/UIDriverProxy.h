@@ -17,6 +17,7 @@
 #pragma once
 
 #include "BaseWindow.h"
+#include "InputMonitor.h"
 #include "wm/BufferQueue.h"
 #include "wm/InputMessage.h"
 #include "wm/Rect.h"
@@ -26,7 +27,7 @@ namespace wm {
 
 class BaseWindow;
 
-class UIDriverProxy {
+class UIDriverProxy : public EventHandler {
 public:
     UIDriverProxy(std::shared_ptr<BaseWindow> win);
     virtual ~UIDriverProxy();
@@ -34,11 +35,11 @@ public:
     virtual void* getRoot() = 0;
     virtual void* getWindow() = 0;
 
-    // window request ui proxy, update buffer data
+    /* window request ui proxy, update buffer data */
     virtual void drawFrame(BufferItem* item);
     bool finishDrawing();
 
-    // ui proxy response window
+    /* ui proxy response window*/
     bool onInvalidate(bool periodic);
     void* onDequeueBuffer();
     bool onQueueBuffer();
@@ -51,9 +52,12 @@ public:
         return mBufferItem;
     }
 
-    virtual void handleEvent() = 0;
+    void handleEvent() override {}
     bool readEvent(InputMessage* message);
-    virtual bool enableInput(bool enable);
+    virtual void setInputMonitor(InputMonitor* monitor);
+    InputMonitor* getInputMonitor() {
+        return mInputMonitor;
+    }
 
     virtual void updateResolution(int32_t width, int32_t height);
 
@@ -79,6 +83,7 @@ private:
     BufferItem* mBufferItem;
     Rect mRectCrop;
     int8_t mFlags;
+    InputMonitor* mInputMonitor;
     WindowEventListener* mEventListener;
 };
 

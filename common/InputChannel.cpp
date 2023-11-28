@@ -43,14 +43,6 @@ status_t InputChannel::readFromParcel(const Parcel* in) {
     return android::OK;
 }
 
-int32_t InputChannel::getEventFd() {
-    return mEventFd;
-}
-
-void InputChannel::setEventFd(int32_t fd) {
-    mEventFd = fd;
-}
-
 bool InputChannel::create(const std::string name) {
     struct mq_attr mqstat;
     int oflag = O_CREAT | O_RDWR | O_NONBLOCK;
@@ -76,20 +68,6 @@ void InputChannel::release() {
         FLOGI("mq unlink:%s", mEventName.c_str());
         mEventFd = -1;
     }
-}
-
-bool InputChannel::sendMessage(const InputMessage* ie) {
-    if (mEventFd == -1) {
-        FLOGW("input message: can't send message without valid channel!");
-        return false;
-    }
-
-    int ret = mq_send(mEventFd, (const char*)ie, sizeof(InputMessage), 100);
-    if (ret < 0) {
-        FLOGW("input message: send message failed:'%s(%d)'", strerror(errno), errno);
-        return false;
-    }
-    return true;
 }
 
 } // namespace wm
