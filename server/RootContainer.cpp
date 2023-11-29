@@ -27,25 +27,34 @@
 namespace os {
 namespace wm {
 
-RootContainer::RootContainer(WindowManagerService* service)
-      : mService(service), mDisp(NULL), mVsyncTimer(NULL), mUvData(NULL) {
+RootContainer::RootContainer(DeviceEventListener* listener, uv_loop_t* loop)
+      : mListener(listener),
+        mDisp(nullptr),
+        mVsyncTimer(nullptr),
+        mUvData(nullptr),
+        mUvLoop(loop),
+        mIndevReadCb(nullptr) {
     init();
 }
 
 RootContainer::~RootContainer() {
+    LV_GLOBAL_DEFAULT()->user_data = nullptr;
     if (mVsyncTimer) lv_timer_del(mVsyncTimer);
 
     lv_anim_del_all();
-#if LV_USE_NUTTX_LIBUV
+
     lv_nuttx_uv_deinit(&mUvData);
-#endif
+    mUvData = nullptr;
+    mUvLoop = nullptr;
+    mIndevReadCb = nullptr;
 
     if (mDisp) {
         lv_disp_remove(mDisp);
-        mDisp = NULL;
+        mDisp = nullptr;
     }
 
-    mService = nullptr;
+    mListener = nullptr;
+
     lv_deinit();
 }
 
@@ -101,11 +110,34 @@ void RootContainer::enableVsync(bool enable) {
 
 void RootContainer::processVsyncEvent() {
     WM_PROFILER_BEGIN();
-    if (mService) {
-        mService->responseVsync();
+    if (mListener) {
+        mListener->responseVsync();
     }
 
     WM_PROFILER_END();
+}
+
+static void monitor_indev_read(lv_indev_t* drv, lv_indev_data_t* data) {
+    if (!data) return;
+
+    RootContainer* container = reinterpret_cast<RootContainer*>(LV_GLOBAL_DEFAULT()->user_data);
+    if (container) container->readInput(drv, data);
+}
+
+void RootContainer::readInput(lv_indev_t* drv, lv_indev_data_t* data) {
+    if (mIndevReadCb) mIndevReadCb(drv, data);
+
+    if (!mListener) return;
+
+    int type = lv_indev_get_type(drv);
+    if (type != LV_INDEV_TYPE_POINTER) return;
+
+    InputMessage msg;
+    msg.type = (InputMessageType)type;
+    msg.state = (InputMessageState)data->state;
+    msg.pointer.x = msg.pointer.raw_x = data->point.x;
+    msg.pointer.y = msg.pointer.raw_y = data->point.y;
+    mListener->responseInput(&msg);
 }
 
 bool RootContainer::init() {
@@ -122,16 +154,22 @@ bool RootContainer::init() {
 #if defined(CONFIG_UINPUT_TOUCH)
     lv_nuttx_touchscreen_create("/dev/utouch");
 #endif
-#if LV_USE_NUTTX_LIBUV
     lv_nuttx_uv_t uv_info = {
-            .loop = mService->getUvLooper(),
+            .loop = mUvLoop,
             .disp = result.disp,
             .indev = result.indev,
     };
     mUvData = lv_nuttx_uv_init(&uv_info);
-#endif
+
     mVsyncTimer = lv_timer_create(vsyncCallback, LV_DEF_REFR_PERIOD, this);
     lv_display_add_event(mDisp, resetVsyncTimer, LV_EVENT_REFR_FINISH, mVsyncTimer);
+
+    if (result.indev->type == LV_INDEV_TYPE_POINTER && mListener) {
+        LV_GLOBAL_DEFAULT()->user_data = this;
+        mIndevReadCb = result.indev->read_cb;
+        lv_indev_set_read_cb(result.indev, monitor_indev_read);
+    }
+
 #endif
 
     return mDisp ? true : false;
