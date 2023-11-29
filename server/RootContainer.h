@@ -18,14 +18,16 @@
 
 #include <lvgl/lvgl.h>
 #include <os/wm/DisplayInfo.h>
+#include <uv.h>
+
+#include "DeviceEventListener.h"
 
 namespace os {
 namespace wm {
-class WindowManagerService;
 
 class RootContainer {
 public:
-    RootContainer(WindowManagerService* service);
+    RootContainer(DeviceEventListener* listener, uv_loop_t* loop);
     ~RootContainer();
 
     lv_disp_t* getRoot();
@@ -40,12 +42,17 @@ public:
 
     void showToast(const char* text, uint32_t duration);
 
+    void readInput(lv_indev_t* drv, lv_indev_data_t* data);
+
 private:
     bool init();
-    WindowManagerService* mService;
+
+    DeviceEventListener* mListener;
     lv_disp_t* mDisp;
     lv_timer_t* mVsyncTimer;
     void* mUvData;
+    uv_loop_t* mUvLoop;
+    lv_indev_read_cb_t mIndevReadCb;
 };
 
 } // namespace wm
