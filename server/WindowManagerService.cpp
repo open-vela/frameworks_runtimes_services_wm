@@ -67,7 +67,7 @@ static inline bool createSharedBuffer(int32_t size, BufferId* id) {
 
 WindowManagerService::WindowManagerService(uv_loop_t* looper) : mLooper(looper) {
     FLOGI("WMS init");
-    mContainer = new RootContainer(this);
+    mContainer = new RootContainer(this, looper);
 }
 
 WindowManagerService::~WindowManagerService() {
@@ -310,6 +310,14 @@ void WindowManagerService::doRemoveWindow(const sp<IWindow>& window) {
     auto itState = mWindowMap.find(binder);
     if (itState != mWindowMap.end()) {
         mWindowMap.erase(binder);
+    }
+}
+
+void WindowManagerService::responseInput(const InputMessage* msg) {
+    if (!msg) return;
+
+    for (const auto& [token, dispatcher] : mInputMonitorMap) {
+        dispatcher->sendMessage(msg);
     }
 }
 

@@ -21,7 +21,9 @@
 #include <map>
 #include <vector>
 
+#include "DeviceEventListener.h"
 #include "os/wm/BnWindowManager.h"
+
 namespace os {
 namespace wm {
 
@@ -33,7 +35,8 @@ class InputDispatcher;
 typedef map<sp<IBinder>, WindowToken*> WindowTokenMap;
 typedef map<sp<IBinder>, WindowState*> WindowStateMap;
 typedef map<sp<IBinder>, InputDispatcher*> InputMonitorMap;
-class WindowManagerService : public BnWindowManager {
+
+class WindowManagerService : public BnWindowManager, DeviceEventListener {
 public:
     WindowManagerService(uv_loop_t* looper);
     ~WindowManagerService();
@@ -59,17 +62,14 @@ public:
 
     Status applyTransaction(const vector<LayerState>& state);
     Status requestVsync(const sp<IWindow>& window, VsyncRequest freq);
-    bool responseVsync();
     Status monitorInput(const sp<IBinder>& token, const ::std::string& name, int32_t displayId,
                         InputChannel* outInputChannel);
 
-    // public methods
+    bool responseVsync() override;
+    void responseInput(const InputMessage* msg) override;
+
     RootContainer* getRootContainer() {
         return mContainer;
-    }
-
-    uv_loop_t* getUvLooper() {
-        return mLooper;
     }
 
     void doRemoveWindow(const sp<IWindow>& window);
