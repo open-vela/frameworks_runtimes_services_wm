@@ -43,6 +43,7 @@ private:
 class InputMonitor {
 public:
     InputMonitor();
+    InputMonitor(const sp<IBinder> token);
     ~InputMonitor();
 
     void setInputChannel(InputChannel* inputChannel);
@@ -60,6 +61,7 @@ public:
 private:
     void stop();
 
+    sp<IBinder> mToken;
     InputChannel* mInputChannel;
     uv_poll_t* mPoll;
 };

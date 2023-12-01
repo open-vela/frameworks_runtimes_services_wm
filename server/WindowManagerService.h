@@ -34,7 +34,7 @@ class InputDispatcher;
 
 typedef map<sp<IBinder>, WindowToken*> WindowTokenMap;
 typedef map<sp<IBinder>, WindowState*> WindowStateMap;
-typedef map<sp<IBinder>, InputDispatcher*> InputMonitorMap;
+typedef map<sp<IBinder>, std::shared_ptr<InputDispatcher>> InputMonitorMap;
 
 class WindowManagerService : public BnWindowManager, DeviceEventListener {
 public:
@@ -77,14 +77,27 @@ public:
 private:
     class WindowDeathRecipient : public IBinder::DeathRecipient {
     public:
-        WindowDeathRecipient(WindowManagerService* wms) : mWms(wms) {}
+        WindowDeathRecipient(WindowManagerService* service) : mService(service) {}
         virtual void binderDied(const wp<IBinder>& who);
 
     private:
-        WindowManagerService* mWms;
+        WindowManagerService* mService;
     };
 
     int32_t createSurfaceControl(SurfaceControl* outSurfaceControl, WindowState* win);
+
+    class InputMonitorDeathRecipient : public IBinder::DeathRecipient {
+    public:
+        InputMonitorDeathRecipient(WindowManagerService* service) : mService(service) {}
+        virtual void binderDied(const wp<IBinder>& who);
+
+    private:
+        WindowManagerService* mService;
+    };
+
+    std::shared_ptr<InputDispatcher> registerInputMonitor(const sp<IBinder>& token,
+                                                          const ::std::string& name);
+    void unregisterInputMonitor(const sp<IBinder>& token);
 
     WindowTokenMap mTokenMap;
     WindowStateMap mWindowMap;
@@ -93,6 +106,7 @@ private:
     uv_loop_t* mLooper;
     InputMonitorMap mInputMonitorMap;
     sp<WindowDeathRecipient> mWindowDeathRecipient;
+    sp<InputMonitorDeathRecipient> mInputMonitorDeathRecipient;
 };
 
 } // namespace wm

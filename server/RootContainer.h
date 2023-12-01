@@ -52,7 +52,6 @@ private:
     lv_timer_t* mVsyncTimer;
     void* mUvData;
     uv_loop_t* mUvLoop;
-    lv_indev_read_cb_t mIndevReadCb;
 };
 
 } // namespace wm
