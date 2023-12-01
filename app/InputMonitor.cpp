@@ -36,10 +36,14 @@ void DefaultEventHandler::handleEvent() {
     }
 }
 
-InputMonitor::InputMonitor() : mInputChannel(nullptr), mPoll(nullptr) {}
+InputMonitor::InputMonitor() : mToken(nullptr), mInputChannel(nullptr), mPoll(nullptr) {}
+
+InputMonitor::InputMonitor(const sp<IBinder> token)
+      : mToken(token), mInputChannel(nullptr), mPoll(nullptr) {}
 
 InputMonitor::~InputMonitor() {
     stop();
+    mToken = nullptr;
 }
 
 void InputMonitor::stop() {
