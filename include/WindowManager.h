@@ -21,6 +21,7 @@
 #include <mutex>
 
 #include "BaseWindow.h"
+#include "InputMonitor.h"
 #include "app/Context.h"
 #include "os/wm/BnWindowManager.h"
 
@@ -59,6 +60,8 @@ public:
         if (width) *width = mDispWidth;
         if (height) *height = mDispHeight;
     }
+
+    static std::shared_ptr<InputMonitor> monitorInput(const ::std::string& name, int32_t displayId);
 
 private:
     std::mutex mLock;
