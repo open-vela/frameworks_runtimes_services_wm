@@ -61,7 +61,33 @@ static void _wm_lv_timer_resume(void* data) {
 namespace os {
 namespace wm {
 
-WindowManager::WindowManager() : mTimerInited(false) {
+static inline bool getWindowService(sp<IWindowManager>& service) {
+    if (service == nullptr || !android::IInterface::asBinder(service)->isBinderAlive()) {
+        if (android::getService<IWindowManager>(android::String16(WindowManager::name()),
+                                                &service) != android::NO_ERROR) {
+            FLOGE("ServiceManager can't find the service:%s", WindowManager::name());
+            return false;
+        }
+        return true;
+    }
+    return true;
+}
+
+std::shared_ptr<InputMonitor> WindowManager::monitorInput(const ::std::string& name,
+                                                          int32_t displayId) {
+    sp<IWindowManager> service;
+    if (!getWindowService(service)) return nullptr;
+
+    InputChannel* channel = new InputChannel();
+    sp<IBinder> token = new BBinder();
+    service->monitorInput(token, name, displayId, channel);
+
+    auto monitor = std::make_shared<InputMonitor>(token);
+    monitor->setInputChannel(channel);
+    return monitor;
+}
+
+WindowManager::WindowManager() : mService(nullptr), mTimerInited(false) {
     mTransaction = std::make_shared<SurfaceTransaction>();
     mTransaction->setWindowManager(this);
     getService();
@@ -98,12 +124,7 @@ WindowManager::~WindowManager() {
 
 sp<IWindowManager>& WindowManager::getService() {
     std::lock_guard<std::mutex> scoped_lock(mLock);
-    if (mService == nullptr || !android::IInterface::asBinder(mService)->isBinderAlive()) {
-        if (android::getService<IWindowManager>(android::String16(WindowManager::name()),
-                                                &mService) != android::NO_ERROR) {
-            FLOGE("ServiceManager can't find the service:%s", WindowManager::name());
-        }
-    }
+    getWindowService(mService);
     return mService;
 }
 
