@@ -19,7 +19,6 @@
 #include "RootContainer.h"
 
 #include <lvgl/lvgl.h>
-#include <lvgl/src/lvgl_private.h>
 
 #include "WindowManagerService.h"
 #include "WindowUtils.h"
@@ -28,12 +27,7 @@ namespace os {
 namespace wm {
 
 RootContainer::RootContainer(DeviceEventListener* listener, uv_loop_t* loop)
-      : mListener(listener),
-        mDisp(nullptr),
-        mVsyncTimer(nullptr),
-        mUvData(nullptr),
-        mUvLoop(loop),
-        mIndevReadCb(nullptr) {
+      : mListener(listener), mDisp(nullptr), mVsyncTimer(nullptr), mUvData(nullptr), mUvLoop(loop) {
     init();
 }
 
@@ -46,7 +40,6 @@ RootContainer::~RootContainer() {
     lv_nuttx_uv_deinit(&mUvData);
     mUvData = nullptr;
     mUvLoop = nullptr;
-    mIndevReadCb = nullptr;
 
     if (mDisp) {
         lv_disp_remove(mDisp);
@@ -117,26 +110,38 @@ void RootContainer::processVsyncEvent() {
     WM_PROFILER_END();
 }
 
-static void monitor_indev_read(lv_indev_t* drv, lv_indev_data_t* data) {
+static void monitor_indev_read(lv_indev_t* indev, lv_indev_data_t* data) {
     if (!data) return;
 
     RootContainer* container = reinterpret_cast<RootContainer*>(LV_GLOBAL_DEFAULT()->user_data);
-    if (container) container->readInput(drv, data);
+    if (container) container->readInput(indev, data);
 }
 
-void RootContainer::readInput(lv_indev_t* drv, lv_indev_data_t* data) {
-    if (mIndevReadCb) mIndevReadCb(drv, data);
+void RootContainer::readInput(lv_indev_t* indev, lv_indev_data_t* data) {
+    lv_indev_read_cb_t read_cb = (lv_indev_read_cb_t)lv_indev_get_user_data(indev);
+    if (!read_cb) return;
+
+    read_cb(indev, data);
 
     if (!mListener) return;
 
-    int type = lv_indev_get_type(drv);
-    if (type != LV_INDEV_TYPE_POINTER) return;
-
+    int type = lv_indev_get_type(indev);
     InputMessage msg;
     msg.type = (InputMessageType)type;
     msg.state = (InputMessageState)data->state;
-    msg.pointer.x = msg.pointer.raw_x = data->point.x;
-    msg.pointer.y = msg.pointer.raw_y = data->point.y;
+
+    switch (type) {
+        case LV_INDEV_TYPE_POINTER:
+            msg.pointer.x = msg.pointer.raw_x = data->point.x;
+            msg.pointer.y = msg.pointer.raw_y = data->point.y;
+            break;
+        case LV_INDEV_TYPE_KEYPAD:
+            msg.keypad.key_code = data->key;
+            break;
+        default:
+            return;
+    }
+
     mListener->responseInput(&msg);
 }
 
@@ -164,12 +169,12 @@ bool RootContainer::init() {
     mVsyncTimer = lv_timer_create(vsyncCallback, LV_DEF_REFR_PERIOD, this);
     lv_display_add_event(mDisp, resetVsyncTimer, LV_EVENT_REFR_FINISH, mVsyncTimer);
 
-    if (result.indev->type == LV_INDEV_TYPE_POINTER && mListener) {
+    if (mListener) {
         LV_GLOBAL_DEFAULT()->user_data = this;
-        mIndevReadCb = result.indev->read_cb;
+
+        lv_indev_set_user_data(result.indev, (void*)lv_indev_get_read_cb(result.indev));
         lv_indev_set_read_cb(result.indev, monitor_indev_read);
     }
-
 #endif
 
     return mDisp ? true : false;
