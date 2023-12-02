@@ -26,7 +26,8 @@
 namespace os {
 namespace wm {
 
-InputChannel::InputChannel() {}
+InputChannel::InputChannel() : mEventFd(-1), mEventName("") {}
+
 InputChannel::~InputChannel() {}
 
 status_t InputChannel::writeToParcel(Parcel* out) const {
@@ -67,6 +68,7 @@ void InputChannel::release() {
         mq_unlink(mEventName.c_str());
         FLOGI("mq unlink:%s", mEventName.c_str());
         mEventFd = -1;
+        mEventName = "";
     }
 }
 

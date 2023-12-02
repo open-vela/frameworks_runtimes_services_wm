@@ -81,10 +81,7 @@ std::shared_ptr<InputMonitor> WindowManager::monitorInput(const ::std::string& n
     InputChannel* channel = new InputChannel();
     sp<IBinder> token = new BBinder();
     service->monitorInput(token, name, displayId, channel);
-
-    auto monitor = std::make_shared<InputMonitor>(token);
-    monitor->setInputChannel(channel);
-    return monitor;
+    return std::make_shared<InputMonitor>(token, channel);
 }
 
 WindowManager::WindowManager() : mService(nullptr), mTimerInited(false) {

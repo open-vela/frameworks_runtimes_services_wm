@@ -52,7 +52,9 @@ protected:
         mWindow->setLayoutParams(mLayoutParam);
         mWindow->setWindowManager(mWindowManager);
     }
+
     void TearDown() override {
+        mWindow = nullptr;
         delete mWindowManager;
     }
 

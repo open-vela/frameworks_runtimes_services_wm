@@ -27,7 +27,7 @@ namespace wm {
 
 class BaseWindow;
 
-class UIDriverProxy : public EventHandler {
+class UIDriverProxy {
 public:
     UIDriverProxy(std::shared_ptr<BaseWindow> win);
     virtual ~UIDriverProxy();
@@ -52,7 +52,7 @@ public:
         return mBufferItem;
     }
 
-    void handleEvent() override {}
+    virtual void handleEvent() = 0;
     bool readEvent(InputMessage* message);
     virtual void setInputMonitor(InputMonitor* monitor);
     InputMonitor* getInputMonitor() {
