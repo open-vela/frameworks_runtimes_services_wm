@@ -25,36 +25,23 @@ namespace wm {
 
 class InputMonitor;
 
-class EventHandler {
-public:
-    virtual void handleEvent() = 0;
-};
-
-class DefaultEventHandler : public EventHandler {
-public:
-    DefaultEventHandler(InputMonitor* monitor) : mInputMonitor(monitor) {}
-
-    void handleEvent() override;
-
-private:
-    InputMonitor* mInputMonitor;
-};
+typedef std::function<void(InputMonitor*)> InputMonitorCallback;
 
 class InputMonitor {
 public:
     InputMonitor();
-    InputMonitor(const sp<IBinder> token);
+    InputMonitor(const sp<IBinder> token, InputChannel* channel);
     ~InputMonitor();
 
     void setInputChannel(InputChannel* inputChannel);
 
     bool isValid() {
-        return mInputChannel != nullptr ? mInputChannel->isValid() : false;
+        return mInputChannel && mInputChannel.get() ? mInputChannel->isValid() : false;
     }
 
     bool receiveMessage(const InputMessage* msg);
 
-    void start(uv_loop_t* loop, EventHandler* handler);
+    void start(uv_loop_t* loop, InputMonitorCallback callback);
 
     DISALLOW_COPY_AND_ASSIGN(InputMonitor);
 
@@ -62,8 +49,9 @@ private:
     void stop();
 
     sp<IBinder> mToken;
-    InputChannel* mInputChannel;
+    std::shared_ptr<InputChannel> mInputChannel;
     uv_poll_t* mPoll;
+    InputMonitorCallback mEventHandler;
 };
 
 } // namespace wm
