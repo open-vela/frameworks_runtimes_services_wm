@@ -26,73 +26,62 @@
 namespace os {
 namespace wm {
 
-void DefaultEventHandler::handleEvent() {
-    if (!mInputMonitor) return;
+InputMonitor::InputMonitor() : mToken(nullptr), mPoll(nullptr), mEventHandler(nullptr) {}
 
-    InputMessage msg;
-    bool ret = mInputMonitor->receiveMessage(&msg);
-    if (ret) {
-        dumpInputMessage(&msg);
-    }
+InputMonitor::InputMonitor(const sp<IBinder> token, InputChannel* channel)
+      : mToken(token), mPoll(nullptr), mEventHandler(nullptr) {
+    mInputChannel.reset(channel);
 }
-
-InputMonitor::InputMonitor() : mToken(nullptr), mInputChannel(nullptr), mPoll(nullptr) {}
-
-InputMonitor::InputMonitor(const sp<IBinder> token)
-      : mToken(token), mInputChannel(nullptr), mPoll(nullptr) {}
 
 InputMonitor::~InputMonitor() {
     stop();
     mToken = nullptr;
+    mInputChannel = nullptr;
 }
 
 void InputMonitor::stop() {
     if (mPoll) {
         uv_poll_stop(mPoll);
         mPoll->data = nullptr;
+        mEventHandler = nullptr;
         uv_close(reinterpret_cast<uv_handle_t*>(mPoll),
                  [](uv_handle_t* handle) { delete reinterpret_cast<uv_poll_t*>(handle); });
         mPoll = nullptr;
     }
 
-    /*release old input channel*/
     if (mInputChannel) {
-        mInputChannel->release();
-        mInputChannel = nullptr;
+        /* release input channel */
+        if (mInputChannel.get()) mInputChannel->release();
+
+        mInputChannel.reset();
     }
 }
 
 void InputMonitor::setInputChannel(InputChannel* inputChannel) {
     /* clear previous setting */
     stop();
-    mInputChannel = inputChannel;
+    mInputChannel.reset(inputChannel);
 }
 
 bool InputMonitor::receiveMessage(const InputMessage* msg) {
-    if (mInputChannel == nullptr || msg == nullptr) {
+    if (msg == nullptr || !isValid()) {
         FLOGW("please set input channel firstly or valid message pointer!");
         return false;
     }
 
-    int32_t fd = mInputChannel->getEventFd();
-    if (fd == -1) {
-        FLOGW("can't read message without valid channel!");
-        return false;
-    }
-
-    ssize_t size = mq_receive(fd, (char*)msg, sizeof(InputMessage), NULL);
+    ssize_t size = mq_receive(mInputChannel->getEventFd(), (char*)msg, sizeof(InputMessage), NULL);
     return size == sizeof(InputMessage) ? true : false;
 }
 
-void InputMonitor::start(uv_loop_t* loop, EventHandler* handler) {
-    int fd = mInputChannel ? mInputChannel->getEventFd() : -1;
+void InputMonitor::start(uv_loop_t* loop, InputMonitorCallback callback) {
+    int fd = isValid() ? mInputChannel->getEventFd() : -1;
     if (fd == -1) {
         FLOGW("no valid file description!");
         return;
     }
 
     mPoll = new uv_poll_t;
-    mPoll->data = handler;
+    mPoll->data = this;
     uv_poll_init(loop, mPoll, fd);
     uv_poll_start(mPoll, UV_READABLE, [](uv_poll_t* handle, int status, int events) {
         if (status < 0) {
@@ -101,9 +90,9 @@ void InputMonitor::start(uv_loop_t* loop, EventHandler* handler) {
         }
 
         if (events & UV_READABLE) {
-            EventHandler* tmpHandle = reinterpret_cast<EventHandler*>(handle->data);
-            if (tmpHandle) {
-                tmpHandle->handleEvent();
+            InputMonitor* monitor = reinterpret_cast<InputMonitor*>(handle->data);
+            if (monitor) {
+                monitor->mEventHandler(monitor);
             }
         }
     });

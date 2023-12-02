@@ -72,6 +72,7 @@ void BaseWindow::W::clear() {
 }
 
 BaseWindow::~BaseWindow() {
+    doDie();
     mIWindow = nullptr;
 }
 
@@ -131,7 +132,8 @@ void BaseWindow::setInputChannel(InputChannel* inputChannel) {
     if (inputChannel != nullptr && inputChannel->isValid()) {
         mInputMonitor->setInputChannel(inputChannel);
         mUIProxy->setInputMonitor(mInputMonitor.get());
-        mInputMonitor->start(mContext->getMainLoop()->get(), mUIProxy.get());
+        mInputMonitor->start(mContext->getMainLoop()->get(),
+                             [this](InputMonitor* monitor) { mUIProxy->handleEvent(); });
     } else if (mInputMonitor && mInputMonitor->isValid()) {
         mUIProxy->setInputMonitor(nullptr);
         mInputMonitor.reset();
