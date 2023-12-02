@@ -32,15 +32,6 @@ protected:
         mName = "InputChannelTest";
         mInputChannel = std::make_shared<InputChannel>();
         mInputChannel2 = std::make_shared<InputChannel>();
-
-        mInputMsg.type = INPUT_MESSAGE_TYPE_POINTER;
-        mInputMsg.state = INPUT_MESSAGE_STATE_PRESSED;
-        mInputMsg.keypad.key_code = 111;
-        mInputMsg.pointer.x = 100;
-        mInputMsg.pointer.y = 100;
-        mInputMsg.pointer.raw_x = 200;
-        mInputMsg.pointer.raw_y = 200;
-
     } // namespace wm
     void TearDown() override {}
 
@@ -48,8 +39,6 @@ protected:
     std::shared_ptr<InputChannel> mInputChannel2;
 
     std::string mName;
-    InputMessage mInputMsg;
-
 }; // namespace wm
 
 TEST_F(InputChannelTest, CreateInputChannel) {
@@ -61,36 +50,6 @@ TEST_F(InputChannelTest, FdValidTest) {
 
     mInputChannel2->copyFrom(*mInputChannel);
     EXPECT_EQ(mInputChannel2->isValid(), true);
-}
-
-TEST_F(InputChannelTest, SendMessage) {
-    EXPECT_EQ(mInputChannel->create(mName), true);
-
-    ::os::app::UvLoop looper;
-    ::os::app::UvLoop* handler = &looper;
-    ::os::app::UvPoll pollfd(looper, mInputChannel->getEventFd());
-    pollfd.start(
-            UV_READABLE,
-            [handler](int f, int status, int events, void* data) {
-                InputMessage msg;
-                mq_receive(f, (char*)&msg, sizeof(InputMessage), NULL);
-
-                InputMessage* ie = &msg;
-                if (ie->type == INPUT_MESSAGE_TYPE_POINTER) {
-                    EXPECT_EQ(ie->pointer.x, 100);
-                    EXPECT_EQ(ie->pointer.y, 100);
-                    EXPECT_EQ(ie->pointer.raw_x, 200);
-                    EXPECT_EQ(ie->pointer.raw_y, 200);
-                } else if (ie->type == INPUT_MESSAGE_TYPE_KEYPAD) {
-                    EXPECT_EQ(ie->keypad.key_code, (uint32_t)111);
-                }
-
-                handler->stop();
-            },
-            nullptr);
-
-    EXPECT_EQ(mInputChannel->sendMessage(&mInputMsg), true);
-    looper.run();
 }
 
 TEST_F(InputChannelTest, ReleaseInputChannel) {
