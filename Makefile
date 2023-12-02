@@ -53,6 +53,9 @@ PROGNAME += BufferQueueTest
 MAINSRC  += test/InputChannelTest.cpp
 PROGNAME += InputChannelTest
 
+MAINSRC  += test/InputMonitorTest.cpp
+PROGNAME += InputMonitorTest
+
 MAINSRC  += test/IWindowManagerTest.cpp
 PROGNAME += IWindowManagerTest
 endif
