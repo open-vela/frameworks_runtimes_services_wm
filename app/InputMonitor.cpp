@@ -74,6 +74,11 @@ bool InputMonitor::receiveMessage(const InputMessage* msg) {
 }
 
 void InputMonitor::start(uv_loop_t* loop, InputMonitorCallback callback) {
+    if (callback == nullptr) {
+        FLOGE("please use valid callback!");
+        return;
+    }
+
     int fd = isValid() ? mInputChannel->getEventFd() : -1;
     if (fd == -1) {
         FLOGW("no valid file description!");
@@ -82,6 +87,7 @@ void InputMonitor::start(uv_loop_t* loop, InputMonitorCallback callback) {
 
     mPoll = new uv_poll_t;
     mPoll->data = this;
+    mEventHandler = callback;
     uv_poll_init(loop, mPoll, fd);
     uv_poll_start(mPoll, UV_READABLE, [](uv_poll_t* handle, int status, int events) {
         if (status < 0) {
