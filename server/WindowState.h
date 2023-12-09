@@ -21,10 +21,10 @@
 #include <binder/Status.h>
 #include <utils/RefBase.h>
 
+#include "InputDispatcher.h"
 #include "WindowManagerService.h"
 #include "WindowNode.h"
 #include "WindowToken.h"
-#include "InputDispatcher.h"
 #include "os/wm/IWindowManager.h"
 #include "wm/LayoutParams.h"
 
@@ -73,10 +73,9 @@ public:
 
     BufferItem* acquireBuffer();
     bool releaseBuffer(BufferItem* buffer);
-    void setRequestedSize(int32_t requestedWidth, int32_t requestedHeight);
 
-    int32_t mRequestedWidth;
-    int32_t mRequestedHeight;
+    void setLayoutParams(LayoutParams attrs);
+    int32_t getSurfaceSize();
 
     DISALLOW_COPY_AND_ASSIGN(WindowState);
 

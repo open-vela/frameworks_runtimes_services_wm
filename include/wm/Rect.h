@@ -69,6 +69,13 @@ public:
         right = other.right;
         bottom = other.bottom;
     }
+    int32_t getLeft() {
+        return left;
+    }
+
+    int32_t getTop() {
+        return top;
+    }
 
     int32_t getWidth() {
         return right - left;

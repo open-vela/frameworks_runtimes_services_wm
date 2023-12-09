@@ -179,7 +179,11 @@ Status WindowManagerService::relayout(const sp<IWindow>& window, const LayoutPar
                                       int32_t visibility, SurfaceControl* outSurfaceControl,
                                       int32_t* _aidl_return) {
     WM_PROFILER_BEGIN();
-    FLOGI("%p", window.get());
+
+    (void)requestedHeight;
+    (void)requestedWidth;
+
+    FLOGI("%p size(%dx%d)", window.get(), requestedWidth, requestedHeight);
     *_aidl_return = -1;
     sp<IBinder> client = IInterface::asBinder(window);
     WindowState* win;
@@ -194,7 +198,7 @@ Status WindowManagerService::relayout(const sp<IWindow>& window, const LayoutPar
     }
 
     if (visibility) {
-        win->setRequestedSize(requestedWidth, requestedHeight);
+        win->setLayoutParams(attrs);
         *_aidl_return = createSurfaceControl(outSurfaceControl, win);
     } else {
         win->destroySurfaceControl();
@@ -287,11 +291,11 @@ Status WindowManagerService::requestVsync(const sp<IWindow>& window, VsyncReques
 
     if (it != mWindowMap.end()) {
         if (!it->second->scheduleVsync(freq)) {
-            FLOGD("scheduleVsync %d for %p failure!", (int)freq, it->second);
+            FLOGI("scheduleVsync %d for %p failure!", (int)freq, it->second);
         }
     } else {
         WM_PROFILER_END();
-        FLOGW("scheduleVsync %d for %p(not added)!", (int)freq, it->second);
+        FLOGI("scheduleVsync %d for %p(not added)!", (int)freq, it->second);
         return Status::fromExceptionCode(1, "can't find winstate in map");
     }
     WM_PROFILER_END();
@@ -385,9 +389,8 @@ int32_t WindowManagerService::createSurfaceControl(SurfaceControl* outSurfaceCon
     int32_t result = 0;
 
     // double buffer: Create shared memory
+    int32_t size = win->getSurfaceSize();
 
-    // TODO:parse mformat, temporary value is 4 bytes
-    int32_t size = (win->mRequestedWidth) * (win->mRequestedHeight) * 4;
     vector<BufferId> ids;
     for (int32_t i = 0; i < 2; i++) {
         BufferId id;

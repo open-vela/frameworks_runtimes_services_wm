@@ -32,7 +32,7 @@ public:
     void* getWindow() override;
     void drawFrame(BufferItem* bufItem) override;
 
-    void updateResolution(int32_t width, int32_t height) override;
+    void updateResolution(int32_t width, int32_t height, uint32_t format) override;
     void handleEvent() override;
     void setInputMonitor(InputMonitor* monitor) override;
 
