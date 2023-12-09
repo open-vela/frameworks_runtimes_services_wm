@@ -30,6 +30,18 @@
 namespace os {
 namespace wm {
 
+static inline void* getLayerByType(WindowManagerService* service, int type) {
+    if (type == LayoutParams::TYPE_APPLICATION) {
+        return service->getRootContainer()->getDefLayer();
+    } else if (type == LayoutParams::TYPE_SYSTEM_WINDOW) {
+        return service->getRootContainer()->getSysLayer();
+    } else if (type > LayoutParams::TYPE_SYSTEM_WINDOW) {
+        return service->getRootContainer()->getTopLayer();
+    } else {
+        return service->getRootContainer()->getDefLayer();
+    }
+}
+
 WindowState::WindowState(WindowManagerService* service, const sp<IWindow>& window,
                          WindowToken* token, const LayoutParams& params, int32_t visibility,
                          bool enableInput)
@@ -40,24 +52,12 @@ WindowState::WindowState(WindowManagerService* service, const sp<IWindow>& windo
         mVsyncRequest(VsyncRequest::VSYNC_REQ_NONE),
         mFrameReq(0),
         mHasSurface(false) {
-    lv_obj_t* layer = NULL;
     mAttrs = params;
     mVisibility = visibility != 0 ? true : false;
-    mRequestedWidth = 0;
-    mRequestedHeight = 0;
 
     Rect rect(params.mX, params.mY, params.mX + params.mWidth, params.mY + params.mHeight);
-
-    if (params.mType == LayoutParams::TYPE_APPLICATION) {
-        layer = mService->getRootContainer()->getDefLayer();
-    } else if (params.mType == LayoutParams::TYPE_SYSTEM_WINDOW) {
-        layer = mService->getRootContainer()->getSysLayer();
-    } else if (params.mType > LayoutParams::TYPE_SYSTEM_WINDOW) {
-        layer = mService->getRootContainer()->getTopLayer();
-    } else {
-        layer = mService->getRootContainer()->getDefLayer();
-    }
-    mNode = new WindowNode(this, layer, rect, enableInput);
+    mNode = new WindowNode(this, getLayerByType(mService, params.mType), rect, enableInput,
+                           mAttrs.mFormat);
 }
 
 WindowState::~WindowState() {
@@ -95,16 +95,7 @@ bool WindowState::sendInputMessage(const InputMessage* ie) {
 
 void WindowState::setVisibility(bool visibility) {
     mVisibility = visibility;
-
-    if (!visibility) {
-        scheduleVsync(VsyncRequest::VSYNC_REQ_NONE);
-    } else {
-        if (mVsyncRequest == VsyncRequest::VSYNC_REQ_NONE) {
-            scheduleVsync(VsyncRequest::VSYNC_REQ_SINGLE);
-        } else {
-            scheduleVsync(mVsyncRequest);
-        }
-    }
+    FLOGI("setVisibility:%d", visibility);
 
     mNode->enableInput(visibility);
 }
@@ -117,8 +108,19 @@ void WindowState::sendAppVisibilityToClients() {
         return;
     }
 
+    FLOGI("mToken %p, before mVisibility=%d", mToken.get(), mVisibility);
+    if (!visible) {
+        scheduleVsync(VsyncRequest::VSYNC_REQ_NONE);
+    } else {
+        if (mVsyncRequest == VsyncRequest::VSYNC_REQ_NONE) {
+            scheduleVsync(VsyncRequest::VSYNC_REQ_SINGLE);
+        } else {
+            scheduleVsync(mVsyncRequest);
+        }
+    }
+
     setVisibility(visible);
-    FLOGI("mToken %p,mVisibility=%d", mToken.get(), mVisibility);
+    FLOGI("mToken %p, after mVisibility=%d", mToken.get(), mVisibility);
     mClient->dispatchAppVisibility(visible);
     WM_PROFILER_END();
 }
@@ -211,7 +213,7 @@ VsyncRequest WindowState::onVsync() {
     if (mVsyncRequest == VsyncRequest::VSYNC_REQ_NONE) return mVsyncRequest;
     WM_PROFILER_BEGIN();
 
-    FLOGD("(%p) send vsync to client", this);
+    FLOGD("(%p)-%d send vsync to client", this, (int)mVsyncRequest);
     mVsyncRequest = nextVsyncState(mVsyncRequest);
     mClient->onFrame(++mFrameReq);
     WM_PROFILER_END();
@@ -253,13 +255,22 @@ bool WindowState::releaseBuffer(BufferItem* buffer) {
     }
     return false;
 }
-
-void WindowState::setRequestedSize(int32_t requestedWidth, int32_t requestedHeight) {
-    if ((mRequestedWidth != requestedWidth || mRequestedHeight != requestedHeight)) {
-        FLOGD("requestedWidth:%d,requestedHeight:%d", requestedWidth, requestedHeight);
-        mRequestedWidth = requestedWidth;
-        mRequestedHeight = requestedHeight;
+void WindowState::setLayoutParams(LayoutParams attrs) {
+    if (mSurfaceControl != nullptr && mSurfaceControl->isValid()) {
+        FLOGW("shouldn't update layout configuration when surface is valid");
     }
+
+    if (mAttrs.mType != attrs.mType) {
+        mNode->setParent(getLayerByType(mService, attrs.mType));
+    }
+    mAttrs = attrs;
+
+    Rect rect(attrs.mX, attrs.mY, attrs.mX + attrs.mWidth, attrs.mY + attrs.mHeight);
+    mNode->setRect(rect);
+}
+
+int32_t WindowState::getSurfaceSize() {
+    return mNode->getSurfaceSize();
 }
 
 } // namespace wm

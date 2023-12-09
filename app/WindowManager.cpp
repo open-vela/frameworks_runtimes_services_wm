@@ -182,8 +182,9 @@ int32_t WindowManager::attachIWindow(std::shared_ptr<BaseWindow> window) {
 
 void WindowManager::relayoutWindow(std::shared_ptr<BaseWindow> window) {
     WM_PROFILER_BEGIN();
-    FLOGI("%p", window.get());
     LayoutParams params = window->getLayoutParams();
+    FLOGI("%p, pos(%dx%d), size(%dx%d)", window.get(), params.mX, params.mY, params.mWidth,
+          params.mHeight);
     sp<IBinder> handle = new BBinder();
     SurfaceControl* surfaceControl = new SurfaceControl(params.mToken, handle, params.mWidth,
                                                         params.mHeight, params.mFormat);

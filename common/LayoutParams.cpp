@@ -30,7 +30,7 @@ LayoutParams::LayoutParams() {
     mY = 0;
     mType = TYPE_APPLICATION;
     mFlags = 0;
-    mFormat = FORMAT_OPAQUE;
+    mFormat = FORMAT_ARGB_8888;
     mToken = NULL;
     mInputFeatures = 0;
 }

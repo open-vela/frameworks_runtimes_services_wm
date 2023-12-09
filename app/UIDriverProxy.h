@@ -59,7 +59,7 @@ public:
         return mInputMonitor;
     }
 
-    virtual void updateResolution(int32_t width, int32_t height);
+    virtual void updateResolution(int32_t width, int32_t height, uint32_t format);
 
     enum {
         UIP_BUFFER_UPDATE = 1,

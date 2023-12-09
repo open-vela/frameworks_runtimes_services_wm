@@ -21,6 +21,8 @@
 #include <lvgl/lvgl.h>
 #include <lvgl/src/lvgl_private.h>
 
+#include "WindowUtils.h"
+
 namespace os {
 namespace wm {
 static lv_display_t* _disp_init(LVGLDriverProxy* proxy, uint32_t width, uint32_t height);
@@ -62,6 +64,7 @@ void LVGLDriverProxy::drawFrame(BufferItem* bufItem) {
     BufferItem* oldItem = getBufferItem();
     UIDriverProxy::drawFrame(bufItem);
     if (!bufItem) {
+        FLOGI("buffer is invalid");
         return;
     }
 
@@ -108,8 +111,12 @@ void LVGLDriverProxy::setInputMonitor(InputMonitor* monitor) {
     }
 }
 
-void LVGLDriverProxy::updateResolution(int32_t width, int32_t height) {
+void LVGLDriverProxy::updateResolution(int32_t width, int32_t height, uint32_t format) {
+    lv_color_format_t color_format = getLvColorFormatType(format);
+    FLOGI("update resolution (%dx%d) format 0x%0x->0x%0x", width, height, format, color_format);
+
     lv_display_set_resolution(mDisp, width, height);
+    lv_display_set_color_format(mDisp, color_format);
 }
 
 void LVGLDriverProxy::updateVisibility(bool visible) {
@@ -148,6 +155,7 @@ static void _disp_event_cb(lv_event_t* e) {
         case LV_EVENT_RENDER_START: {
             LVGLDriverProxy* proxy = reinterpret_cast<LVGLDriverProxy*>(lv_event_get_user_data(e));
             if (proxy == NULL) {
+                FLOGI("Render start, proxy is invalid");
                 return;
             }
 
@@ -162,6 +170,7 @@ static void _disp_event_cb(lv_event_t* e) {
         case LV_EVENT_INVALIDATE_AREA: { // for LV_DISP_RENDER_MODE_DIRECT
             LVGLDriverProxy* proxy = reinterpret_cast<LVGLDriverProxy*>(lv_event_get_user_data(e));
             if (proxy == NULL) {
+                FLOGI("Invalidate, proxy is invalid");
                 return;
             }
 
@@ -186,18 +195,14 @@ static void _disp_event_cb(lv_event_t* e) {
 
         case LV_EVENT_RESOLUTION_CHANGED: {
             lv_display_t* disp = (lv_display_t*)lv_event_get_target(e);
-            FLOGI("Resolution changed to (%dx%d)", disp->hor_res, disp->ver_res);
-
-            lv_obj_t* act_screen = lv_display_get_screen_act(disp);
-            if (act_screen) {
-                lv_obj_set_width(act_screen, disp->hor_res);
-                lv_obj_set_height(act_screen, disp->ver_res);
-            }
-
             LVGLDriverProxy* proxy = reinterpret_cast<LVGLDriverProxy*>(lv_event_get_user_data(e));
             if (proxy == NULL) {
+                FLOGI("Resoluation changed, proxy is invalid");
                 return;
             }
+            FLOGD("Resoluation changed from(%dx%d) to (%dx%d)", proxy->mDispW, proxy->mDispH,
+                  disp->hor_res, disp->ver_res);
+
             WindowEventListener* listener = proxy->getEventListener();
             if (listener) {
                 lv_coord_t oldW = proxy->mDispW;

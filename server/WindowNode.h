@@ -26,7 +26,7 @@ namespace wm {
 
 class WindowNode {
 public:
-    WindowNode(WindowState* state, lv_obj_t* parent, const Rect& rect, bool enableInput);
+    WindowNode(WindowState* state, void* parent, const Rect& rect, bool enableInput, int format);
     ~WindowNode();
 
     bool updateBuffer(BufferItem* item, Rect* rect);
@@ -42,7 +42,16 @@ public:
         return mState;
     }
 
+    lv_color_format_t getColorFormat() {
+        return mColorFormat;
+    }
+
     void enableInput(bool enable);
+
+    void setRect(Rect& newRect);
+    void setParent(void* parent);
+
+    int32_t getSurfaceSize();
 
     DISALLOW_COPY_AND_ASSIGN(WindowNode);
 
@@ -51,6 +60,7 @@ private:
     BufferItem* mBuffer;
     lv_obj_t* mWidget;
     Rect mRect;
+    lv_color_format_t mColorFormat;
 };
 
 } // namespace wm
