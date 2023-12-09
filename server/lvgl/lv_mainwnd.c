@@ -238,13 +238,16 @@ static inline void draw_buffer(lv_obj_t* obj, lv_event_t* e) {
     img_dsc.pivot.y = img_h / 2;
     img_dsc.antialias = 0;
 
-    lv_area_t win_coords;
-    win_coords.x1 = 0;
+    lv_area_t win_coords, coords;
+    lv_obj_get_coords(obj, &coords);
+    LV_LOG_TRACE("mainwnd (%d,%d) - (%d,%d)", coords.x1, coords.y1, coords.x2, coords.y2);
+
+    win_coords.x1 = coords.x1;
     win_coords.x2 = win_coords.x1 + img_w - 1;
-    win_coords.y1 = 0;
+    win_coords.y1 = coords.y1;
     win_coords.y2 = win_coords.y1 + img_h - 1;
 
-    LV_LOG_TRACE("draw (%p) with (%d)", mainwnd, mainwnd->buf_dsc.id);
+    LV_LOG_TRACE("draw (%p) with (%d) (%dx%d)", mainwnd, mainwnd->buf_dsc.id, img_w, img_h);
     img_dsc.src = &mainwnd->buf_dsc.img_dsc;
     lv_draw_image(layer, &img_dsc, &win_coords);
     WM_PROFILER_END();

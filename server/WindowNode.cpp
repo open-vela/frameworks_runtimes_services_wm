@@ -19,6 +19,7 @@
 #include "WindowNode.h"
 
 #include "WindowUtils.h"
+#include "wm/LayoutParams.h"
 
 namespace os {
 namespace wm {
@@ -36,11 +37,11 @@ static inline WindowNode* toWindowNode(lv_mainwnd_metainfo_t* meta) {
 }
 
 static inline void initBufDsc(lv_mainwnd_buf_dsc_t* buf_dsc, BufferKey id, int32_t w, int32_t h,
-                              uint32_t size, void* data) {
+                              uint32_t format, uint32_t size, void* data) {
     buf_dsc->id = id;
     buf_dsc->img_dsc.header.w = w;
     buf_dsc->img_dsc.header.h = h;
-    buf_dsc->img_dsc.header.cf = LV_COLOR_FORMAT_NATIVE_WITH_ALPHA;
+    buf_dsc->img_dsc.header.cf = format;
     buf_dsc->img_dsc.data_size = size;
     buf_dsc->img_dsc.data = (const uint8_t*)data;
 }
@@ -60,8 +61,8 @@ static bool acquireDrawBuffer(struct _lv_mainwnd_metainfo_t* meta, lv_mainwnd_bu
 
     Rect& rect = node->getRect();
 
-    initBufDsc(buf_dsc, bufItem->mKey, rect.getWidth(), rect.getHeight(), bufItem->mSize,
-               bufItem->mBuffer);
+    initBufDsc(buf_dsc, bufItem->mKey, rect.getWidth(), rect.getHeight(), node->getColorFormat(),
+               bufItem->mSize, bufItem->mBuffer);
     return true;
 }
 
@@ -106,9 +107,12 @@ static inline void setWidgetMetaInfo(lv_obj_t* obj, void* data, bool enableInput
     lv_mainwnd_set_metainfo(obj, &meta);
 }
 
-WindowNode::WindowNode(WindowState* state, lv_obj_t* parent, const Rect& rect, bool enableInput)
+WindowNode::WindowNode(WindowState* state, void* parent, const Rect& rect, bool enableInput,
+                       int32_t format)
       : mState(state), mBuffer(nullptr), mRect(rect) {
-    mWidget = lv_mainwnd_create(parent);
+    mWidget = lv_mainwnd_create((lv_obj_t*)parent);
+
+    mColorFormat = getLvColorFormatType(format);
 
     // init window position and size
     lv_obj_set_pos(mWidget, mRect.left, mRect.top);
@@ -140,8 +144,8 @@ bool WindowNode::updateBuffer(BufferItem* item, Rect* rect) {
     }
 
     if (mBuffer) {
-        initBufDsc(&dsc, mBuffer->mKey, mRect.getWidth(), mRect.getHeight(), mBuffer->mSize,
-                   mBuffer->mBuffer);
+        initBufDsc(&dsc, mBuffer->mKey, mRect.getWidth(), mRect.getHeight(), getColorFormat(),
+                   mBuffer->mSize, mBuffer->mBuffer);
         result = lv_mainwnd_update_buffer(mWidget, &dsc, rect ? &area : nullptr);
     } else {
         result = lv_mainwnd_update_buffer(mWidget, NULL, NULL);
@@ -178,6 +182,46 @@ bool WindowNode::releaseBuffer() {
 
 void WindowNode::enableInput(bool enable) {
     setWidgetMetaInfo(mWidget, this, enable);
+}
+
+void WindowNode::setRect(Rect& newRect) {
+    if (mWidget) {
+        int32_t left = newRect.getLeft();
+        int32_t top = newRect.getTop();
+        int32_t width = newRect.getWidth();
+        int32_t height = newRect.getHeight();
+
+        FLOGI("update node pos(%dx%d), size(%dx%d)", left, top, width, height);
+
+        if (left != mRect.getLeft()) {
+            lv_obj_set_x(mWidget, left);
+        }
+
+        if (top != mRect.getTop()) {
+            lv_obj_set_y(mWidget, top);
+        }
+
+        if (width != mRect.getWidth()) {
+            lv_obj_set_width(mWidget, width);
+        }
+
+        if (height != mRect.getHeight()) {
+            lv_obj_set_height(mWidget, height);
+        }
+    }
+    mRect = newRect;
+}
+
+void WindowNode::setParent(void* parent) {
+    FLOGI("update node parent");
+    if (mWidget) {
+        lv_obj_set_parent(mWidget, (lv_obj_t*)parent);
+    }
+}
+
+int32_t WindowNode::getSurfaceSize() {
+    int bpp = lv_color_format_get_bpp(mColorFormat);
+    return mRect.getWidth() * mRect.getHeight() * (bpp >> 3);
 }
 
 } // namespace wm
