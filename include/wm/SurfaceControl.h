@@ -42,7 +42,7 @@ public:
     ~SurfaceControl();
 
     SurfaceControl(const sp<IBinder>& token, const sp<IBinder>& handle, uint32_t width = 0,
-                   uint32_t height = 0, uint8_t format = 0);
+                   uint32_t height = 0, uint32_t format = 0);
 
     status_t writeToParcel(Parcel* out) const override;
     status_t readFromParcel(const Parcel* in) override;

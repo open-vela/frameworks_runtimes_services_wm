@@ -27,3 +27,5 @@
 #define FLOGW(fmt, ...) ALOGW("%s: " fmt, __FUNCTION__, ##__VA_ARGS__)
 #define FLOGI(fmt, ...) ALOGI("%s: " fmt, __FUNCTION__, ##__VA_ARGS__)
 #define FLOGD(fmt, ...) ALOGD("%s: " fmt, __FUNCTION__, ##__VA_ARGS__)
+
+uint32_t getLvColorFormatType(uint32_t format);

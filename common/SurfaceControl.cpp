@@ -31,7 +31,7 @@ bool SurfaceControl::isSameSurface(const std::shared_ptr<SurfaceControl>& lhs,
 SurfaceControl::SurfaceControl() {}
 
 SurfaceControl::SurfaceControl(const sp<IBinder>& token, const sp<IBinder>& handle, uint32_t width,
-                               uint32_t height, uint8_t format)
+                               uint32_t height, uint32_t format)
       : mToken(token), mHandle(handle), mWidth(width), mHeight(height), mFormat(format) {}
 
 SurfaceControl::~SurfaceControl() {

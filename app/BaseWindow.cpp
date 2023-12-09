@@ -146,7 +146,8 @@ void BaseWindow::setSurfaceControl(SurfaceControl* surfaceControl) {
     mSurfaceControl.reset(surfaceControl);
 
     if (surfaceControl != nullptr && surfaceControl->isValid()) {
-        mUIProxy->updateResolution(surfaceControl->getWidth(), surfaceControl->getHeight());
+        mUIProxy->updateResolution(surfaceControl->getWidth(), surfaceControl->getHeight(),
+                                   surfaceControl->getFormat());
 
 #ifdef CONFIG_ENABLE_BUFFER_QUEUE_BY_NAME
         vector<BufferId> ids;
@@ -236,17 +237,18 @@ void BaseWindow::handleOnFrame(int32_t seq) {
         }
     } else {
         if (mUIProxy.get() == nullptr) {
+            FLOGI("UIProxy is invalid!");
             return;
         }
 
         std::shared_ptr<BufferProducer> buffProducer = getBufferProducer();
         if (buffProducer.get() == nullptr) {
-            FLOGD("buffProducer is invalid!");
+            FLOGI("buffProducer is invalid!");
             return;
         }
         BufferItem* item = buffProducer->dequeueBuffer();
         if (!item) {
-            FLOGD("onFrame, no valid buffer!\n");
+            FLOGI("onFrame, no valid buffer!\n");
             return;
         }
 
@@ -254,6 +256,7 @@ void BaseWindow::handleOnFrame(int32_t seq) {
         mUIProxy->drawFrame(item);
         WM_PROFILER_END();
         if (!mUIProxy->finishDrawing()) {
+            FLOGI("no finish drawing!");
             buffProducer->cancelBuffer(item);
             return;
         }
@@ -303,5 +306,6 @@ void BaseWindow::updateOrCreateBufferQueue() {
 void BaseWindow::setEventListener(WindowEventListener* listener) {
     if (mUIProxy && mUIProxy.get()) mUIProxy->setEventListener(listener);
 }
+
 } // namespace wm
 } // namespace os
