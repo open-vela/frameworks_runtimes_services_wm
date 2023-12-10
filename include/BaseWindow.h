@@ -104,9 +104,8 @@ public:
     std::shared_ptr<BufferProducer> getBufferProducer();
 
     void doDie();
-    bool isVisible() {
-        return mVisible;
-    }
+    int32_t getVisibility();
+
     void dispatchAppVisibility(bool visible);
     void handleAppVisibility(bool visible);
 
@@ -136,7 +135,7 @@ private:
     std::shared_ptr<InputMonitor> mInputMonitor;
     std::shared_ptr<UIDriverProxy> mUIProxy;
     VsyncRequest mVsyncRequest;
-    bool mVisible;
+    bool mAppVisible;
     atomic_bool mFrameDone;
 };
 
