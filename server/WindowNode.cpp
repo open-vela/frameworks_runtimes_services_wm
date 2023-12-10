@@ -151,14 +151,14 @@ bool WindowNode::updateBuffer(BufferItem* item, Rect* rect) {
         result = lv_mainwnd_update_buffer(mWidget, NULL, NULL);
     }
 
-    FLOGD("updateBuffer(%s) from(%d) to(%d)\n", result ? "success" : "failure",
+    FLOGD("(%p) %s from(0x%0x) to(0x%0x)\n", this, result ? "success" : "failure",
           oldBuffer ? oldBuffer->mKey : -1, mBuffer ? mBuffer->mKey : -1);
 
     // need to reset buffer
     if (!result) {
         mBuffer = oldBuffer;
     } else if (oldBuffer && !mState->releaseBuffer(oldBuffer)) {
-        FLOGD("releaseBuffer(%d) exception\n", oldBuffer->mKey);
+        FLOGW("releaseBuffer(%d) exception\n", oldBuffer->mKey);
         WM_PROFILER_END();
         return false;
     }

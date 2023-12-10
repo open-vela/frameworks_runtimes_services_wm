@@ -33,6 +33,7 @@ class LayoutParams : public Parcelable {
 public:
     static const int32_t WINDOW_VISIBLE = 0;
     static const int32_t WINDOW_INVISIBLE = 1;
+    static const int32_t WINDOW_HOLD = 1;
     static const int32_t WINDOW_GONE = 2;
 
     // for type

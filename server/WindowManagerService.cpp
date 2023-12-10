@@ -45,12 +45,12 @@ static inline bool createSharedBuffer(int32_t size, BufferId* id) {
     std::string bufferPath = graphicsPath + std::to_string(pid) + "/bq/" + getUniqueId();
     int fd = shm_open(bufferPath.c_str(), O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
     if (fd == -1) {
-        FLOGE("Failed to create shared memory,%s", strerror(errno));
+        FLOGE("[%d] Failed to create shared memory, %s", pid, strerror(errno));
         return false;
     }
 
     if (ftruncate(fd, size) == -1) {
-        FLOGE("Failed to resize shared memory");
+        FLOGE("[%d] Failed to resize shared memory", pid);
         close(fd);
         return false;
     }
@@ -70,8 +70,8 @@ void WindowManagerService::WindowDeathRecipient::binderDied(const wp<IBinder>& w
     auto key = who.promote();
     auto it = mService->mWindowMap.find(key);
     if (it != mService->mWindowMap.end()) {
-        it->second->removeIfPossible();
         mService->mWindowMap.erase(key);
+        it->second->removeIfPossible();
     }
 }
 
@@ -98,7 +98,7 @@ Status WindowManagerService::getPhysicalDisplayInfo(int32_t displayId, DisplayIn
     *_aidl_return = 0;
     if (mContainer) {
         mContainer->getDisplayInfo(info);
-        FLOGI("width:%d,height:%d", info->width, info->height);
+        FLOGI("display size (%dx%d)", info->width, info->height);
     }
     WM_PROFILER_END();
 
@@ -109,7 +109,8 @@ Status WindowManagerService::addWindow(const sp<IWindow>& window, const LayoutPa
                                        int32_t visibility, int32_t displayId, int32_t userId,
                                        InputChannel* outInputChannel, int32_t* _aidl_return) {
     WM_PROFILER_BEGIN();
-    FLOGI("visibility:%d,w:%d,h:%d", visibility, attrs.mWidth, attrs.mHeight);
+    int32_t pid = IPCThreadState::self()->getCallingPid();
+    FLOGI("[%d] visibility(%d) size(%dx%d)", pid, visibility, attrs.mWidth, attrs.mHeight);
 
     if (mWindowMap.size() >= CONFIG_ENABLE_WINDOW_LIMIT_MAX) {
         ALOGE("failure, exceed maximum window limit!");
@@ -119,33 +120,30 @@ Status WindowManagerService::addWindow(const sp<IWindow>& window, const LayoutPa
     }
 
     sp<IBinder> client = IInterface::asBinder(window);
-    client->linkToDeath(mWindowDeathRecipient);
-
     auto itState = mWindowMap.find(client);
     if (itState != mWindowMap.end()) {
         *_aidl_return = -1;
         WM_PROFILER_END();
-        return Status::fromExceptionCode(1, "window already existed");
+        return Status::fromExceptionCode(1, "window already exist");
     }
 
-    sp<IBinder> token = attrs.mToken; // get token from attrs
+    sp<IBinder> token = attrs.mToken;
+
     auto itToken = mTokenMap.find(token);
     if (itToken == mTokenMap.end()) {
         *_aidl_return = -1;
         WM_PROFILER_END();
-        return Status::fromExceptionCode(1, "can't find window token in map");
+        return Status::fromExceptionCode(1, "please add token firstly");
     }
 
     WindowToken* winToken = itToken->second;
-
     WindowState* win = new WindowState(this, window, winToken, attrs, visibility,
                                        outInputChannel != nullptr ? true : false);
+    client->linkToDeath(mWindowDeathRecipient);
     mWindowMap.emplace(client, win);
-
     winToken->addWindow(win);
 
     if (outInputChannel != nullptr && attrs.hasInput()) {
-        int32_t pid = IPCThreadState::self()->getCallingPid();
         std::string name = graphicsPath + std::to_string(pid) + "/event/" + getUniqueId();
         std::shared_ptr<InputDispatcher> inputDispatcher = win->createInputDispatcher(name);
         outInputChannel->copyFrom(inputDispatcher->getInputChannel());
@@ -158,9 +156,9 @@ Status WindowManagerService::addWindow(const sp<IWindow>& window, const LayoutPa
 }
 
 Status WindowManagerService::removeWindow(const sp<IWindow>& window) {
-    // TODO
     WM_PROFILER_BEGIN();
-    FLOGI("%p", window.get());
+
+    FLOGI("[%d] window(%p)", IPCThreadState::self()->getCallingPid(), window.get());
     sp<IBinder> client = IInterface::asBinder(window);
     auto itState = mWindowMap.find(client);
     if (itState != mWindowMap.end()) {
@@ -180,10 +178,9 @@ Status WindowManagerService::relayout(const sp<IWindow>& window, const LayoutPar
                                       int32_t* _aidl_return) {
     WM_PROFILER_BEGIN();
 
-    (void)requestedHeight;
-    (void)requestedWidth;
+    int32_t pid = IPCThreadState::self()->getCallingPid();
+    FLOGI("[%d] window(%p) size(%dx%d)", pid, window.get(), requestedWidth, requestedHeight);
 
-    FLOGI("%p size(%dx%d)", window.get(), requestedWidth, requestedHeight);
     *_aidl_return = -1;
     sp<IBinder> client = IInterface::asBinder(window);
     WindowState* win;
@@ -191,24 +188,31 @@ Status WindowManagerService::relayout(const sp<IWindow>& window, const LayoutPar
     if (it != mWindowMap.end()) {
         win = it->second;
     } else {
-        win = nullptr;
+        FLOGW("[%d] please add window firstly", pid);
         WM_PROFILER_END();
-        FLOGW("can't find winstate in map");
-        return Status::fromExceptionCode(1, "can't find winstate in map");
+        return Status::fromExceptionCode(1, "please add window firstly");
     }
 
     bool visible = visibility == LayoutParams::WINDOW_VISIBLE ? true : false;
+    win->destroySurfaceControl();
+
     if (visible) {
-        win->setLayoutParams(attrs);
+        if (attrs.mWidth != requestedWidth || attrs.mHeight != requestedHeight) {
+            LayoutParams newAttrs = attrs;
+            newAttrs.mWidth = requestedWidth;
+            newAttrs.mHeight = requestedHeight;
+            win->setLayoutParams(newAttrs);
+        } else {
+            win->setLayoutParams(attrs);
+        }
         *_aidl_return = createSurfaceControl(outSurfaceControl, win);
     } else {
-        win->destroySurfaceControl();
         outSurfaceControl = nullptr;
     }
-    win->setVisibility(visible);
+
+    win->setVisibility(visibility);
 
     WM_PROFILER_END();
-
     return Status::ok();
 }
 
@@ -222,7 +226,7 @@ Status WindowManagerService::isWindowToken(const sp<IBinder>& binder, bool* _aid
         *_aidl_return = false;
     }
     WM_PROFILER_END();
-    FLOGI("isWindowToken = %d", *_aidl_return);
+    FLOGI("result %s", (*_aidl_return) ? "success" : "failure");
 
     return Status::ok();
 }
@@ -230,14 +234,16 @@ Status WindowManagerService::isWindowToken(const sp<IBinder>& binder, bool* _aid
 Status WindowManagerService::addWindowToken(const sp<IBinder>& token, int32_t type,
                                             int32_t displayId) {
     WM_PROFILER_BEGIN();
-    FLOGI("%p", token.get());
+    int32_t pid = IPCThreadState::self()->getCallingPid();
+
     auto it = mTokenMap.find(token);
     if (it != mTokenMap.end()) {
-        FLOGW("windowToken already existed");
-        return Status::fromExceptionCode(1, "windowToken already existed");
+        FLOGW("[%d] window token(%p) already exist", pid, token.get());
+        return Status::fromExceptionCode(1, "window token already exist");
     } else {
-        WindowToken* windToken = new WindowToken(this, token, type, displayId);
+        WindowToken* windToken = new WindowToken(this, token, type, displayId, pid);
         mTokenMap.emplace(token, windToken);
+        FLOGI("[%d] add window token(%p) success", pid, token.get());
     }
     WM_PROFILER_END();
     return Status::ok();
@@ -245,7 +251,10 @@ Status WindowManagerService::addWindowToken(const sp<IBinder>& token, int32_t ty
 
 Status WindowManagerService::removeWindowToken(const sp<IBinder>& token, int32_t displayId) {
     WM_PROFILER_BEGIN();
-    FLOGI("%p", token.get());
+
+    int32_t pid = IPCThreadState::self()->getCallingPid();
+    FLOGI("[%d] remove token(%p)", pid, token.get());
+
     auto it = mTokenMap.find(token);
     if (it != mTokenMap.end()) {
         it->second->removeAllWindowsIfPossible();
@@ -261,12 +270,14 @@ Status WindowManagerService::removeWindowToken(const sp<IBinder>& token, int32_t
 Status WindowManagerService::updateWindowTokenVisibility(const sp<IBinder>& token,
                                                          int32_t visibility) {
     WM_PROFILER_BEGIN();
-    FLOGI("token:%p,visibility:%d", token.get(), visibility);
+    int32_t pid = IPCThreadState::self()->getCallingPid();
+    FLOGI("[%d] update token(%p)'s visibility to %d", pid, token.get(), visibility);
+
     auto it = mTokenMap.find(token);
     if (it != mTokenMap.end()) {
-        it->second->setClientVisible(visibility == LayoutParams::WINDOW_VISIBLE ? true : false);
+        it->second->setClientVisibility(visibility);
     } else {
-        FLOGW("can't find token %p in map", token.get());
+        FLOGI("[%d] can't find token %p in map", pid, token.get());
         return Status::fromExceptionCode(1, "can't find token in map");
     }
     WM_PROFILER_END();
@@ -286,17 +297,17 @@ Status WindowManagerService::applyTransaction(const vector<LayerState>& state) {
 
 Status WindowManagerService::requestVsync(const sp<IWindow>& window, VsyncRequest freq) {
     WM_PROFILER_BEGIN();
-    FLOGD("freq:%d", (int)freq);
+    FLOGD("%p freq:%d", window.get(), (int)freq);
     sp<IBinder> client = IInterface::asBinder(window);
     auto it = mWindowMap.find(client);
 
     if (it != mWindowMap.end()) {
         if (!it->second->scheduleVsync(freq)) {
-            FLOGI("scheduleVsync %d for %p failure!", (int)freq, it->second);
+            FLOGI("%p scheduleVsync %d for %p failure!", window.get(), (int)freq, it->second);
         }
     } else {
         WM_PROFILER_END();
-        FLOGI("scheduleVsync %d for %p(not added)!", (int)freq, it->second);
+        FLOGI("%p scheduleVsync %d for %p(not added)!", window.get(), (int)freq, it->second);
         return Status::fromExceptionCode(1, "can't find winstate in map");
     }
     WM_PROFILER_END();
@@ -321,15 +332,14 @@ Status WindowManagerService::monitorInput(const sp<IBinder>& token, const ::std:
 
 std::shared_ptr<InputDispatcher> WindowManagerService::registerInputMonitor(
         const sp<IBinder>& token, const ::std::string& name) {
+    int32_t pid = IPCThreadState::self()->getCallingPid();
     auto it = mInputMonitorMap.find(token);
     if (it != mInputMonitorMap.end()) {
-        FLOGW("don't register input monitor repeatly!");
+        FLOGW("[%d] don't register input monitor repeatly!", pid);
         return nullptr;
     }
 
-    int32_t pid = IPCThreadState::self()->getCallingPid();
     std::string input_name = graphicsPath + "/monitor/" + std::to_string(pid) + "/" + name;
-
     auto dispatcher = std::make_shared<InputDispatcher>();
     if (!dispatcher->create(input_name)) {
         return nullptr;
@@ -400,7 +410,7 @@ int32_t WindowManagerService::createSurfaceControl(SurfaceControl* outSurfaceCon
                 close(ids[j].mFd);
             }
             ids.clear();
-            FLOGE("createSharedBuffer failed,clear buffer ids!");
+            FLOGE("createSharedBuffer failed, clear buffer ids!");
             return -1;
         }
         ids.push_back(id);
