@@ -29,3 +29,7 @@
 #define FLOGD(fmt, ...) ALOGD("%s: " fmt, __FUNCTION__, ##__VA_ARGS__)
 
 uint32_t getLvColorFormatType(uint32_t format);
+
+#define DATA_MIN(a, b) ((a) < (b) ? (a) : (b))
+#define DATA_MAX(a, b) ((a) > (b) ? (a) : (b))
+#define DATA_CLAMP(val, min, max) (DATA_MAX(min, (DATA_MIN(val, max))))

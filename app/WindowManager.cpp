@@ -127,9 +127,8 @@ sp<IWindowManager>& WindowManager::getService() {
 
 std::shared_ptr<BaseWindow> WindowManager::newWindow(::os::app::Context* context) {
     WM_PROFILER_BEGIN();
-    std::shared_ptr<BaseWindow> window = std::make_shared<BaseWindow>(context);
+    std::shared_ptr<BaseWindow> window = std::make_shared<BaseWindow>(context, this);
     FLOGI("%p", window.get());
-    window->setWindowManager(this);
     mWindows.push_back(window);
 
     // for lvgl driver
@@ -153,19 +152,10 @@ int32_t WindowManager::attachIWindow(std::shared_ptr<BaseWindow> window) {
     FLOGI("%p", window.get());
 
     sp<IWindow> w = window->getIWindow();
-    int32_t result = 0;
-    InputChannel* outInputChannel = nullptr;
     LayoutParams lp = window->getLayoutParams();
-    DisplayInfo displayInfo;
+    int32_t result = 0;
 
-    if (lp.mWidth == lp.MATCH_PARENT) {
-        lp.mWidth = mDispWidth;
-    }
-    if (lp.mHeight == lp.MATCH_PARENT) {
-        lp.mHeight = mDispHeight;
-    }
-    window->setLayoutParams(lp);
-
+    InputChannel* outInputChannel = nullptr;
     if (lp.hasInput()) outInputChannel = new InputChannel();
 
     Status status = mService->addWindow(w, lp, 0, 0, 1, outInputChannel, &result);

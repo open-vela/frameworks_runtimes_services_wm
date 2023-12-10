@@ -72,7 +72,7 @@ public:
         BaseWindow* mBaseWindow;
     };
 
-    BaseWindow(::os::app::Context* context);
+    BaseWindow(::os::app::Context* context, WindowManager* wm);
     ~BaseWindow();
 
     bool scheduleVsync(VsyncRequest freq);
@@ -91,15 +91,11 @@ public:
         return mUIProxy;
     }
 
-    void setLayoutParams(LayoutParams lp) {
-        mAttrs = lp;
-    }
+    void setLayoutParams(LayoutParams lp);
 
     LayoutParams getLayoutParams() {
         return mAttrs;
     }
-
-    void setWindowManager(WindowManager* wm);
 
     const WindowManager* getWindowManager() {
         return mWindowManager;
