@@ -80,7 +80,7 @@ BaseWindow::BaseWindow(::os::app::Context* context, WindowManager* wm)
       : mContext(context),
         mWindowManager(wm),
         mVsyncRequest(VsyncRequest::VSYNC_REQ_NONE),
-        mVisible(false),
+        mAppVisible(false),
         mFrameDone(true) {
     if (mWindowManager == nullptr) {
         FLOGE("no valid window manager");
@@ -100,8 +100,12 @@ BaseWindow::BaseWindow(::os::app::Context* context, WindowManager* wm)
     mIWindow = sp<W>::make(this);
 }
 
+int32_t BaseWindow::getVisibility() {
+    return mAppVisible ? LayoutParams::WINDOW_VISIBLE : LayoutParams::WINDOW_GONE;
+}
+
 bool BaseWindow::scheduleVsync(VsyncRequest freq) {
-    if (!mVisible || mVsyncRequest == freq) {
+    if (!mAppVisible || mVsyncRequest == freq) {
         return false;
     }
 
@@ -122,7 +126,7 @@ std::shared_ptr<BufferProducer> BaseWindow::getBufferProducer() {
     if (mSurfaceControl.get() != nullptr && mSurfaceControl->isValid()) {
         return std::static_pointer_cast<BufferProducer>(mSurfaceControl->bufferQueue());
     }
-    FLOGI("no valid SurfaceControl when window is %svisible!", isVisible() ? "" : "not ");
+    FLOGI("no valid SurfaceControl when window is %svisible!", mAppVisible ? "" : "not ");
     return nullptr;
 }
 
@@ -201,16 +205,15 @@ void BaseWindow::bufferReleased(int32_t bufKey) {
 }
 
 void BaseWindow::handleAppVisibility(bool visible) {
-    FLOGI("visible from %d to %d", mVisible, visible);
+    FLOGI("visible from %d to %d", mAppVisible, visible);
 
-    if (mVisible == visible) {
+    if (visible == mAppVisible) {
         return;
     }
-
     WM_PROFILER_BEGIN();
-    mVisible = visible;
 
-    mUIProxy->updateVisibility(visible);
+    mAppVisible = visible;
+    mUIProxy->updateVisibility(mAppVisible);
 
     mWindowManager->relayoutWindow(shared_from_this());
     if (mSurfaceControl.get() != nullptr && mSurfaceControl->isValid()) {
@@ -220,7 +223,7 @@ void BaseWindow::handleAppVisibility(bool visible) {
         mSurfaceControl.reset();
     }
 
-    if (!visible) {
+    if (!mAppVisible) {
         mVsyncRequest = VsyncRequest::VSYNC_REQ_NONE;
     } else {
         scheduleVsync(VsyncRequest::VSYNC_REQ_SINGLE);
@@ -230,8 +233,8 @@ void BaseWindow::handleAppVisibility(bool visible) {
 }
 
 void BaseWindow::handleOnFrame(int32_t seq) {
-    if (!isVisible()) {
-        FLOGD("window is not visible now.");
+    if (!mAppVisible) {
+        FLOGD("window needn't update.");
         return;
     }
 

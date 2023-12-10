@@ -180,7 +180,7 @@ void WindowManager::relayoutWindow(std::shared_ptr<BaseWindow> window) {
                                                         params.mHeight, params.mFormat);
     int32_t result = 0;
     mService->relayout(window->getIWindow(), params, params.mWidth, params.mHeight,
-                       window->isVisible(), surfaceControl, &result);
+                       window->getVisibility(), surfaceControl, &result);
     window->setSurfaceControl(surfaceControl);
     WM_PROFILER_END();
 }
@@ -216,11 +216,10 @@ bool WindowManager::dumpWindows() {
     int number = 1;
     for (const auto& ptr : mWindows) {
         LayoutParams attrs = ptr->getLayoutParams();
-        bool appVsible = ptr->isVisible();
         FLOGI("Window %d", number);
         FLOGI("\t\t size:%dx%d", attrs.mWidth, attrs.mHeight);
         FLOGI("\t\t position:[%d,%d]", attrs.mX, attrs.mY);
-        FLOGI("\t\t visible:%d", appVsible);
+        FLOGI("\t\t visibility:%d", ptr->getVisibility());
         FLOGI("\t\t type:%d", attrs.mType);
         FLOGI("\t\t flags:%d", attrs.mFlags);
         FLOGI("\t\t format:%d", attrs.mFormat);

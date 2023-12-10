@@ -197,14 +197,15 @@ Status WindowManagerService::relayout(const sp<IWindow>& window, const LayoutPar
         return Status::fromExceptionCode(1, "can't find winstate in map");
     }
 
-    if (visibility) {
+    bool visible = visibility == LayoutParams::WINDOW_VISIBLE ? true : false;
+    if (visible) {
         win->setLayoutParams(attrs);
         *_aidl_return = createSurfaceControl(outSurfaceControl, win);
     } else {
         win->destroySurfaceControl();
         outSurfaceControl = nullptr;
     }
-    win->setVisibility(visibility);
+    win->setVisibility(visible);
 
     WM_PROFILER_END();
 
