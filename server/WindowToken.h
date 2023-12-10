@@ -35,20 +35,31 @@ class WindowState;
 class WindowToken {
 public:
     WindowToken(WindowManagerService* service, const sp<IBinder>& token, int32_t type,
-                int32_t displayId);
+                int32_t displayId, int32_t clientPid);
     ~WindowToken();
 
     void addWindow(WindowState* win);
     bool isClientVisible();
-    void setClientVisible(bool clientVisible);
     void removeAllWindowsIfPossible();
 
+    int32_t getClientVisibility() {
+        return mClientVisibility;
+    }
+    void setClientVisibility(int32_t visibility);
+    int32_t getClientPid() {
+        return mClientPid;
+    }
+
 private:
+    void setClientVisible(bool clientVisible);
+
     WindowManagerService* mService;
     sp<IBinder> mToken;
     int32_t mType;
     std::vector<WindowState*> mChildren;
     bool mClientVisible;
+    int32_t mClientVisibility;
+    int32_t mClientPid;
 };
 
 } // namespace wm

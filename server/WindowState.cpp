@@ -53,7 +53,7 @@ WindowState::WindowState(WindowManagerService* service, const sp<IWindow>& windo
         mFrameReq(0),
         mHasSurface(false) {
     mAttrs = params;
-    mVisibility = visibility != 0 ? true : false;
+    mVisibility = visibility;
 
     Rect rect(params.mX, params.mY, params.mX + params.mWidth, params.mY + params.mHeight);
     mNode = new WindowNode(this, getLayerByType(mService, params.mType), rect, enableInput,
@@ -61,7 +61,7 @@ WindowState::WindowState(WindowManagerService* service, const sp<IWindow>& windo
 }
 
 WindowState::~WindowState() {
-    // TODO: clear members
+    FLOGI("");
     mClient = nullptr;
     mToken = nullptr;
     if (mNode) delete mNode;
@@ -93,22 +93,16 @@ bool WindowState::sendInputMessage(const InputMessage* ie) {
     return false;
 }
 
-void WindowState::setVisibility(bool visibility) {
+void WindowState::setVisibility(int32_t visibility) {
     mVisibility = visibility;
-    FLOGI("setVisibility:%d", visibility);
-
-    mNode->enableInput(visibility);
+    FLOGI("to %d (0:visible, 1:hold, 2:gone)", visibility);
+    mNode->enableInput(visibility == LayoutParams::WINDOW_VISIBLE);
 }
 
 void WindowState::sendAppVisibilityToClients() {
     WM_PROFILER_BEGIN();
 
     bool visible = mToken->isClientVisible();
-    if (visible == mVisibility) {
-        return;
-    }
-
-    FLOGI("mToken %p, before mVisibility=%d", mToken.get(), mVisibility);
     if (!visible) {
         scheduleVsync(VsyncRequest::VSYNC_REQ_NONE);
     } else {
@@ -119,8 +113,8 @@ void WindowState::sendAppVisibilityToClients() {
         }
     }
 
-    setVisibility(visible);
-    FLOGI("mToken %p, after mVisibility=%d", mToken.get(), mVisibility);
+    mNode->enableInput(visible);
+    FLOGI("token(%p) update to %s", mToken.get(), visible ? "visible" : "invisible");
     mClient->dispatchAppVisibility(visible);
     WM_PROFILER_END();
 }
@@ -167,7 +161,7 @@ void WindowState::destroySurfaceControl() {
 }
 
 void WindowState::applyTransaction(LayerState layerState) {
-    // FLOGD("(%p)", this);
+    FLOGD("[%d] (%p)", mToken->getClientPid(), this);
     WM_PROFILER_BEGIN();
 
     BufferItem* buffItem = nullptr;
@@ -213,7 +207,8 @@ VsyncRequest WindowState::onVsync() {
     if (mVsyncRequest == VsyncRequest::VSYNC_REQ_NONE) return mVsyncRequest;
     WM_PROFILER_BEGIN();
 
-    FLOGD("(%p)-%d send vsync to client", this, (int)mVsyncRequest);
+    FLOGD("(%p)-%d(-2:none, -1:single, 0:suppress, 1:period) send vsync to client [%d]", this,
+          (int)mVsyncRequest, mToken->getClientPid());
     mVsyncRequest = nextVsyncState(mVsyncRequest);
     mClient->onFrame(++mFrameReq);
     WM_PROFILER_END();
@@ -247,7 +242,7 @@ bool WindowState::releaseBuffer(BufferItem* buffer) {
     if (consumer == nullptr) {
         return false;
     }
-    if (consumer && consumer->releaseBuffer(buffer) && mClient && mVisibility) {
+    if (consumer && consumer->releaseBuffer(buffer) && mClient) {
         WM_PROFILER_BEGIN();
         mClient->bufferReleased(buffer->mKey);
         WM_PROFILER_END();
@@ -255,9 +250,11 @@ bool WindowState::releaseBuffer(BufferItem* buffer) {
     }
     return false;
 }
+
 void WindowState::setLayoutParams(LayoutParams attrs) {
     if (mSurfaceControl != nullptr && mSurfaceControl->isValid()) {
-        FLOGW("shouldn't update layout configuration when surface is valid");
+        FLOGW("shouldn't update layout configuration when surface is valid!");
+        return;
     }
 
     if (mAttrs.mType != attrs.mType) {
@@ -271,6 +268,10 @@ void WindowState::setLayoutParams(LayoutParams attrs) {
 
 int32_t WindowState::getSurfaceSize() {
     return mNode->getSurfaceSize();
+}
+
+bool WindowState::isVisible() {
+    return mToken->isClientVisible();
 }
 
 } // namespace wm

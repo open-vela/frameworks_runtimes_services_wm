@@ -46,11 +46,9 @@ public:
     WindowState(WindowManagerService* service, const sp<IWindow>& window, WindowToken* token,
                 const LayoutParams& params, int32_t visibility, bool enableInput);
 
-    bool isVisible() {
-        return mVisibility;
-    }
+    bool isVisible();
     void sendAppVisibilityToClients();
-    void setVisibility(bool visibility);
+    void setVisibility(int32_t visibility);
     void removeIfPossible();
 
     std::shared_ptr<InputDispatcher> createInputDispatcher(const std::string name);
@@ -88,7 +86,7 @@ private:
     LayoutParams mAttrs;
     VsyncRequest mVsyncRequest;
     int32_t mFrameReq;
-    bool mVisibility;
+    int32_t mVisibility;
     bool mHasSurface;
 
     WindowNode* mNode;
