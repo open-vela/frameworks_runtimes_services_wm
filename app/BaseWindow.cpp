@@ -76,20 +76,28 @@ BaseWindow::~BaseWindow() {
     mIWindow = nullptr;
 }
 
-BaseWindow::BaseWindow(::os::app::Context* context)
+BaseWindow::BaseWindow(::os::app::Context* context, WindowManager* wm)
       : mContext(context),
-        mWindowManager(nullptr),
+        mWindowManager(wm),
         mVsyncRequest(VsyncRequest::VSYNC_REQ_NONE),
         mVisible(false),
         mFrameDone(true) {
+    if (mWindowManager == nullptr) {
+        FLOGE("no valid window manager");
+        return;
+    }
+
+    uint32_t width = 0, height = 0;
+
     mInputMonitor = std::make_shared<InputMonitor>();
     mAttrs = LayoutParams();
+
+    mWindowManager->getDisplayInfo(&width, &height);
+    mAttrs.mWidth = width;
+    mAttrs.mHeight = height;
+
     mAttrs.mToken = context->getToken();
     mIWindow = sp<W>::make(this);
-}
-
-void BaseWindow::setWindowManager(WindowManager* wm) {
-    mWindowManager = wm;
 }
 
 bool BaseWindow::scheduleVsync(VsyncRequest freq) {
@@ -305,6 +313,27 @@ void BaseWindow::updateOrCreateBufferQueue() {
 
 void BaseWindow::setEventListener(WindowEventListener* listener) {
     if (mUIProxy && mUIProxy.get()) mUIProxy->setEventListener(listener);
+}
+
+void BaseWindow::setLayoutParams(LayoutParams lp) {
+    mAttrs = lp;
+
+    if (mWindowManager) {
+        uint32_t width = 0, height = 0;
+        mWindowManager->getDisplayInfo(&width, &height);
+
+        if (mAttrs.mWidth < 0) {
+            mAttrs.mWidth = width;
+        } else {
+            mAttrs.mWidth = DATA_CLAMP(mAttrs.mWidth, 0, (int32_t)width * 2);
+        }
+
+        if (mAttrs.mHeight < 0) {
+            mAttrs.mHeight = height;
+        } else {
+            mAttrs.mHeight = DATA_CLAMP(mAttrs.mHeight, 0, (int32_t)height * 2);
+        }
+    }
 }
 
 } // namespace wm

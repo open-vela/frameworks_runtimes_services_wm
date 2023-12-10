@@ -42,9 +42,7 @@ public:
     static const int32_t TYPE_DIALOG = TYPE_SYSTEM_WINDOW + 2;
     static const int32_t INVALID_WINDOW_TYPE = -1;
 
-    // for width/height
     static const int32_t MATCH_PARENT = -1;
-    static const int32_t WRAP_CONTENT = -2;
 
     // for format
     static const int32_t FORMAT_UNKNOWN = 0;
