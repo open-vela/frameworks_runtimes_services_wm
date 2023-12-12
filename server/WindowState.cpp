@@ -31,14 +31,20 @@ namespace os {
 namespace wm {
 
 static inline void* getLayerByType(WindowManagerService* service, int type) {
-    if (type == LayoutParams::TYPE_APPLICATION) {
-        return service->getRootContainer()->getDefLayer();
-    } else if (type == LayoutParams::TYPE_SYSTEM_WINDOW) {
-        return service->getRootContainer()->getSysLayer();
-    } else if (type > LayoutParams::TYPE_SYSTEM_WINDOW) {
-        return service->getRootContainer()->getTopLayer();
-    } else {
-        return service->getRootContainer()->getDefLayer();
+    switch (type) {
+        case LayoutParams::TYPE_SYSTEM_WINDOW:
+        case LayoutParams::TYPE_DIALOG: {
+            return service->getRootContainer()->getTopLayer();
+        }
+
+        case LayoutParams::TYPE_TOAST: {
+            return service->getRootContainer()->getSysLayer();
+        }
+
+        case LayoutParams::TYPE_APPLICATION:
+        default: {
+            return service->getRootContainer()->getDefLayer();
+        }
     }
 }
 
