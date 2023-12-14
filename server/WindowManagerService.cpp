@@ -36,8 +36,6 @@
 #include "WindowUtils.h"
 #include "wm/SurfaceControl.h"
 
-static const std::string graphicsPath = "/data/graphics/";
-
 namespace os {
 namespace wm {
 
@@ -84,10 +82,19 @@ static inline std::string getUniqueId() {
     return std::to_string(std::rand());
 }
 
+static inline std::string genUniquePath(int32_t pid, const char* prefix,
+                                        const char* name = nullptr) {
+    std::string path = "/data/graphics/" + std::to_string(pid) + "/" + (prefix ? prefix : "") +
+            "/" + getUniqueId();
+    if (name) path += "/" + std::string(name);
+    FLOGD("%s", path.c_str());
+    return path;
+}
+
 static inline bool createSharedBuffer(int32_t size, BufferId* id) {
     int32_t pid = IPCThreadState::self()->getCallingPid();
 
-    std::string bufferPath = graphicsPath + std::to_string(pid) + "/bq/" + getUniqueId();
+    std::string bufferPath = genUniquePath(pid, "bq");
     int fd = shm_open(bufferPath.c_str(), O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
     if (fd == -1) {
         FLOGE("[%d] Failed to create shared memory, %s", pid, strerror(errno));
@@ -120,16 +127,10 @@ void WindowManagerService::WindowDeathRecipient::binderDied(const wp<IBinder>& w
     }
 }
 
-void WindowManagerService::InputMonitorDeathRecipient::binderDied(const wp<IBinder>& who) {
-    FLOGI("Input monitor binder Died");
-    mService->unregisterInputMonitor(who.promote());
-}
-
 WindowManagerService::WindowManagerService(uv_loop_t* looper) : mLooper(looper) {
     FLOGI("WMS init");
     mContainer = new RootContainer(this, looper);
     mWindowDeathRecipient = sp<WindowDeathRecipient>::make(this);
-    mInputMonitorDeathRecipient = sp<InputMonitorDeathRecipient>::make(this);
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
     mWinAnimEngine = new WindowAnimEngine();
     int ret = parseAnimJsonFile(animConfigPath.c_str());
@@ -200,7 +201,7 @@ Status WindowManagerService::addWindow(const sp<IWindow>& window, const LayoutPa
     winToken->addWindow(win);
 
     if (outInputChannel != nullptr && attrs.hasInput()) {
-        std::string name = graphicsPath + std::to_string(pid) + "/event/" + getUniqueId();
+        std::string name = genUniquePath(pid, "event");
         std::shared_ptr<InputDispatcher> inputDispatcher = win->createInputDispatcher(name);
         outInputChannel->copyFrom(inputDispatcher->getInputChannel());
     }
@@ -373,45 +374,36 @@ Status WindowManagerService::requestVsync(const sp<IWindow>& window, VsyncReques
 
 Status WindowManagerService::monitorInput(const sp<IBinder>& token, const ::std::string& name,
                                           int32_t displayId, InputChannel* outInputChannel) {
-    if (outInputChannel == nullptr)
-        return Status::fromExceptionCode(binder::Status::EX_NULL_POINTER, "input channel is null!");
-
-    auto dispatcher = registerInputMonitor(token, name);
-
-    if (dispatcher == nullptr) {
-        return Status::fromExceptionCode(2, "monitor input is failure!");
-    }
-
-    outInputChannel->copyFrom(dispatcher->getInputChannel());
-    return Status::ok();
-}
-
-std::shared_ptr<InputDispatcher> WindowManagerService::registerInputMonitor(
-        const sp<IBinder>& token, const ::std::string& name) {
     int32_t pid = IPCThreadState::self()->getCallingPid();
     auto it = mInputMonitorMap.find(token);
     if (it != mInputMonitorMap.end()) {
         FLOGW("[%d] don't register input monitor repeatly!", pid);
-        return nullptr;
+        return Status::fromExceptionCode(1, "don't register input monitor repeatly");
     }
 
-    std::string input_name = graphicsPath + "/monitor/" + std::to_string(pid) + "/" + name;
-    auto dispatcher = std::make_shared<InputDispatcher>();
-    if (!dispatcher->create(input_name)) {
-        return nullptr;
+    std::string input_name = genUniquePath(pid, "monitor", name.c_str());
+    auto dispatcher = InputDispatcher::create(input_name);
+    if (dispatcher == nullptr) {
+        return Status::fromExceptionCode(2, "monitor input is failure!");
     }
-
-    token->linkToDeath(mInputMonitorDeathRecipient);
 
     mInputMonitorMap.emplace(token, dispatcher);
-    return dispatcher;
+    outInputChannel->copyFrom(dispatcher->getInputChannel());
+
+    FLOGI("for %d", dispatcher->getInputChannel().getEventFd());
+    return Status::ok();
 }
 
-void WindowManagerService::unregisterInputMonitor(const sp<IBinder>& token) {
+Status WindowManagerService::releaseInput(const sp<IBinder>& token) {
+    int32_t pid = IPCThreadState::self()->getCallingPid();
+    FLOGI("[%d]", pid);
+
     auto it = mInputMonitorMap.find(token);
     if (it != mInputMonitorMap.end()) {
         mInputMonitorMap.erase(token);
+        return Status::ok();
     }
+    return Status::fromExceptionCode(1, "no specified input monitor");
 }
 
 void WindowManagerService::doRemoveWindow(const sp<IWindow>& window) {
@@ -427,8 +419,13 @@ void WindowManagerService::doRemoveWindow(const sp<IWindow>& window) {
 void WindowManagerService::responseInput(const InputMessage* msg) {
     if (!msg) return;
 
+    int ret = 0;
     for (const auto& [token, dispatcher] : mInputMonitorMap) {
-        dispatcher->sendMessage(msg);
+        ret = dispatcher->sendMessage(msg);
+        if (ret != 0) {
+            FLOGW("dispatch input monitor for %d failure: %d",
+                  dispatcher->getInputChannel().getEventFd(), ret);
+        }
     }
 }
 

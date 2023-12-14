@@ -97,12 +97,7 @@ std::shared_ptr<InputDispatcher> WindowState::createInputDispatcher(const std::s
         FLOGE("mInputDispatcher has existed, needn't create again.");
         return nullptr;
     }
-    WM_PROFILER_BEGIN();
-    mInputDispatcher = std::make_shared<InputDispatcher>();
-    if (!mInputDispatcher->create(name)) {
-        mInputDispatcher = nullptr;
-    }
-    WM_PROFILER_END();
+    mInputDispatcher = InputDispatcher::create(name);
     return mInputDispatcher;
 }
 

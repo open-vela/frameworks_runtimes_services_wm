@@ -77,4 +77,5 @@ interface IWindowManager {
     oneway void requestVsync(IWindow window, VsyncRequest freq);
 
     InputChannel monitorInput(IBinder token, @utf8InCpp String name, int displayId);
+    void releaseInput(IBinder token);
 }
