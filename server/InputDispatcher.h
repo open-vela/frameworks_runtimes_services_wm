@@ -32,16 +32,17 @@ public:
     InputDispatcher();
     ~InputDispatcher();
 
-    bool create(const std::string name);
     void release();
 
-    bool sendMessage(const InputMessage* ie);
-
-    DISALLOW_COPY_AND_ASSIGN(InputDispatcher);
+    int sendMessage(const InputMessage* ie);
 
     InputChannel& getInputChannel() {
         return mInputChannel;
     }
+
+    static std::shared_ptr<InputDispatcher> create(const std::string name);
+
+    DISALLOW_COPY_AND_ASSIGN(InputDispatcher);
 
 private:
     InputChannel mInputChannel;
