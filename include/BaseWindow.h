@@ -22,13 +22,13 @@
 
 #include <atomic>
 
-#include "InputMonitor.h"
 #include "WindowManager.h"
 #include "app/Context.h"
 #include "app/UvLoop.h"
 #include "os/wm/BnWindow.h"
 #include "os/wm/VsyncRequest.h"
 #include "wm/InputMessage.h"
+#include "wm/InputMonitor.h"
 #include "wm/LayoutParams.h"
 #include "wm/WindowEventListener.h"
 #include "wm/WindowFrames.h"
@@ -121,6 +121,9 @@ public:
 
     void setEventListener(WindowEventListener* listener);
 
+    ::os::app::Context* getContext() {
+        return mContext;
+    }
     DISALLOW_COPY_AND_ASSIGN(BaseWindow);
 
 private:
