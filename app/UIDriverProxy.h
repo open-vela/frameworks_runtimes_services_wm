@@ -17,9 +17,9 @@
 #pragma once
 
 #include "BaseWindow.h"
-#include "InputMonitor.h"
 #include "wm/BufferQueue.h"
 #include "wm/InputMessage.h"
+#include "wm/InputMonitor.h"
 #include "wm/Rect.h"
 
 namespace os {

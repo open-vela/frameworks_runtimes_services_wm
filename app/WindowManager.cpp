@@ -76,12 +76,36 @@ static inline bool getWindowService(sp<IWindowManager>& service) {
 std::shared_ptr<InputMonitor> WindowManager::monitorInput(const ::std::string& name,
                                                           int32_t displayId) {
     sp<IWindowManager> service;
-    if (!getWindowService(service)) return nullptr;
+    if (!getWindowService(service)) {
+        FLOGE("get service failure!");
+        return nullptr;
+    }
 
     InputChannel* channel = new InputChannel();
     sp<IBinder> token = new BBinder();
-    service->monitorInput(token, name, displayId, channel);
+    Status status = service->monitorInput(token, name, displayId, channel);
+    if (!status.isOk()) {
+        FLOGE("failure");
+        return nullptr;
+    }
+    FLOGI("success");
     return std::make_shared<InputMonitor>(token, channel);
+}
+
+void WindowManager::releaseInput(InputMonitor* monitor) {
+    if (!monitor) return;
+
+    sp<IWindowManager> service;
+    if (!getWindowService(service)) {
+        FLOGE("get service failure!");
+        return;
+    }
+    Status status = service->releaseInput(monitor->getToken());
+    if (!status.isOk()) {
+        FLOGE("failure");
+        return;
+    }
+    FLOGI("success");
 }
 
 WindowManager::WindowManager() : mService(nullptr), mTimerInited(false) {

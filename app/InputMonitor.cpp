@@ -16,10 +16,11 @@
 
 #define LOG_TAG "InputMonitor"
 
-#include "InputMonitor.h"
+#include "wm/InputMonitor.h"
 
 #include <mqueue.h>
 
+#include "WindowManager.h"
 #include "WindowUtils.h"
 #include "wm/InputMessage.h"
 
@@ -34,13 +35,16 @@ InputMonitor::InputMonitor(const sp<IBinder> token, InputChannel* channel)
 }
 
 InputMonitor::~InputMonitor() {
+    FLOGI("");
     stop();
+    WindowManager::releaseInput(this);
     mToken = nullptr;
     mInputChannel = nullptr;
 }
 
 void InputMonitor::stop() {
     if (mPoll) {
+        FLOGI("reset poll");
         uv_poll_stop(mPoll);
         mPoll->data = nullptr;
         mEventHandler = nullptr;
@@ -52,13 +56,14 @@ void InputMonitor::stop() {
     if (mInputChannel) {
         /* release input channel */
         if (mInputChannel.get()) mInputChannel->release();
-
         mInputChannel.reset();
     }
 }
 
 void InputMonitor::setInputChannel(InputChannel* inputChannel) {
     /* clear previous setting */
+    if (inputChannel == mInputChannel.get()) return;
+
     stop();
     mInputChannel.reset(inputChannel);
 }
@@ -69,27 +74,37 @@ bool InputMonitor::receiveMessage(const InputMessage* msg) {
         return false;
     }
 
-    ssize_t size = mq_receive(mInputChannel->getEventFd(), (char*)msg, sizeof(InputMessage), NULL);
-    return size == sizeof(InputMessage) ? true : false;
+    int fd = mInputChannel->getEventFd();
+    ssize_t size = mq_receive(fd, (char*)msg, sizeof(InputMessage), NULL);
+    if (size == sizeof(InputMessage)) {
+        return true;
+    }
+    return false;
 }
 
-void InputMonitor::start(uv_loop_t* loop, InputMonitorCallback callback) {
+bool InputMonitor::start(uv_loop_t* loop, InputMonitorCallback callback) {
     if (callback == nullptr) {
         FLOGE("please use valid callback!");
-        return;
+        return false;
     }
 
     int fd = isValid() ? mInputChannel->getEventFd() : -1;
     if (fd == -1) {
-        FLOGW("no valid file description!");
-        return;
+        FLOGE("no valid file description!");
+        return false;
     }
 
     mPoll = new uv_poll_t;
     mPoll->data = this;
     mEventHandler = callback;
-    uv_poll_init(loop, mPoll, fd);
-    uv_poll_start(mPoll, UV_READABLE, [](uv_poll_t* handle, int status, int events) {
+
+    int ret = uv_poll_init(loop, mPoll, fd);
+    if (ret != 0) {
+        FLOGE("init monitor fd failure:%d", ret);
+        return false;
+    }
+
+    ret = uv_poll_start(mPoll, UV_READABLE, [](uv_poll_t* handle, int status, int events) {
         if (status < 0) {
             FLOGE("Poll error: %s ", uv_strerror(status));
             return;
@@ -102,6 +117,14 @@ void InputMonitor::start(uv_loop_t* loop, InputMonitorCallback callback) {
             }
         }
     });
+
+    if (ret != 0) {
+        FLOGE("start monitor(%d) failure:%d", fd, ret);
+        return false;
+    }
+
+    FLOGI("start monitor(%d) success", fd);
+    return true;
 }
 
 } // namespace wm

@@ -67,6 +67,7 @@ public:
     Status requestVsync(const sp<IWindow>& window, VsyncRequest freq);
     Status monitorInput(const sp<IBinder>& token, const ::std::string& name, int32_t displayId,
                         InputChannel* outInputChannel);
+    Status releaseInput(const sp<IBinder>& token);
 
     bool responseVsync() override;
     void responseInput(const InputMessage* msg) override;
@@ -94,27 +95,12 @@ private:
 
     int32_t createSurfaceControl(SurfaceControl* outSurfaceControl, WindowState* win);
 
-    class InputMonitorDeathRecipient : public IBinder::DeathRecipient {
-    public:
-        InputMonitorDeathRecipient(WindowManagerService* service) : mService(service) {}
-        virtual void binderDied(const wp<IBinder>& who);
-
-    private:
-        WindowManagerService* mService;
-    };
-
-    std::shared_ptr<InputDispatcher> registerInputMonitor(const sp<IBinder>& token,
-                                                          const ::std::string& name);
-    void unregisterInputMonitor(const sp<IBinder>& token);
-
     WindowTokenMap mTokenMap;
     WindowStateMap mWindowMap;
-
     RootContainer* mContainer;
     uv_loop_t* mLooper;
     InputMonitorMap mInputMonitorMap;
     sp<WindowDeathRecipient> mWindowDeathRecipient;
-    sp<InputMonitorDeathRecipient> mInputMonitorDeathRecipient;
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
     WindowAnimEngine* mWinAnimEngine;
 #endif

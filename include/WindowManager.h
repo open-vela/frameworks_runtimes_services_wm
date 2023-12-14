@@ -21,9 +21,9 @@
 #include <mutex>
 
 #include "BaseWindow.h"
-#include "InputMonitor.h"
 #include "app/Context.h"
 #include "os/wm/BnWindowManager.h"
+#include "wm/InputMonitor.h"
 
 namespace os {
 namespace wm {
@@ -62,6 +62,7 @@ public:
     }
 
     static std::shared_ptr<InputMonitor> monitorInput(const ::std::string& name, int32_t displayId);
+    static void releaseInput(InputMonitor* monitor);
 
 private:
     std::mutex mLock;

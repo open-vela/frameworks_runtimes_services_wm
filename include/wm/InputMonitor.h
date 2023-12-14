@@ -41,7 +41,14 @@ public:
 
     bool receiveMessage(const InputMessage* msg);
 
-    void start(uv_loop_t* loop, InputMonitorCallback callback);
+    bool start(uv_loop_t* loop, InputMonitorCallback callback);
+
+    std::shared_ptr<InputChannel>& getInputChannel() {
+        return mInputChannel;
+    }
+    sp<IBinder>& getToken() {
+        return mToken;
+    }
 
     DISALLOW_COPY_AND_ASSIGN(InputMonitor);
 

@@ -84,12 +84,15 @@ TEST_F(InputMonitorTest, receiveMessage) {
 
 TEST_F(InputMonitorTest, start) {
     auto input = WindowManager::monitorInput("input-gesture-test3", 0);
-    input->start(&mUVLooper, [](InputMonitor* monitor) {
+    EXPECT_NE(input, nullptr);
+    int ret = input->start(&mUVLooper, [](InputMonitor* monitor) {
         if (!monitor || !monitor->isValid()) return;
         InputMessage msg;
         bool ret = monitor->receiveMessage(&msg);
         EXPECT_EQ(ret, true);
     });
+
+    EXPECT_EQ(ret, true);
 }
 
 extern "C" int main(int argc, char** argv) {
