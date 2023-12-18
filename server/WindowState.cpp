@@ -118,9 +118,8 @@ void WindowState::setVisibility(int32_t visibility) {
 }
 
 void WindowState::sendAppVisibilityToClients(int32_t visibility) {
-    WM_PROFILER_BEGIN();
-
     if (!isVisible() && visibility == LayoutParams::WINDOW_GONE) return;
+    WM_PROFILER_BEGIN();
 
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
     if (mAnimRunning) {
@@ -130,6 +129,8 @@ void WindowState::sendAppVisibilityToClients(int32_t visibility) {
     setVisibility(visibility);
     bool visible = visibility == LayoutParams::WINDOW_VISIBLE ? true : false;
 
+    FLOGI("token(%p) update to %s", mToken.get(), visible ? "visible" : "invisible");
+
     if (!visible) {
         scheduleVsync(VsyncRequest::VSYNC_REQ_NONE);
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
@@ -138,6 +139,8 @@ void WindowState::sendAppVisibilityToClients(int32_t visibility) {
                                      [this](WindowAnimStatus status) {
                                          this->onAnimationFinished(status);
                                      });
+#else
+        mClient->dispatchAppVisibility(visible);
 #endif
     } else {
         if (mVsyncRequest == VsyncRequest::VSYNC_REQ_NONE) {
@@ -145,10 +148,9 @@ void WindowState::sendAppVisibilityToClients(int32_t visibility) {
         } else {
             scheduleVsync(mVsyncRequest);
         }
-        FLOGI("token(%p) update to %s", mToken.get(), visible ? "visible" : "invisible");
         mClient->dispatchAppVisibility(visible);
-        WM_PROFILER_END();
     }
+    WM_PROFILER_END();
 }
 
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
