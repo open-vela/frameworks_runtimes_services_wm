@@ -47,8 +47,9 @@ SurfaceTransaction& SurfaceTransaction::setBufferCrop(const std::shared_ptr<Surf
                                                       Rect& rect) {
     LayerState* state = getLayerState(sc);
 
-    // TODO:
     if (state != nullptr) {
+        state->mFlags |= LayerState::LAYER_BUFFER_CROP_CHANGED;
+        state->mBufferCrop = rect;
     }
     return *this;
 }
@@ -57,8 +58,10 @@ SurfaceTransaction& SurfaceTransaction::setPosition(const std::shared_ptr<Surfac
                                                     int32_t x, int32_t y) {
     LayerState* state = getLayerState(sc);
 
-    // TODO:
     if (state != nullptr) {
+        state->mFlags |= LayerState::LAYER_POSITION_CHANGED;
+        state->mX = x;
+        state->mY = y;
     }
     return *this;
 }
@@ -66,26 +69,35 @@ SurfaceTransaction& SurfaceTransaction::setPosition(const std::shared_ptr<Surfac
 SurfaceTransaction& SurfaceTransaction::setAlpha(const std::shared_ptr<SurfaceControl>& sc,
                                                  int32_t alpha) {
     LayerState* state = getLayerState(sc);
-
-    // TODO:
     if (state != nullptr) {
+        state->mFlags |= LayerState::LAYER_ALPHA_CHANGED;
+        state->mAlpha = alpha;
     }
 
     return *this;
 }
 
 SurfaceTransaction& SurfaceTransaction::apply() {
-    // TODO:
     WM_PROFILER_BEGIN();
 
     std::vector<LayerState> layerStates;
     for (std::unordered_map<sp<IBinder>, LayerState, IBinderHash>::iterator it =
                  mLayerStates.begin();
          it != mLayerStates.end(); ++it) {
-        layerStates.push_back(it->second);
+        if (it->second.mFlags != 0) {
+            layerStates.push_back(it->second);
+        }
     }
+
     WM_PROFILER_END();
     mWindowManager->getService()->applyTransaction(layerStates);
+
+    /* reset flags */
+    for (std::unordered_map<sp<IBinder>, LayerState, IBinderHash>::iterator it =
+                 mLayerStates.begin();
+         it != mLayerStates.end(); ++it) {
+        it->second.mFlags = 0;
+    }
 
     return *this;
 }
