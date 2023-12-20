@@ -113,7 +113,8 @@ void LVGLDriverProxy::setInputMonitor(InputMonitor* monitor) {
 
 void LVGLDriverProxy::updateResolution(int32_t width, int32_t height, uint32_t format) {
     lv_color_format_t color_format = getLvColorFormatType(format);
-    FLOGI("update resolution (%dx%d) format 0x%0x->0x%0x", width, height, format, color_format);
+    FLOGI("update resolution (%" PRId32 "x%" PRId32 ") format %" PRId32 "->%d", width, height,
+          format, color_format);
 
     lv_display_set_resolution(mDisp, width, height);
     lv_display_set_color_format(mDisp, color_format);
@@ -142,8 +143,8 @@ static void _disp_flush_cb(lv_display_t* disp, const lv_area_t* area_p, uint8_t*
 
         Rect inv_rect = Rect(area_p->x1, area_p->y1, area_p->x2, area_p->y2);
         proxy->onRectCrop(inv_rect);
-        FLOGD("%p display flush area (%d,%d)->(%d,%d)", proxy, area_p->x1, area_p->y1, area_p->x2,
-              area_p->y2);
+        FLOGD("%p display flush area (%" PRId32 ",%" PRId32 ")->(%" PRId32 ",%" PRId32 ")", proxy,
+              area_p->x1, area_p->y1, area_p->x2, area_p->y2);
     }
     lv_display_flush_ready(disp);
 }
@@ -200,8 +201,8 @@ static void _disp_event_cb(lv_event_t* e) {
                 FLOGI("Resoluation changed, proxy is invalid");
                 return;
             }
-            FLOGD("Resoluation changed from(%dx%d) to (%dx%d)", proxy->mDispW, proxy->mDispH,
-                  disp->hor_res, disp->ver_res);
+            FLOGD("Resoluation changed from(%" PRId32 "x%" PRId32 ") to (%" PRId32 "x%" PRId32 ")",
+                  proxy->mDispW, proxy->mDispH, disp->hor_res, disp->ver_res);
 
             WindowEventListener* listener = proxy->getEventListener();
             if (listener) {
