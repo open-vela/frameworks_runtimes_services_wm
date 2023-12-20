@@ -97,12 +97,12 @@ static inline bool createSharedBuffer(int32_t size, BufferId* id) {
     std::string bufferPath = genUniquePath(pid, "bq");
     int fd = shm_open(bufferPath.c_str(), O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
     if (fd == -1) {
-        FLOGE("[%d] Failed to create shared memory, %s", pid, strerror(errno));
+        FLOGE("[%" PRId32 "] Failed to create shared memory, %s", pid, strerror(errno));
         return false;
     }
 
     if (ftruncate(fd, size) == -1) {
-        FLOGE("[%d] Failed to resize shared memory", pid);
+        FLOGE("[%" PRId32 "] Failed to resize shared memory", pid);
         close(fd);
         return false;
     }
@@ -155,7 +155,7 @@ Status WindowManagerService::getPhysicalDisplayInfo(int32_t displayId, DisplayIn
     *_aidl_return = 0;
     if (mContainer) {
         mContainer->getDisplayInfo(info);
-        FLOGI("display size (%dx%d)", info->width, info->height);
+        FLOGI("display size (%" PRId32 "x%" PRId32 ")", info->width, info->height);
     }
     WM_PROFILER_END();
 
@@ -167,7 +167,8 @@ Status WindowManagerService::addWindow(const sp<IWindow>& window, const LayoutPa
                                        InputChannel* outInputChannel, int32_t* _aidl_return) {
     WM_PROFILER_BEGIN();
     int32_t pid = IPCThreadState::self()->getCallingPid();
-    FLOGI("[%d] visibility(%d) size(%dx%d)", pid, visibility, attrs.mWidth, attrs.mHeight);
+    FLOGI("[%" PRId32 "] visibility(%" PRId32 ") size(%" PRId32 "x%" PRId32 ")", pid, visibility,
+          attrs.mWidth, attrs.mHeight);
 
     if (mWindowMap.size() >= CONFIG_ENABLE_WINDOW_LIMIT_MAX) {
         ALOGE("failure, exceed maximum window limit!");
@@ -236,7 +237,8 @@ Status WindowManagerService::relayout(const sp<IWindow>& window, const LayoutPar
     WM_PROFILER_BEGIN();
 
     int32_t pid = IPCThreadState::self()->getCallingPid();
-    FLOGI("[%d] window(%p) size(%dx%d)", pid, window.get(), requestedWidth, requestedHeight);
+    FLOGI("[%" PRId32 "] window(%p) size(%" PRId32 "x%" PRId32 ")", pid, window.get(),
+          requestedWidth, requestedHeight);
 
     *_aidl_return = -1;
     sp<IBinder> client = IInterface::asBinder(window);
@@ -245,7 +247,7 @@ Status WindowManagerService::relayout(const sp<IWindow>& window, const LayoutPar
     if (it != mWindowMap.end()) {
         win = it->second;
     } else {
-        FLOGW("[%d] please add window firstly", pid);
+        FLOGW("[%" PRId32 "] please add window firstly", pid);
         WM_PROFILER_END();
         return Status::fromExceptionCode(1, "please add window firstly");
     }
@@ -295,12 +297,12 @@ Status WindowManagerService::addWindowToken(const sp<IBinder>& token, int32_t ty
 
     auto it = mTokenMap.find(token);
     if (it != mTokenMap.end()) {
-        FLOGW("[%d] window token(%p) already exist", pid, token.get());
+        FLOGW("[%" PRId32 "] window token(%p) already exist", pid, token.get());
         return Status::fromExceptionCode(1, "window token already exist");
     } else {
         WindowToken* windToken = new WindowToken(this, token, type, displayId, pid);
         mTokenMap.emplace(token, windToken);
-        FLOGI("[%d] add window token(%p) success", pid, token.get());
+        FLOGI("[%" PRId32 "] add window token(%p) success", pid, token.get());
     }
     WM_PROFILER_END();
     return Status::ok();
@@ -310,7 +312,7 @@ Status WindowManagerService::removeWindowToken(const sp<IBinder>& token, int32_t
     WM_PROFILER_BEGIN();
 
     int32_t pid = IPCThreadState::self()->getCallingPid();
-    FLOGI("[%d] remove token(%p)", pid, token.get());
+    FLOGI("[%" PRId32 "] remove token(%p)", pid, token.get());
 
     auto it = mTokenMap.find(token);
     if (it != mTokenMap.end()) {
@@ -328,13 +330,14 @@ Status WindowManagerService::updateWindowTokenVisibility(const sp<IBinder>& toke
                                                          int32_t visibility) {
     WM_PROFILER_BEGIN();
     int32_t pid = IPCThreadState::self()->getCallingPid();
-    FLOGI("[%d] update token(%p)'s visibility to %d", pid, token.get(), visibility);
+    FLOGI("[%" PRId32 "] update token(%p)'s visibility to %" PRId32 "", pid, token.get(),
+          visibility);
 
     auto it = mTokenMap.find(token);
     if (it != mTokenMap.end()) {
         it->second->setClientVisibility(visibility);
     } else {
-        FLOGI("[%d] can't find token %p in map", pid, token.get());
+        FLOGI("[%" PRId32 "] can't find token %p in map", pid, token.get());
         return Status::fromExceptionCode(1, "can't find token in map");
     }
     WM_PROFILER_END();
@@ -377,7 +380,7 @@ Status WindowManagerService::monitorInput(const sp<IBinder>& token, const ::std:
     int32_t pid = IPCThreadState::self()->getCallingPid();
     auto it = mInputMonitorMap.find(token);
     if (it != mInputMonitorMap.end()) {
-        FLOGW("[%d] don't register input monitor repeatly!", pid);
+        FLOGW("[%" PRId32 "] don't register input monitor repeatly!", pid);
         return Status::fromExceptionCode(1, "don't register input monitor repeatly");
     }
 
@@ -390,13 +393,13 @@ Status WindowManagerService::monitorInput(const sp<IBinder>& token, const ::std:
     mInputMonitorMap.emplace(token, dispatcher);
     outInputChannel->copyFrom(dispatcher->getInputChannel());
 
-    FLOGI("for %d", dispatcher->getInputChannel().getEventFd());
+    FLOGI("for %" PRId32 "", dispatcher->getInputChannel().getEventFd());
     return Status::ok();
 }
 
 Status WindowManagerService::releaseInput(const sp<IBinder>& token) {
     int32_t pid = IPCThreadState::self()->getCallingPid();
-    FLOGI("[%d]", pid);
+    FLOGI("[%" PRId32 "]", pid);
 
     auto it = mInputMonitorMap.find(token);
     if (it != mInputMonitorMap.end()) {
@@ -423,7 +426,7 @@ void WindowManagerService::responseInput(const InputMessage* msg) {
     for (const auto& [token, dispatcher] : mInputMonitorMap) {
         ret = dispatcher->sendMessage(msg);
         if (ret != 0) {
-            FLOGW("dispatch input monitor for %d failure: %d",
+            FLOGW("dispatch input monitor for %" PRId32 " failure: %d",
                   dispatcher->getInputChannel().getEventFd(), ret);
         }
     }

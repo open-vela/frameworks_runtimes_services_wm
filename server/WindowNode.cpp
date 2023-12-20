@@ -157,14 +157,14 @@ bool WindowNode::updateBuffer(BufferItem* item, Rect* rect) {
         result = lv_mainwnd_update_buffer(mWidget, NULL, NULL);
     }
 
-    FLOGD("(%p) %s from(0x%0x) to(0x%0x)\n", this, result ? "success" : "failure",
+    FLOGD("(%p) %s from(0x%0" PRIx32 ") to(0x%0" PRIx32 ")\n", this, result ? "success" : "failure",
           oldBuffer ? oldBuffer->mKey : -1, mBuffer ? mBuffer->mKey : -1);
 
     // need to reset buffer
     if (!result) {
         mBuffer = oldBuffer;
     } else if (oldBuffer && !mState->releaseBuffer(oldBuffer)) {
-        FLOGW("releaseBuffer(%d) exception\n", oldBuffer->mKey);
+        FLOGW("releaseBuffer(%" PRId32 ") exception\n", oldBuffer->mKey);
         WM_PROFILER_END();
         return false;
     }
@@ -197,7 +197,8 @@ void WindowNode::setRect(const Rect& newRect) {
         int32_t width = newRect.getWidth();
         int32_t height = newRect.getHeight();
 
-        FLOGI("update node pos(%dx%d), size(%dx%d)", left, top, width, height);
+        FLOGI("update node pos(%" PRId32 "x%" PRId32 "), size(%" PRId32 "x%" PRId32 ")", left, top,
+              width, height);
 
         if (left != mRect.getLeft()) {
             lv_obj_set_x(mWidget, left);

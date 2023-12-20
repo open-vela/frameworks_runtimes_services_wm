@@ -54,10 +54,10 @@ static inline void dumpInputMessage(const InputMessage* ie) {
 
     ALOGD("Message: type(%d), state(%d)", ie->type, ie->state);
     if (ie->type == INPUT_MESSAGE_TYPE_POINTER) {
-        ALOGD("\t\traw pos(%d, %d), pos(%d, %d)", ie->pointer.raw_x, ie->pointer.raw_y,
-              ie->pointer.x, ie->pointer.y);
+        ALOGD("\t\traw pos(%" PRId32 ", %" PRId32 "), pos(%" PRId32 ", %" PRId32 ")",
+              ie->pointer.raw_x, ie->pointer.raw_y, ie->pointer.x, ie->pointer.y);
     } else if (ie->type == INPUT_MESSAGE_TYPE_KEYPAD) {
-        ALOGD("\t\tkeycode(%d)", ie->keypad.key_code);
+        ALOGD("\t\tkeycode(%" PRId32 ")", ie->keypad.key_code);
     }
 }
 

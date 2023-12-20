@@ -26,7 +26,8 @@ namespace wm {
 
 class WindowNode {
 public:
-    WindowNode(WindowState* state, void* parent, const Rect& rect, bool enableInput, int format);
+    WindowNode(WindowState* state, void* parent, const Rect& rect, bool enableInput,
+               int32_t format);
     ~WindowNode();
 
     bool updateBuffer(BufferItem* item, Rect* rect);

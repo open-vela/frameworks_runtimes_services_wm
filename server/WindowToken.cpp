@@ -40,12 +40,12 @@ WindowToken::~WindowToken() {
 void WindowToken::addWindow(WindowState* win) {
     for (auto it = mChildren.begin(); it != mChildren.end(); it++) {
         if ((*it) == win) {
-            FLOGW("[%d] window has been attached.\n", mClientPid);
+            FLOGW("[%" PRId32 "] window has been attached.\n", mClientPid);
             return;
         }
     }
     mChildren.push_back(win);
-    FLOGI("[%d] add window ok, now child count:%d", mClientPid, mChildren.size());
+    FLOGI("[%" PRId32 "] add window ok, now child count:%d", mClientPid, mChildren.size());
 }
 
 void WindowToken::removeWindow(WindowState* win) {
@@ -59,7 +59,8 @@ void WindowToken::removeWindow(WindowState* win) {
 
 void WindowToken::setClientVisibility(int32_t visibility) {
     if (mClientVisibility == visibility) return;
-    FLOGI("[%d] %d => %d (0:visible, 1:hold, 2:gone)", mClientPid, mClientVisibility, visibility);
+    FLOGI("[%" PRId32 "] %" PRId32 " => %" PRId32 " (0:visible, 1:hold, 2:gone)", mClientPid,
+          mClientVisibility, visibility);
 
     mClientVisibility = visibility;
     for (auto it = mChildren.begin(); it != mChildren.end(); it++) {

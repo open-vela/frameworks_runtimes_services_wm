@@ -165,7 +165,8 @@ void BaseWindow::setSurfaceControl(SurfaceControl* surfaceControl) {
         vector<BufferId> ids;
         std::unordered_map<BufferKey, BufferId> bufferIds = mSurfaceControl->bufferIds();
         for (auto it = bufferIds.begin(); it != bufferIds.end(); ++it) {
-            FLOGI("reset SurfaceControl bufferId:%s,%d", it->second.mName.c_str(), it->second.mKey);
+            FLOGI("reset SurfaceControl bufferId:%s,%" PRId32 "", it->second.mName.c_str(),
+                  it->second.mKey);
 
             int32_t fd = shm_open(it->second.mName.c_str(), O_RDWR, S_IRUSR | S_IWUSR);
             ids.push_back({it->second.mName, it->second.mKey, fd});
@@ -186,7 +187,7 @@ void BaseWindow::dispatchAppVisibility(bool visible) {
 void BaseWindow::onFrame(int32_t seq) {
     WM_PROFILER_BEGIN();
     if (!mFrameDone.load(std::memory_order_acquire)) {
-        FLOGD("onFrame(%p) %d, waiting frame done!", this, seq);
+        FLOGD("onFrame(%p) %" PRId32 ", waiting frame done!", this, seq);
         WM_PROFILER_END();
         return;
     }
@@ -199,7 +200,7 @@ void BaseWindow::onFrame(int32_t seq) {
 
 void BaseWindow::bufferReleased(int32_t bufKey) {
     WM_PROFILER_BEGIN();
-    FLOGD("bufKey:%d", bufKey);
+    FLOGD("bufKey:%" PRId32 "", bufKey);
     handleBufferReleased(bufKey);
     WM_PROFILER_END();
 }
@@ -239,7 +240,7 @@ void BaseWindow::handleOnFrame(int32_t seq) {
     }
 
     mVsyncRequest = nextVsyncState(mVsyncRequest);
-    FLOGD("frame(%p) %d", this, seq);
+    FLOGD("frame(%p) %" PRId32 "", this, seq);
 
     if (mSurfaceControl.get() == nullptr) {
         mWindowManager->relayoutWindow(shared_from_this());
@@ -278,7 +279,7 @@ void BaseWindow::handleOnFrame(int32_t seq) {
         auto rect = mUIProxy->rectCrop();
         if (rect) transaction->setBufferCrop(mSurfaceControl, *rect);
 
-        FLOGD("frame(%p) %d apply transaction\n", this, seq);
+        FLOGD("frame(%p) %" PRId32 " apply transaction\n", this, seq);
         transaction->apply();
 
         WindowEventListener* listener = mUIProxy->getEventListener();
@@ -297,10 +298,10 @@ void BaseWindow::handleBufferReleased(int32_t bufKey) {
     WM_PROFILER_BEGIN();
     auto buffer = buffProducer->syncFreeState(bufKey);
     if (!buffer) {
-        FLOGD("bufferReleased, release %d failure!", bufKey);
+        FLOGD("bufferReleased, release %" PRId32 " failure!", bufKey);
     }
     WM_PROFILER_END();
-    FLOGD("release bufKey:%d done!", bufKey);
+    FLOGD("release bufKey:%" PRId32 " done!", bufKey);
 }
 
 void BaseWindow::updateOrCreateBufferQueue() {
