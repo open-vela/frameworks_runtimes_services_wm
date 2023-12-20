@@ -197,8 +197,8 @@ int32_t WindowManager::attachIWindow(std::shared_ptr<BaseWindow> window) {
 void WindowManager::relayoutWindow(std::shared_ptr<BaseWindow> window) {
     WM_PROFILER_BEGIN();
     LayoutParams params = window->getLayoutParams();
-    FLOGI("%p, pos(%dx%d), size(%dx%d)", window.get(), params.mX, params.mY, params.mWidth,
-          params.mHeight);
+    FLOGI("%p, pos(%" PRId32 "x%" PRId32 "), size(%" PRId32 "x%" PRId32 ")", window.get(),
+          params.mX, params.mY, params.mWidth, params.mHeight);
     sp<IBinder> handle = new BBinder();
     SurfaceControl* surfaceControl = new SurfaceControl(params.mToken, handle, params.mWidth,
                                                         params.mHeight, params.mFormat);
@@ -241,12 +241,12 @@ bool WindowManager::dumpWindows() {
     for (const auto& ptr : mWindows) {
         LayoutParams attrs = ptr->getLayoutParams();
         FLOGI("Window %d", number);
-        FLOGI("\t\t size:%dx%d", attrs.mWidth, attrs.mHeight);
-        FLOGI("\t\t position:[%d,%d]", attrs.mX, attrs.mY);
-        FLOGI("\t\t visibility:%d", ptr->getVisibility());
-        FLOGI("\t\t type:%d", attrs.mType);
-        FLOGI("\t\t flags:%d", attrs.mFlags);
-        FLOGI("\t\t format:%d", attrs.mFormat);
+        FLOGI("\t\t size:%" PRId32 "x%" PRId32 "", attrs.mWidth, attrs.mHeight);
+        FLOGI("\t\t position:[%" PRId32 ",%" PRId32 "]", attrs.mX, attrs.mY);
+        FLOGI("\t\t visibility:%" PRId32 "", ptr->getVisibility());
+        FLOGI("\t\t type:%" PRId32 "", attrs.mType);
+        FLOGI("\t\t flags:%" PRId32 "", attrs.mFlags);
+        FLOGI("\t\t format:%" PRId32 "", attrs.mFormat);
         number++;
     }
     return true;

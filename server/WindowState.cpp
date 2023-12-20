@@ -108,7 +108,7 @@ bool WindowState::sendInputMessage(const InputMessage* ie) {
 
 void WindowState::setVisibility(int32_t visibility) {
     mVisibility = visibility;
-    FLOGI("%p to %d (0:visible, 1:hold, 2:gone)", this, visibility);
+    FLOGI("%p to %" PRId32 " (0:visible, 1:hold, 2:gone)", this, visibility);
     mNode->enableInput(visibility == LayoutParams::WINDOW_VISIBLE);
 }
 
@@ -152,7 +152,7 @@ void WindowState::sendAppVisibilityToClients(int32_t visibility) {
 void WindowState::onAnimationFinished(WindowAnimStatus status) {
     if (status == WINDOW_ANIM_STATUS_FINISHED) {
         mAnimRunning = false;
-        FLOGI("mToken %p,mVisibility=%d", mToken.get(), mVisibility);
+        FLOGI("mToken %p,mVisibility=%" PRId32 "", mToken.get(), mVisibility);
         if (mVisibility != LayoutParams::WINDOW_VISIBLE) {
             mClient->dispatchAppVisibility(false);
         }
@@ -209,7 +209,7 @@ void WindowState::destroySurfaceControl() {
 }
 
 void WindowState::applyTransaction(LayerState layerState) {
-    FLOGD("[%d] (%p)", mToken->getClientPid(), this);
+    FLOGD("[%" PRId32 "] (%p)", mToken->getClientPid(), this);
     WM_PROFILER_BEGIN();
 
     BufferItem* buffItem = nullptr;
@@ -275,8 +275,8 @@ VsyncRequest WindowState::onVsync() {
     if (mVsyncRequest == VsyncRequest::VSYNC_REQ_NONE) return mVsyncRequest;
     WM_PROFILER_BEGIN();
 
-    FLOGD("(%p)-%d(-2:none, -1:single, 0:suppress, 1:period) send vsync to client [%d]", this,
-          (int)mVsyncRequest, mToken->getClientPid());
+    FLOGD("(%p)-%d(-2:none, -1:single, 0:suppress, 1:period) send vsync to client [%" PRId32 "]",
+          this, (int)mVsyncRequest, mToken->getClientPid());
     mVsyncRequest = nextVsyncState(mVsyncRequest);
     mClient->onFrame(++mFrameReq);
     WM_PROFILER_END();

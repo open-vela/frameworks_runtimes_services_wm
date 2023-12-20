@@ -26,7 +26,7 @@ WindowEventListener::WindowEventListener(void* data) : mData(data) {}
 WindowEventListener::~WindowEventListener() {}
 
 void WindowEventListener::onSizeChanged(uint32_t w, uint32_t h, uint32_t oldw, uint32_t oldh) {
-    FLOGI(" %dx%d from %dx%d ", w, h, oldw, oldh);
+    FLOGI(" %" PRId32 "x%" PRId32 " from %" PRId32 "x%" PRId32 " ", w, h, oldw, oldh);
 }
 
 /*for mock ui*/
