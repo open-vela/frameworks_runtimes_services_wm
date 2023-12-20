@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <inttypes.h>
 #include <nuttx/config.h>
 #include <utils/Log.h>
 
