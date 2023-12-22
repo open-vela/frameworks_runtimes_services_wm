@@ -152,13 +152,12 @@ bool RootContainer::init() {
     lv_nuttx_dsc_t info;
     lv_nuttx_result_t result;
 
+    lv_nuttx_dsc_init(&info);
     info.fb_path = CONFIG_LV_FBDEV_INTERFACE_DEFAULT_DEVICEPATH;
     info.input_path = CONFIG_LV_TOUCHPAD_INTERFACE_DEFAULT_DEVICEPATH;
+
     lv_nuttx_init(&info, &result);
     mDisp = result.disp;
-#if defined(CONFIG_UINPUT_TOUCH)
-    lv_nuttx_touchscreen_create("/dev/utouch");
-#endif
     lv_nuttx_uv_t uv_info = {
             .loop = mUvLoop,
             .disp = result.disp,
