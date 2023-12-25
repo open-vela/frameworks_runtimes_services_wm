@@ -266,8 +266,8 @@ static void _indev_read(lv_indev_t* drv, lv_indev_data_t* data) {
                 lv_coord_t ver_max = disp_drv->ver_res - 1;
                 lv_coord_t hor_max = disp_drv->hor_res - 1;
 
-                data->point.x = LV_CLAMP(0, message.pointer.raw_x, hor_max);
-                data->point.y = LV_CLAMP(0, message.pointer.raw_y, ver_max);
+                data->point.x = LV_CLAMP(0, message.pointer.x, hor_max);
+                data->point.y = LV_CLAMP(0, message.pointer.y, ver_max);
                 proxy->mLastEventState = LV_INDEV_STATE_PRESSED;
             } else if (message.state == INPUT_MESSAGE_STATE_RELEASED) {
                 proxy->mLastEventState = LV_INDEV_STATE_RELEASED;
