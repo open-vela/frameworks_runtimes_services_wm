@@ -42,10 +42,42 @@ namespace wm {
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
 static std::map<int, std::string> mAnimConfigMap;
 static const std::string animConfigPath = "/data/app/window_anim_config.json";
+
 static const std::string defaultEnterConfigJson =
-        R"({"fromState": {"opacity": 0.0},"toState": {"opacity": 1.0},"config": {"ease": ["cubicIn",0.2]}})";
+        R"({
+            "fromState": {
+                "opacity": 0.0,
+                "scale": 0.8
+            },
+            "toState": {
+                "opacity": 1.0,
+                "scale": 1.0
+            },
+            "config": {
+                "ease": [
+                    "cubicInOut",
+                    0.3
+                ]
+            }
+        })";
+
 static const std::string defaultExitConfigJson =
-        R"({"fromState": {"opacity": 1.0},"toState": {"opacity": 0.0},"config": {"ease": ["cubicIn",0.2]}})";
+        R"({
+            "fromState": {
+                "opacity": 1.0,
+                "scale": 1.0
+            },
+            "toState": {
+                "opacity": 0.0,
+                "scale": 0.8
+            },
+            "config": {
+                "ease": [
+                    "cubicInOut",
+                    0.2
+                ]
+            }
+        })";
 
 int parseAnimJsonFile(const char* filename) {
     std::ifstream file(filename);
