@@ -58,6 +58,9 @@ PROGNAME += InputMonitorTest
 
 MAINSRC  += test/IWindowManagerTest.cpp
 PROGNAME += IWindowManagerTest
+
+MAINSRC  += test/lvgltest_attribute.c
+PROGNAME += lvgltest_attribute
 endif
 
 EXPORT_FILES := include
