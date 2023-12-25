@@ -137,8 +137,12 @@ bool lv_mainwnd_update_buffer(lv_obj_t* obj, lv_mainwnd_buf_dsc_t* buf_dsc, cons
         WM_PROFILER_END();
         return true;
     }
+
     lv_area_t win_coords;
     lv_obj_get_coords(obj, &win_coords);
+
+    if (win_coords.x1 != 0 || win_coords.y1 != 0)
+        lv_area_move((lv_area_t*)area, win_coords.x1, win_coords.y1);
 
     lv_area_t inv_area;
     if (_lv_area_intersect(&inv_area, &win_coords, area)) {
