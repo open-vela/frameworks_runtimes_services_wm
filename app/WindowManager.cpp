@@ -100,7 +100,10 @@ void WindowManager::releaseInput(InputMonitor* monitor) {
         FLOGE("get service failure!");
         return;
     }
-    Status status = service->releaseInput(monitor->getToken());
+    auto token = monitor->getToken();
+    if (!token) return;
+
+    Status status = service->releaseInput(token);
     if (!status.isOk()) {
         FLOGE("failure");
         return;
