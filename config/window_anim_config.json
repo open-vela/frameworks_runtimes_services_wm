@@ -4,15 +4,17 @@
         "type": "enter",
         "action": {
             "fromState": {
-                "x": -640.0
+                "opacity": 0.0,
+                "scale": 0.8
             },
             "toState": {
-                "x": 0.0
+                "opacity": 1.0,
+                "scale": 1.0
             },
             "config": {
                 "ease": [
-                    "linear",
-                    2
+                    "cubicInOut",
+                    0.3
                 ]
             }
         }
@@ -22,15 +24,17 @@
         "type": "exit",
         "action": {
             "fromState": {
-                "x": 0.0
+                "opacity": 1.0,
+                "scale": 1.0
             },
             "toState": {
-                "x": 640.0
+                "opacity": 0.0,
+                "scale": 0.8
             },
             "config": {
                 "ease": [
-                    "linear",
-                    2
+                    "cubicInOut",
+                    0.2
                 ]
             }
         }
