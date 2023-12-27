@@ -50,8 +50,8 @@ static inline void* getLayerByType(WindowManagerService* service, int type) {
 }
 
 WindowState::WindowState(WindowManagerService* service, const sp<IWindow>& window,
-                         WindowToken* token, const LayoutParams& params, int32_t visibility,
-                         bool enableInput)
+                         std::shared_ptr<WindowToken> token, const LayoutParams& params,
+                         int32_t visibility, bool enableInput)
       : mClient(window),
         mToken(token),
         mService(service),
@@ -59,12 +59,12 @@ WindowState::WindowState(WindowManagerService* service, const sp<IWindow>& windo
         mVsyncRequest(VsyncRequest::VSYNC_REQ_NONE),
         mFrameReq(0),
         mHasSurface(false),
-        mWindowRemoving(false) {
+        mFlags(0) {
     mAttrs = params;
     mVisibility = visibility;
 
     Rect rect(params.mX, params.mY, params.mX + params.mWidth, params.mY + params.mHeight);
-    mNode = new WindowNode(this, getLayerByType(mService, params.mType), rect, enableInput,
+    mNode = new WindowNode(this, getLayerByType(mService, mToken->getType()), rect, enableInput,
                            mAttrs.mFormat);
 
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
@@ -75,14 +75,13 @@ WindowState::WindowState(WindowManagerService* service, const sp<IWindow>& windo
 }
 
 WindowState::~WindowState() {
-    // TODO: clear members
     FLOGI("");
     mClient = nullptr;
-    mToken = nullptr;
     if (mNode) delete mNode;
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
     if (mWinAnimator) delete mWinAnimator;
 #endif
+    mToken = nullptr;
 }
 
 std::shared_ptr<BufferConsumer> WindowState::getBufferConsumer() {
@@ -156,7 +155,7 @@ void WindowState::onAnimationFinished(WindowAnimStatus status) {
         if (mVisibility != LayoutParams::WINDOW_VISIBLE) {
             mClient->dispatchAppVisibility(false);
         }
-        if (mWindowRemoving) {
+        if (mFlags & WS_ALLOW_REMOVING) {
             removeIfPossible();
         }
     }
@@ -285,20 +284,30 @@ VsyncRequest WindowState::onVsync() {
 }
 
 void WindowState::removeIfPossible() {
-    mWindowRemoving = true;
+    mFlags |= WS_ALLOW_REMOVING;
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
     if (!mAnimRunning)
 #endif
     {
-        FLOGI("");
-        mWindowRemoving = false;
-        destroySurfaceControl();
-        if (mInputDispatcher.get() != nullptr) {
-            mInputDispatcher->release();
-        }
-        if (mToken) mToken->removeWindow(this);
-        mService->doRemoveWindow(mClient);
+        removeImmediately();
     }
+}
+
+void WindowState::removeImmediately() {
+    FLOGI("");
+
+    if (mFlags & WS_REMOVED) return;
+
+    mFlags |= WS_REMOVED;
+
+    destroySurfaceControl();
+    if (mInputDispatcher.get() != nullptr) {
+        mInputDispatcher->release();
+    }
+
+    if (mToken) mToken->removeWindow(this);
+
+    mService->postWindowRemoveCleanup(this);
 }
 
 BufferItem* WindowState::acquireBuffer() {
@@ -333,11 +342,7 @@ void WindowState::setLayoutParams(LayoutParams attrs) {
         return;
     }
 
-    if (mAttrs.mType != attrs.mType) {
-        mNode->setParent(getLayerByType(mService, attrs.mType));
-    }
     mAttrs = attrs;
-
     Rect rect(attrs.mX, attrs.mY, attrs.mX + attrs.mWidth, attrs.mY + attrs.mHeight);
     mNode->setRect(rect);
 }

@@ -35,7 +35,7 @@ class WindowState;
 class WindowToken;
 class InputDispatcher;
 
-typedef map<sp<IBinder>, WindowToken*> WindowTokenMap;
+typedef map<sp<IBinder>, std::shared_ptr<WindowToken>> WindowTokenMap;
 typedef map<sp<IBinder>, WindowState*> WindowStateMap;
 typedef map<sp<IBinder>, std::shared_ptr<InputDispatcher>> InputMonitorMap;
 
@@ -81,7 +81,8 @@ public:
     std::string getAnimConfig(bool animMode, WindowState* win);
 #endif
 
-    void doRemoveWindow(const sp<IWindow>& window);
+    void postWindowRemoveCleanup(WindowState* state);
+    bool removeWindowTokenInner(sp<IBinder>& token);
 
 private:
     class WindowDeathRecipient : public IBinder::DeathRecipient {

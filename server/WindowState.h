@@ -46,13 +46,15 @@ class WindowState {
 public:
     WindowState();
     ~WindowState();
-    WindowState(WindowManagerService* service, const sp<IWindow>& window, WindowToken* token,
-                const LayoutParams& params, int32_t visibility, bool enableInput);
+    WindowState(WindowManagerService* service, const sp<IWindow>& window,
+                shared_ptr<WindowToken> token, const LayoutParams& params, int32_t visibility,
+                bool enableInput);
 
     bool isVisible();
     void sendAppVisibilityToClients(int32_t visibility);
     void setVisibility(int32_t visibility);
     void removeIfPossible();
+    void removeImmediately();
 
     std::shared_ptr<InputDispatcher> createInputDispatcher(const std::string name);
     std::shared_ptr<SurfaceControl> createSurfaceControl(vector<BufferId> ids);
@@ -66,6 +68,10 @@ public:
 
     std::shared_ptr<WindowToken> getToken() {
         return mToken;
+    }
+
+    sp<IWindow>& getClient() {
+        return mClient;
     }
 
     void setHasSurface(bool hasSurface) {
@@ -100,8 +106,12 @@ private:
     bool mAnimRunning;
     WindowAnimator* mWinAnimator;
 #endif
-    bool mWindowRemoving;
     WindowNode* mNode;
+    enum {
+        WS_ALLOW_REMOVING = 1 << 0,
+        WS_REMOVED = 1 << 1,
+    };
+    int32_t mFlags;
 };
 
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION

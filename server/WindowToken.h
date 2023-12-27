@@ -49,6 +49,23 @@ public:
         return mClientPid;
     }
 
+    bool isEmpty() {
+        return mChildren.empty();
+    }
+
+    void setPersistOnEmpty(bool persistOnEmpty) {
+        mPersistOnEmpty = persistOnEmpty;
+    }
+
+    bool isPersistOnEmpty() {
+        return mPersistOnEmpty;
+    }
+
+    void removeImmediately();
+    int32_t getType() {
+        return mType;
+    }
+
 private:
     WindowManagerService* mService;
     sp<IBinder> mToken;
@@ -56,6 +73,8 @@ private:
     std::vector<WindowState*> mChildren;
     int32_t mClientVisibility;
     int32_t mClientPid;
+    bool mPersistOnEmpty;
+    bool mRemoved;
 };
 
 } // namespace wm

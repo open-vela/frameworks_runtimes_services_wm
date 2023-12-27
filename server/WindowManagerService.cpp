@@ -154,7 +154,7 @@ void WindowManagerService::WindowDeathRecipient::binderDied(const wp<IBinder>& w
     auto key = who.promote();
     auto it = mService->mWindowMap.find(key);
     if (it != mService->mWindowMap.end()) {
-        it->second->removeIfPossible();
+        it->second->removeImmediately();
         mService->mWindowMap.erase(key);
     }
 }
@@ -226,7 +226,7 @@ Status WindowManagerService::addWindow(const sp<IWindow>& window, const LayoutPa
         return Status::fromExceptionCode(1, "please add token firstly");
     }
 
-    WindowToken* winToken = itToken->second;
+    auto winToken = itToken->second;
     WindowState* win = new WindowState(this, window, winToken, attrs, visibility,
                                        outInputChannel != nullptr ? true : false);
     client->linkToDeath(mWindowDeathRecipient);
@@ -252,6 +252,7 @@ Status WindowManagerService::removeWindow(const sp<IWindow>& window) {
     sp<IBinder> client = IInterface::asBinder(window);
     auto itState = mWindowMap.find(client);
     if (itState != mWindowMap.end()) {
+        itState->first->unlinkToDeath(mWindowDeathRecipient);
         itState->second->removeIfPossible();
         mWindowMap.erase(client);
     } else {
@@ -332,12 +333,21 @@ Status WindowManagerService::addWindowToken(const sp<IBinder>& token, int32_t ty
         FLOGW("[%" PRId32 "] window token(%p) already exist", pid, token.get());
         return Status::fromExceptionCode(1, "window token already exist");
     } else {
-        WindowToken* windToken = new WindowToken(this, token, type, displayId, pid);
-        mTokenMap.emplace(token, windToken);
+        auto winToken = std::make_shared<WindowToken>(this, token, type, displayId, pid);
+        mTokenMap.emplace(token, winToken);
         FLOGI("[%" PRId32 "] add window token(%p) success", pid, token.get());
     }
     WM_PROFILER_END();
     return Status::ok();
+}
+
+bool WindowManagerService::removeWindowTokenInner(sp<IBinder>& token) {
+    auto it = mTokenMap.find(token);
+    if (it != mTokenMap.end()) {
+        mTokenMap.erase(token);
+        return true;
+    }
+    return false;
 }
 
 Status WindowManagerService::removeWindowToken(const sp<IBinder>& token, int32_t displayId) {
@@ -348,10 +358,7 @@ Status WindowManagerService::removeWindowToken(const sp<IBinder>& token, int32_t
 
     auto it = mTokenMap.find(token);
     if (it != mTokenMap.end()) {
-        it->second = nullptr;
-        mTokenMap.erase(token);
-    } else {
-        return Status::fromExceptionCode(1, "can't find token in map");
+        it->second->removeImmediately();
     }
     WM_PROFILER_END();
 
@@ -441,13 +448,19 @@ Status WindowManagerService::releaseInput(const sp<IBinder>& token) {
     return Status::fromExceptionCode(1, "no specified input monitor");
 }
 
-void WindowManagerService::doRemoveWindow(const sp<IWindow>& window) {
-    sp<IBinder> binder = IInterface::asBinder(window);
+void WindowManagerService::postWindowRemoveCleanup(WindowState* state) {
+    sp<IBinder> binder = IInterface::asBinder(state->getClient());
+    auto token = state->getToken();
+
     auto itState = mWindowMap.find(binder);
     if (itState != mWindowMap.end()) {
+        itState->first->unlinkToDeath(mWindowDeathRecipient);
         delete itState->second;
-        itState->second = nullptr;
         mWindowMap.erase(binder);
+    }
+
+    if (token && token.get() && token->isEmpty() && !token->isPersistOnEmpty()) {
+        token->removeImmediately();
     }
 }
 
