@@ -30,9 +30,12 @@ WindowToken::WindowToken(WindowManagerService* service, const sp<IBinder>& token
         mToken(token),
         mType(type),
         mClientVisibility(LayoutParams::WINDOW_GONE),
-        mClientPid(clientPid) {}
+        mClientPid(clientPid),
+        mPersistOnEmpty(false),
+        mRemoved(false) {}
 
 WindowToken::~WindowToken() {
+    FLOGI("");
     mChildren.clear();
     mClientPid = -1;
 }
@@ -66,6 +69,19 @@ void WindowToken::setClientVisibility(int32_t visibility) {
     for (auto it = mChildren.begin(); it != mChildren.end(); it++) {
         (*it)->sendAppVisibilityToClients(mClientVisibility);
     }
+}
+
+void WindowToken::removeImmediately() {
+    if (mRemoved) return;
+    mRemoved = true;
+
+    for (auto it = mChildren.begin(); it != mChildren.end();) {
+        WindowState* state = *it;
+        it = mChildren.erase(it);
+        state->removeImmediately();
+    }
+
+    mService->removeWindowTokenInner(mToken);
 }
 
 } // namespace wm
