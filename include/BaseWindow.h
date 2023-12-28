@@ -91,8 +91,8 @@ public:
         return mUIProxy;
     }
 
+    void setVisible(bool visible);
     void setLayoutParams(LayoutParams lp);
-
     LayoutParams getLayoutParams() {
         return mAttrs;
     }
@@ -101,33 +101,28 @@ public:
         return mWindowManager;
     }
 
-    std::shared_ptr<BufferProducer> getBufferProducer();
-
-    void doDie();
     int32_t getVisibility();
-
-    void dispatchAppVisibility(bool visible);
-    void handleAppVisibility(bool visible);
-
-    void onFrame(int32_t seq);
-    void handleOnFrame(int32_t seq);
-
-    void bufferReleased(int32_t bufKey);
-    void handleBufferReleased(int32_t bufKey);
-
     void setInputChannel(InputChannel* inputChannel);
     void setSurfaceControl(SurfaceControl* surfaceControl);
     bool readEvent(InputMessage* message);
 
-    void setEventListener(WindowEventListener* listener);
-
     ::os::app::Context* getContext() {
         return mContext;
     }
+
+    void doDie();
+
+    void setEventListener(WindowEventListener* listener);
+
     DISALLOW_COPY_AND_ASSIGN(BaseWindow);
 
 private:
+    void onFrame(int32_t seq);
+    void bufferReleased(int32_t bufKey);
+
+    std::shared_ptr<BufferProducer> getBufferProducer();
     void updateOrCreateBufferQueue();
+    void handleOnFrame(int32_t seq);
 
     ::os::app::Context* mContext;
     WindowManager* mWindowManager;
