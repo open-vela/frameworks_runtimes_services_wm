@@ -214,11 +214,9 @@ void WindowState::applyTransaction(LayerState layerState) {
     BufferItem* buffItem = nullptr;
     Rect* rect = nullptr;
     if (layerState.mFlags & LayerState::LAYER_POSITION_CHANGED) {
-        // TODO
     }
 
     if (layerState.mFlags & LayerState::LAYER_ALPHA_CHANGED) {
-        // TODO
     }
 
     if (layerState.mFlags & LayerState::LAYER_BUFFER_CHANGED) {
