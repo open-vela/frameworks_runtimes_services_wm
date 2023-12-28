@@ -37,18 +37,16 @@ namespace os {
 namespace wm {
 
 Status BaseWindow::W::moved(int32_t newX, int32_t newY) {
-    // TODO
     return Status::ok();
 }
 
 Status BaseWindow::W::resized(const WindowFrames& frames, int32_t displayId) {
-    // TODO
     return Status::ok();
 }
 
 Status BaseWindow::W::dispatchAppVisibility(bool visible) {
     if (mBaseWindow != nullptr) {
-        mBaseWindow->dispatchAppVisibility(visible);
+        mBaseWindow->setVisible(visible);
     }
     return Status::ok();
 }
@@ -176,14 +174,6 @@ void BaseWindow::setSurfaceControl(SurfaceControl* surfaceControl) {
     }
 }
 
-void BaseWindow::dispatchAppVisibility(bool visible) {
-    WM_PROFILER_BEGIN();
-
-    FLOGI("%p visible:%d", this, visible);
-    handleAppVisibility(visible);
-    WM_PROFILER_END();
-}
-
 void BaseWindow::onFrame(int32_t seq) {
     WM_PROFILER_BEGIN();
     if (!mFrameDone.load(std::memory_order_acquire)) {
@@ -198,14 +188,7 @@ void BaseWindow::onFrame(int32_t seq) {
     mFrameDone.exchange(true, std::memory_order_release);
 }
 
-void BaseWindow::bufferReleased(int32_t bufKey) {
-    WM_PROFILER_BEGIN();
-    FLOGD("bufKey:%" PRId32 "", bufKey);
-    handleBufferReleased(bufKey);
-    WM_PROFILER_END();
-}
-
-void BaseWindow::handleAppVisibility(bool visible) {
+void BaseWindow::setVisible(bool visible) {
     FLOGI("visible from %d to %d", mAppVisible, visible);
 
     if (visible == mAppVisible) {
@@ -220,7 +203,6 @@ void BaseWindow::handleAppVisibility(bool visible) {
     if (mSurfaceControl.get() != nullptr && mSurfaceControl->isValid()) {
         updateOrCreateBufferQueue();
     } else {
-        // release mSurfaceControl
         mSurfaceControl.reset();
     }
 
@@ -289,7 +271,7 @@ void BaseWindow::handleOnFrame(int32_t seq) {
     }
 }
 
-void BaseWindow::handleBufferReleased(int32_t bufKey) {
+void BaseWindow::bufferReleased(int32_t bufKey) {
     std::shared_ptr<BufferProducer> buffProducer = getBufferProducer();
     if (buffProducer.get() == nullptr) {
         return;
