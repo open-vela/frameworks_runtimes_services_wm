@@ -217,16 +217,27 @@ Status WindowManagerService::addWindow(const sp<IWindow>& window, const LayoutPa
         return Status::fromExceptionCode(1, "window already exist");
     }
 
-    sp<IBinder> token = attrs.mToken;
-
-    auto itToken = mTokenMap.find(token);
-    if (itToken == mTokenMap.end()) {
-        *_aidl_return = -1;
-        WM_PROFILER_END();
-        return Status::fromExceptionCode(1, "please add token firstly");
+    shared_ptr<WindowToken> winToken = nullptr;
+    if (attrs.mToken != nullptr) {
+        auto itToken = mTokenMap.find(attrs.mToken);
+        if (itToken != mTokenMap.end()) {
+            winToken = itToken->second;
+        }
     }
 
-    auto winToken = itToken->second;
+    if (winToken == nullptr) {
+        if (attrs.mType == LayoutParams::TYPE_APPLICATION) {
+            *_aidl_return = -1;
+            WM_PROFILER_END();
+            return Status::fromExceptionCode(1, "please add token firstly");
+        } else {
+            FLOGW("for non-application, create token automatically");
+            sp<IBinder> token = new BBinder();
+            winToken = std::make_shared<WindowToken>(this, token, attrs.mType, displayId, pid);
+            mTokenMap.emplace(token, winToken);
+        }
+    }
+
     WindowState* win = new WindowState(this, window, winToken, attrs, visibility,
                                        outInputChannel != nullptr ? true : false);
     client->linkToDeath(mWindowDeathRecipient);
