@@ -166,6 +166,8 @@ std::shared_ptr<BaseWindow> WindowManager::newWindow(::os::app::Context* context
         uv_timer_start(&mEventTimer, _wm_lv_timer_cb, LV_DEF_REFR_PERIOD, 0);
         lv_timer_handler_set_resume_cb(_wm_lv_timer_resume, &mEventTimer);
         FLOGD("init event timer.");
+        /* for video feature */
+        lv_ext_uv_init(context->getMainLoop()->get());
         mTimerInited = true;
     }
 
@@ -230,6 +232,7 @@ bool WindowManager::removeWindow(std::shared_ptr<BaseWindow> window) {
             uv_close((uv_handle_t*)&mEventTimer, NULL);
             mTimerInited = false;
             FLOGD("close event timer.");
+            lv_ext_uv_deinit();
         }
     }
     WM_PROFILER_END();
