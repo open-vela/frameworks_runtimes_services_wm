@@ -50,7 +50,6 @@ protected:
 
         mWindow = mWindowManager->newWindow(mContext);
         mWindow->setLayoutParams(mLayoutParam);
-        mWindow->setWindowManager(mWindowManager);
     }
 
     void TearDown() override {

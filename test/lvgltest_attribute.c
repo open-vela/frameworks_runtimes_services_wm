@@ -1,3 +1,5 @@
+
+#include <unistd.h>
 #include "lvgl/lvgl.h"
 
 static void lv_obj_set_scale(void *var, int32_t v) {
