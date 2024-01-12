@@ -55,9 +55,9 @@ TEST_F(InputMonitorTest, receiveMessage) {
     const char* channel_name = "input-gesture-test2";
 
     /* create dispatcher for server */
-    auto dispatcher = std::make_shared<InputDispatcher>();
-    bool ret = dispatcher->create(channel_name);
-    EXPECT_EQ(ret, true);
+    auto dispatcher = InputDispatcher::create(channel_name);
+
+    EXPECT_NE(dispatcher, nullptr);
     EXPECT_EQ(dispatcher->getInputChannel().isValid(), true);
 
     /* create monitor for client */
@@ -69,12 +69,12 @@ TEST_F(InputMonitorTest, receiveMessage) {
     EXPECT_EQ(monitor->isValid(), true);
 
     /* server sending message */
-    ret = dispatcher->sendMessage(&gTestMessage);
-    EXPECT_EQ(ret, true);
+    int int_ret = dispatcher->sendMessage(&gTestMessage);
+    EXPECT_EQ(int_ret, 0);
 
     /* client receiving message */
     InputMessage im;
-    ret = monitor->receiveMessage(&im);
+    bool ret = monitor->receiveMessage(&im);
     EXPECT_EQ(ret, true);
     EXPECT_EQ(im.type, gTestMessage.type);
     EXPECT_EQ(im.state, gTestMessage.state);
@@ -85,11 +85,11 @@ TEST_F(InputMonitorTest, receiveMessage) {
 TEST_F(InputMonitorTest, start) {
     auto input = WindowManager::monitorInput("input-gesture-test3", 0);
     EXPECT_NE(input, nullptr);
-    int ret = input->start(&mUVLooper, [](InputMonitor* monitor) {
+    bool ret = input->start(&mUVLooper, [](InputMonitor* monitor) {
         if (!monitor || !monitor->isValid()) return;
         InputMessage msg;
-        bool ret = monitor->receiveMessage(&msg);
-        EXPECT_EQ(ret, true);
+        bool recv_ret = monitor->receiveMessage(&msg);
+        EXPECT_EQ(recv_ret, true);
     });
 
     EXPECT_EQ(ret, true);
