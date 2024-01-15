@@ -115,9 +115,5 @@ private:
     bool mNeedInput;
 };
 
-#ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
-int parseAnimJsonFile(const char* filename);
-#endif
-
 } // namespace wm
 } // namespace os

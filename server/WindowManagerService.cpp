@@ -79,7 +79,7 @@ static const std::string defaultExitConfigJson =
             }
         })";
 
-int parseAnimJsonFile(const char* filename) {
+static int parseAnimJsonFile(const char* filename) {
     std::ifstream file(filename);
     if (!file) {
         FLOGE("Failed to open file %s", filename);
@@ -114,13 +114,15 @@ static inline std::string getUniqueId() {
     return std::to_string(std::rand());
 }
 
-static inline std::string genUniquePath(int32_t pid, const char* prefix,
-                                        const char* name = nullptr) {
-    std::string path = "/data/graphics/" + std::to_string(pid) + "/" + (prefix ? prefix : "") +
-            "/" + getUniqueId();
-    if (name) path += "/" + std::string(name);
-    FLOGD("%s", path.c_str());
-    return path;
+/* limited by mq_open */
+#define MQ_PATH_MAXLEN 50
+static inline std::string genUniquePath(int32_t pid, const std::string& prefix,
+                                        const std::string name = "") {
+    std::string path = "/data/xms/" + std::to_string(pid) + "/" + prefix;
+    path += "/" + (name.size() > 0 ? name : getUniqueId());
+
+    FLOGD("'%s', length is %d", path.c_str(), path.size());
+    return path.size() <= MQ_PATH_MAXLEN ? path : path.substr(0, MQ_PATH_MAXLEN);
 }
 
 static inline bool createSharedBuffer(int32_t size, BufferId* id) {
@@ -167,7 +169,7 @@ WindowManagerService::WindowManagerService(uv_loop_t* looper) : mLooper(looper) 
     mWinAnimEngine = new WindowAnimEngine();
     int ret = parseAnimJsonFile(animConfigPath.c_str());
     if (ret < 0) {
-        ALOGE("read file %s failed,use default anim config", animConfigPath.c_str());
+        ALOGE("Failed to parse file %s, use default animation config", animConfigPath.c_str());
     }
 #endif
 }
@@ -434,7 +436,7 @@ Status WindowManagerService::monitorInput(const sp<IBinder>& token, const ::std:
         return Status::fromExceptionCode(1, "don't register input monitor repeatly");
     }
 
-    std::string input_name = genUniquePath(pid, "monitor", name.c_str());
+    std::string input_name = genUniquePath(pid, "monitor", name);
     auto dispatcher = InputDispatcher::create(input_name);
     if (dispatcher == nullptr) {
         return Status::fromExceptionCode(2, "monitor input is failure!");

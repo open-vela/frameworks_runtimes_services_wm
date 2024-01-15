@@ -105,7 +105,7 @@ void WindowManager::releaseInput(InputMonitor* monitor) {
 
     Status status = service->releaseInput(token);
     if (!status.isOk()) {
-        FLOGE("failure");
+        FLOGI("failure");
         return;
     }
     FLOGI("success");
