@@ -45,6 +45,7 @@ status_t InputChannel::readFromParcel(const Parcel* in) {
 }
 
 bool InputChannel::create(const std::string name) {
+    const char* cname = name.c_str();
     struct mq_attr mqstat;
     int oflag = O_CREAT | O_RDWR | O_NONBLOCK;
 
@@ -53,8 +54,8 @@ bool InputChannel::create(const std::string name) {
     mqstat.mq_msgsize = sizeof(InputMessage);
     mqstat.mq_flags = 0;
 
-    if (((mqd_t)-1) == (mEventFd = mq_open(name.c_str(), oflag, 0777, &mqstat))) {
-        FLOGI("mq_open doesn't return success");
+    if (((mqd_t)-1) == (mEventFd = mq_open(cname, oflag, 0777, &mqstat))) {
+        FLOGW("Failed with '%s', error: %d", cname, errno);
         return false;
     }
     mEventName = name;
