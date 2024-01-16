@@ -112,6 +112,7 @@ private:
         WS_REMOVED = 1 << 1,
     };
     int32_t mFlags;
+    bool mNeedInput;
 };
 
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
