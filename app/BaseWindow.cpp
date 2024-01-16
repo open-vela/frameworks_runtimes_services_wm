@@ -322,5 +322,9 @@ void BaseWindow::setLayoutParams(LayoutParams lp) {
     }
 }
 
+void BaseWindow::setType(int32_t type) {
+    mAttrs.mType = type;
+}
+
 } // namespace wm
 } // namespace os
