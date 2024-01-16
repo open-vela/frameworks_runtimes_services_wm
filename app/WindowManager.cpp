@@ -202,15 +202,15 @@ int32_t WindowManager::attachIWindow(std::shared_ptr<BaseWindow> window) {
 
 void WindowManager::relayoutWindow(std::shared_ptr<BaseWindow> window) {
     WM_PROFILER_BEGIN();
-    LayoutParams params = window->getLayoutParams();
-    FLOGI("%p, pos(%" PRId32 "x%" PRId32 "), size(%" PRId32 "x%" PRId32 ")", window.get(),
-          params.mX, params.mY, params.mWidth, params.mHeight);
+    LayoutParams lp = window->getLayoutParams();
+    FLOGI("%p, pos(%" PRId32 "x%" PRId32 "), size(%" PRId32 "x%" PRId32 ")", window.get(), lp.mX,
+          lp.mY, lp.mWidth, lp.mHeight);
     sp<IBinder> handle = new BBinder();
-    SurfaceControl* surfaceControl = new SurfaceControl(params.mToken, handle, params.mWidth,
-                                                        params.mHeight, params.mFormat);
+    SurfaceControl* surfaceControl =
+            new SurfaceControl(lp.mToken, handle, lp.mWidth, lp.mHeight, lp.mFormat);
     int32_t result = 0;
-    mService->relayout(window->getIWindow(), params, params.mWidth, params.mHeight,
-                       window->getVisibility(), surfaceControl, &result);
+    mService->relayout(window->getIWindow(), lp, lp.mWidth, lp.mHeight, window->getVisibility(),
+                       surfaceControl, &result);
     window->setSurfaceControl(surfaceControl);
     WM_PROFILER_END();
 }
@@ -246,14 +246,14 @@ void WindowManager::toBackground() {}
 bool WindowManager::dumpWindows() {
     int number = 1;
     for (const auto& ptr : mWindows) {
-        LayoutParams attrs = ptr->getLayoutParams();
+        LayoutParams lp = ptr->getLayoutParams();
         FLOGI("Window %d", number);
-        FLOGI("\t\t size:%" PRId32 "x%" PRId32 "", attrs.mWidth, attrs.mHeight);
-        FLOGI("\t\t position:[%" PRId32 ",%" PRId32 "]", attrs.mX, attrs.mY);
+        FLOGI("\t\t size:%" PRId32 "x%" PRId32 "", lp.mWidth, lp.mHeight);
+        FLOGI("\t\t position:[%" PRId32 ",%" PRId32 "]", lp.mX, lp.mY);
         FLOGI("\t\t visibility:%" PRId32 "", ptr->getVisibility());
-        FLOGI("\t\t type:%" PRId32 "", attrs.mType);
-        FLOGI("\t\t flags:%" PRId32 "", attrs.mFlags);
-        FLOGI("\t\t format:%" PRId32 "", attrs.mFormat);
+        FLOGI("\t\t type:%" PRId32 "", lp.mType);
+        FLOGI("\t\t flags:%" PRId32 "", lp.mFlags);
+        FLOGI("\t\t format:%" PRId32 "", lp.mFormat);
         number++;
     }
     return true;
