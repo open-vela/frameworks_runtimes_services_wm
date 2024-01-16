@@ -114,9 +114,9 @@ WindowNode::WindowNode(WindowState* state, void* parent, const Rect& rect, bool 
         lv_obj_clear_flag((lv_obj_t*)parent, LV_OBJ_FLAG_SCROLLABLE);
     }
     mWidget = lv_mainwnd_create((lv_obj_t*)parent);
+    lv_obj_add_flag(mWidget, LV_OBJ_FLAG_HIDDEN);
 
     mColorFormat = getLvColorFormatType(format);
-
     lv_mainwnd_update_flag(mWidget, LV_MAINWND_FLAG_DRAW_SCALE, true);
     setRect(rect);
 
