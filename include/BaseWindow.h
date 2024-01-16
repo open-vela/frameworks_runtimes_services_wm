@@ -91,6 +91,7 @@ public:
         return mUIProxy;
     }
 
+    void setType(int32_t type);
     void setVisible(bool visible);
     void setLayoutParams(LayoutParams lp);
     LayoutParams getLayoutParams() {
