@@ -59,7 +59,8 @@ WindowState::WindowState(WindowManagerService* service, const sp<IWindow>& windo
         mVsyncRequest(VsyncRequest::VSYNC_REQ_NONE),
         mFrameReq(0),
         mHasSurface(false),
-        mFlags(0) {
+        mFlags(0),
+        mNeedInput(enableInput) {
     mAttrs = params;
     mVisibility = visibility;
 
@@ -108,7 +109,7 @@ bool WindowState::sendInputMessage(const InputMessage* ie) {
 void WindowState::setVisibility(int32_t visibility) {
     mVisibility = visibility;
     FLOGI("%p to %" PRId32 " (0:visible, 1:hold, 2:gone)", this, visibility);
-    mNode->enableInput(visibility == LayoutParams::WINDOW_VISIBLE);
+    if (mNeedInput) mNode->enableInput(visibility == LayoutParams::WINDOW_VISIBLE);
 }
 
 void WindowState::sendAppVisibilityToClients(int32_t visibility) {
