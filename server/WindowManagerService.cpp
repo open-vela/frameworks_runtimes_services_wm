@@ -233,7 +233,7 @@ Status WindowManagerService::addWindow(const sp<IWindow>& window, const LayoutPa
             WM_PROFILER_END();
             return Status::fromExceptionCode(1, "please add token firstly");
         } else {
-            FLOGW("for non-application, create token automatically");
+            FLOGI("for non-application, create token automatically");
             sp<IBinder> token = new BBinder();
             winToken = std::make_shared<WindowToken>(this, token, attrs.mType, displayId, pid);
             mTokenMap.emplace(token, winToken);
