@@ -260,9 +260,9 @@ static inline void draw_buffer(lv_obj_t* obj, lv_event_t* e) {
 static inline void dump_input_event(lv_mainwnd_input_event_t* ie) {
     if (!ie) return;
 
-    LV_LOG_TRACE("input event dump: type(%d), state(%d)\n", ie->type, ie->state);
+    LV_LOG_TRACE("input event dump: type(%d), state(%d)", ie->type, ie->state);
     if (ie->type == LV_INDEV_TYPE_POINTER) {
-        LV_LOG_TRACE("\t\traw pos(%d, %d), pos(%d, %d)\n", ie->pointer.raw_x, ie->pointer.raw_y,
+        LV_LOG_TRACE("\t\traw pos(%d, %d), pos(%d, %d)", ie->pointer.raw_x, ie->pointer.raw_y,
                      ie->pointer.x, ie->pointer.y);
 
     } else if (ie->type == LV_INDEV_TYPE_KEYPAD) {
@@ -274,22 +274,40 @@ static inline void send_input_event(lv_mainwnd_t* mainwnd, lv_event_code_t code,
                                     lv_indev_t* indev) {
     lv_mainwnd_input_event_t ie;
     ie.type = lv_indev_get_type(indev);
-    ie.state = lv_indev_get_state(indev);
+    LV_LOG_TRACE("mainwnd %p, code %d", mainwnd, code);
 
     if (code == LV_EVENT_KEY) {
+        ie.state = lv_indev_get_state(indev);
         ie.type = LV_MAINWND_EVENT_TYPE_KEYPAD;
         ie.keypad.key_code = lv_indev_get_key(indev);
         dump_input_event(&ie);
         mainwnd->meta_info.send_input_event(&(mainwnd->meta_info), &ie);
     } else {
-        lv_point_t point;
-        lv_indev_get_point(indev, &point);
+        if (code == LV_EVENT_PRESSED || code == LV_EVENT_RELEASED || code == LV_EVENT_PRESSING ||
+            code == LV_EVENT_LEAVE) {
+            lv_point_t point;
+            lv_indev_get_point(indev, &point);
 
-        ie.pointer.raw_x = point.x;
-        ie.pointer.raw_y = point.y;
-        // raw x, y
-        ie.pointer.x = point.x - lv_obj_get_x((lv_obj_t*)mainwnd);
-        ie.pointer.y = point.y - lv_obj_get_y((lv_obj_t*)mainwnd);
+            ie.pointer.raw_x = point.x;
+            ie.pointer.raw_y = point.y;
+            // raw x, y
+            ie.pointer.x = point.x - lv_obj_get_x((lv_obj_t*)mainwnd);
+            ie.pointer.y = point.y - lv_obj_get_y((lv_obj_t*)mainwnd);
+        } else if (code == LV_EVENT_DEFOCUSED || code == LV_EVENT_PRESS_LOST) {
+            ie.pointer.raw_x = lv_obj_get_x((lv_obj_t*)mainwnd) - 10;
+            ie.pointer.raw_y = lv_obj_get_y((lv_obj_t*)mainwnd) - 10;
+            ie.pointer.x = -10;
+            ie.pointer.y = -10;
+        } else {
+            return;
+        }
+
+        if (code == LV_EVENT_PRESSED || code == LV_EVENT_PRESSING) {
+            ie.state = LV_INDEV_STATE_PRESSED;
+        } else {
+            ie.state = LV_INDEV_STATE_RELEASED;
+        }
+
         dump_input_event(&ie);
         mainwnd->meta_info.send_input_event(&(mainwnd->meta_info), &ie);
     }
