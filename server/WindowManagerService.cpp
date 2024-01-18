@@ -41,7 +41,7 @@ namespace wm {
 
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
 static std::map<int, std::string> mAnimConfigMap;
-static const std::string animConfigPath = "/data/app/window_anim_config.json";
+static const std::string animConfigPath = "/etc/xms/window_anim_config.json";
 
 static const std::string defaultEnterConfigJson =
         R"({
@@ -118,7 +118,7 @@ static inline std::string getUniqueId() {
 #define MQ_PATH_MAXLEN 50
 static inline std::string genUniquePath(int32_t pid, const std::string& prefix,
                                         const std::string name = "") {
-    std::string path = "/data/xms/" + std::to_string(pid) + "/" + prefix;
+    std::string path = "/var/xms/" + std::to_string(pid) + "/" + prefix;
     path += "/" + (name.size() > 0 ? name : getUniqueId());
 
     FLOGD("'%s', length is %d", path.c_str(), path.size());
