@@ -18,8 +18,6 @@
 
 #include <utils/Log.h>
 
-#include "WindowUtils.h"
-
 #define MAX_MSG 50
 
 namespace os {

@@ -23,9 +23,9 @@
 
 #include <map>
 
+#include "../common/WindowUtils.h"
 #include "RootContainer.h"
 #include "WindowManagerService.h"
-#include "WindowUtils.h"
 #include "wm/LayerState.h"
 #include "wm/VsyncRequestOps.h"
 namespace os {

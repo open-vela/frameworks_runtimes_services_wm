@@ -20,8 +20,8 @@
 
 #include <lvgl/lvgl.h>
 
+#include "../common/WindowUtils.h"
 #include "WindowManagerService.h"
-#include "WindowUtils.h"
 
 namespace os {
 namespace wm {

@@ -18,7 +18,7 @@
 
 #include "WindowNode.h"
 
-#include "WindowUtils.h"
+#include "../common/WindowUtils.h"
 #include "wm/LayoutParams.h"
 
 namespace os {
