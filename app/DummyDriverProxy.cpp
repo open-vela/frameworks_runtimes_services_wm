@@ -18,7 +18,7 @@
 
 #include "DummyDriverProxy.h"
 
-#include "WindowUtils.h"
+#include "../common/WindowUtils.h"
 
 namespace os {
 namespace wm {

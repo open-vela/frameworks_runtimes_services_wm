@@ -17,7 +17,7 @@
 
 #include "SurfaceTransaction.h"
 
-#include "WindowUtils.h"
+#include "../common/WindowUtils.h"
 #include "wm/BufferQueue.h"
 #include "wm/LayerState.h"
 #include "wm/Rect.h"

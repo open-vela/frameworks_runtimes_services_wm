@@ -19,8 +19,8 @@
 
 #include <mqueue.h>
 
+#include "../common/WindowUtils.h"
 #include "SurfaceTransaction.h"
-#include "WindowUtils.h"
 #ifdef CONFIG_ENABLE_BUFFER_QUEUE_BY_NAME
 #include <sys/mman.h>
 #include <sys/stat.h>

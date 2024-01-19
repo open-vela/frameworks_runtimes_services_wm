@@ -20,7 +20,7 @@
 
 #include <string>
 
-#include "WindowUtils.h"
+#include "../common/WindowUtils.h"
 
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
 namespace os {

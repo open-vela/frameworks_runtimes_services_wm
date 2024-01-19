@@ -20,7 +20,7 @@
 
 #include <mqueue.h>
 
-#include "WindowUtils.h"
+#include "../common/WindowUtils.h"
 #include "wm/InputMessage.h"
 
 namespace os {

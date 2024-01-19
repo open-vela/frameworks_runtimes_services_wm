@@ -18,8 +18,8 @@
 
 #include "WindowToken.h"
 
+#include "../common/WindowUtils.h"
 #include "WindowState.h"
-#include "WindowUtils.h"
 
 namespace os {
 namespace wm {

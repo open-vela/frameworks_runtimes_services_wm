@@ -21,7 +21,7 @@
 #include <lvgl/lvgl.h>
 #include <lvgl/src/lvgl_private.h>
 
-#include "WindowUtils.h"
+#include "../common/WindowUtils.h"
 
 namespace os {
 namespace wm {
