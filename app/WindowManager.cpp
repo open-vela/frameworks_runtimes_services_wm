@@ -27,10 +27,10 @@
 #include <ext/lv_ext.h>
 #endif
 
+#include "../common/WindowUtils.h"
 #include "DummyDriverProxy.h"
 #include "LVGLDriverProxy.h"
 #include "SurfaceTransaction.h"
-#include "WindowUtils.h"
 #include "uv.h"
 
 static void _wm_lv_timer_cb(uv_timer_t* handle) {

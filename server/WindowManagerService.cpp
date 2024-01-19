@@ -29,11 +29,11 @@
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
 #endif
+#include "../common/WindowUtils.h"
 #include "InputDispatcher.h"
 #include "RootContainer.h"
 #include "WindowState.h"
 #include "WindowToken.h"
-#include "WindowUtils.h"
 #include "wm/SurfaceControl.h"
 
 namespace os {

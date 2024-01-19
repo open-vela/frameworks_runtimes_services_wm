@@ -25,7 +25,7 @@
 
 #include "lv_mainwnd.h"
 
-#include "WindowTrace.h"
+#include "../common/WindowTrace.h"
 
 /*********************
  *      DEFINES
