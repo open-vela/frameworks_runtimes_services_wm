@@ -34,16 +34,10 @@ ASRCS := $(wildcard $(ASRCS))
 CSRCS := $(wildcard $(CSRCS))
 CXXSRCS := $(wildcard $(CXXSRCS))
 MAINSRC := $(wildcard $(MAINSRC))
-NOEXPORTSRCS = $(ASRCS)$(CSRCS)$(CXXSRCS)$(MAINSRC)
-
-ifneq ($(NOEXPORTSRCS),)
-BIN := $(APPDIR)/staging/libframework.a
-endif
 
 CSRCS += $(wildcard server/lvgl/*.c)
 
 ifneq ($(CONFIG_SYSTEM_WINDOW_SERVICE_TEST),)
-CSRCS += $(wildcard test/*.c)
 
 LIBS += -L$(APPDIR)/staging -lframework
 
@@ -63,6 +57,12 @@ MAINSRC  += test/lvgltest_attribute.c
 PROGNAME += lvgltest_attribute
 endif
 
-EXPORT_FILES := include
+NOEXPORTSRCS = $(ASRCS)$(CSRCS)$(CXXSRCS)$(MAINSRC)
+
+ifneq ($(NOEXPORTSRCS),)
+BIN := $(APPDIR)/staging/libxms.a
+endif
+
+EXPORT_FILES :=
 
 include $(APPDIR)/Application.mk
