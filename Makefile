@@ -30,11 +30,6 @@ CXXSRCS  += $(shell find common server app -name *.cpp)
 CXXSRCS  += $(patsubst %$(AIDLEXT),%$(CXXEXT),$(AIDLSRCS))
 endif
 
-ASRCS := $(wildcard $(ASRCS))
-CSRCS := $(wildcard $(CSRCS))
-CXXSRCS := $(wildcard $(CXXSRCS))
-MAINSRC := $(wildcard $(MAINSRC))
-
 CSRCS += $(wildcard server/lvgl/*.c)
 
 ifneq ($(CONFIG_SYSTEM_WINDOW_SERVICE_TEST),)
@@ -56,6 +51,11 @@ PROGNAME += IWindowManagerTest
 MAINSRC  += test/lvgltest_attribute.c
 PROGNAME += lvgltest_attribute
 endif
+
+ASRCS := $(wildcard $(ASRCS))
+CSRCS := $(wildcard $(CSRCS))
+CXXSRCS := $(wildcard $(CXXSRCS))
+MAINSRC := $(wildcard $(MAINSRC))
 
 NOEXPORTSRCS = $(ASRCS)$(CSRCS)$(CXXSRCS)$(MAINSRC)
 
