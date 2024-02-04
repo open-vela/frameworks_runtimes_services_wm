@@ -68,14 +68,14 @@ protected:
 
 TEST_F(IWindowManagerTest, GetPhysicalDisplayInfo) {
     Status status = Status::ok();
-    int result = 0;
+    int32_t result = 0;
     DisplayInfo dispalyInfo;
     status = mWindowManager->getService()->getPhysicalDisplayInfo(1, &dispalyInfo, &result);
     EXPECT_TRUE(status.isOk());
 }
 TEST_F(IWindowManagerTest, AddWindow) {
     Status status = Status::ok();
-    int result = 0;
+    int32_t result = 0;
     sp<IWindow> w = mWindow->getIWindow();
     LayoutParams lp = mWindow->getLayoutParams();
     InputChannel* outInputChannel = nullptr;
@@ -87,7 +87,7 @@ TEST_F(IWindowManagerTest, AddWindow) {
 }
 TEST_F(IWindowManagerTest, RemoveWindow) {
     Status status = Status::ok();
-    int result = 0;
+    int32_t result = 0;
     sp<IWindow> w = mWindow->getIWindow();
     LayoutParams lp = mWindow->getLayoutParams();
     InputChannel* outInputChannel = nullptr;
