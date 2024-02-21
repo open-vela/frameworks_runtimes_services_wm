@@ -31,6 +31,7 @@ LayoutParams::LayoutParams() {
     mType = TYPE_APPLICATION;
     mFlags = 0;
     mFormat = FORMAT_ARGB_8888;
+    mWindowTransitionState = WINDOW_TRANSITION_ENABLE;
     mToken = NULL;
     mInputFeatures = 0;
 }
@@ -45,6 +46,7 @@ LayoutParams::LayoutParams(const LayoutParams& other)
         mType(other.mType),
         mFlags(other.mFlags),
         mFormat(other.mFormat),
+        mWindowTransitionState(other.mWindowTransitionState),
         mToken(other.mToken),
         mInputFeatures(other.mInputFeatures) {}
 
@@ -57,6 +59,7 @@ LayoutParams& LayoutParams::operator=(const LayoutParams& other) {
         mType = other.mType;
         mFlags = other.mFlags;
         mFormat = other.mFormat;
+        mWindowTransitionState = other.mWindowTransitionState;
         mToken = other.mToken;
         mInputFeatures = other.mInputFeatures;
     }
@@ -71,6 +74,7 @@ status_t LayoutParams::writeToParcel(Parcel* out) const {
     SAFE_PARCEL(out->writeInt32, mType);
     SAFE_PARCEL(out->writeInt32, mFlags);
     SAFE_PARCEL(out->writeInt32, mFormat);
+    SAFE_PARCEL(out->writeInt32, mWindowTransitionState);
     SAFE_PARCEL(out->writeStrongBinder, mToken);
     SAFE_PARCEL(out->writeByte, mInputFeatures);
     return android::OK;
@@ -84,6 +88,7 @@ status_t LayoutParams::readFromParcel(const Parcel* in) {
     SAFE_PARCEL(in->readInt32, &mType);
     SAFE_PARCEL(in->readInt32, &mFlags);
     SAFE_PARCEL(in->readInt32, &mFormat);
+    SAFE_PARCEL(in->readInt32, &mWindowTransitionState);
     SAFE_PARCEL(in->readStrongBinder, &mToken);
     SAFE_PARCEL(in->readByte, &mInputFeatures);
     return android::OK;
