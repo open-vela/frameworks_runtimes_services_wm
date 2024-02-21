@@ -55,6 +55,10 @@ public:
     static const int32_t FORMAT_ARGB_8888 = 0x10;
     static const int32_t FORMAT_XRGB_8888 = 0x11;
 
+    // for window transition
+    static const int32_t WINDOW_TRANSITION_DISABLE = 0;
+    static const int32_t WINDOW_TRANSITION_ENABLE = 1;
+
     LayoutParams();
     ~LayoutParams();
 
@@ -75,6 +79,7 @@ public:
     int32_t mType;
     int32_t mFlags;
     int32_t mFormat;
+    int32_t mWindowTransitionState;
     sp<IBinder> mToken;
 
 private:
