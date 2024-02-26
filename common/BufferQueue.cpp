@@ -53,6 +53,7 @@ bool BufferQueue::cancelBuffer(BufferItem* item) {
 
 void BufferQueue::clearBuffers() {
     for (auto it = mBuffers.begin(); it != mBuffers.end(); ++it) {
+        it->second.mUserData = nullptr;
         if (it->second.mBuffer && munmap(it->second.mBuffer, it->second.mSize) == -1) {
             FLOGE("munmap");
         }
@@ -107,7 +108,7 @@ bool BufferQueue::update(const std::shared_ptr<SurfaceControl>& sc) {
             return false;
         }
 
-        BufferItem buffItem = {bufferkey, bufferFd, buffer, size, BSTATE_FREE};
+        BufferItem buffItem = {bufferkey, bufferFd, buffer, size, BSTATE_FREE, nullptr};
         mBuffers[bufferkey] = buffItem;
         mFreeSlot.push_back(bufferkey);
     }

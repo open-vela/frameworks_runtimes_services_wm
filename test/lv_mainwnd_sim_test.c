@@ -37,8 +37,8 @@
  **********************/
 typedef struct {
     int id;
-    lv_coord_t w;
-    lv_coord_t h;
+    int32_t w;
+    int32_t h;
     uint32_t cf : 5;
     uint8_t data_type : 2;
     const void *info;

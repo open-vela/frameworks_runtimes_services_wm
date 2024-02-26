@@ -77,7 +77,7 @@ static void vsyncCallback(lv_timer_t* tmr) {
 static void resetVsyncTimer(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);
 
-    if (code == LV_EVENT_REFR_FINISH) {
+    if (code == LV_EVENT_REFR_READY) {
         WM_PROFILER_BEGIN();
         lv_timer_t* timer = (lv_timer_t*)(lv_event_get_user_data(e));
         WM_PROFILER_END();
@@ -166,7 +166,7 @@ bool RootContainer::init() {
     mUvData = lv_nuttx_uv_init(&uv_info);
 
     mVsyncTimer = lv_timer_create(vsyncCallback, LV_DEF_REFR_PERIOD, this);
-    lv_display_add_event(mDisp, resetVsyncTimer, LV_EVENT_REFR_FINISH, mVsyncTimer);
+    lv_display_add_event_cb(mDisp, resetVsyncTimer, LV_EVENT_REFR_READY, mVsyncTimer);
 
     if (mListener) {
         LV_GLOBAL_DEFAULT()->user_data = this;
