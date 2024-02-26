@@ -51,6 +51,7 @@ typedef struct {
     void* mBuffer;
     uint32_t mSize;
     BufferState mState;
+    void* mUserData;
 } BufferItem;
 
 typedef enum {

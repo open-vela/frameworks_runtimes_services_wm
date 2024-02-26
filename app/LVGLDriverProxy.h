@@ -18,10 +18,26 @@
 
 #include <lvgl/lvgl.h>
 
+#include <vector>
+
 #include "UIDriverProxy.h"
 
 namespace os {
 namespace wm {
+
+class LVGLDrawBuffer {
+public:
+    LVGLDrawBuffer(void* rawBuffer, uint32_t width, uint32_t height, lv_color_format_t cf,
+                   uint32_t size);
+    ~LVGLDrawBuffer();
+
+    lv_draw_buf_t* getDrawBuffer() {
+        return &mDrawBuffer;
+    }
+
+private:
+    lv_draw_buf_t mDrawBuffer;
+};
 
 class LVGLDriverProxy : public UIDriverProxy {
 public:
@@ -36,17 +52,22 @@ public:
     void handleEvent() override;
     void setInputMonitor(InputMonitor* monitor) override;
 
-    lv_disp_render_mode_t renderMode() {
+    lv_display_render_mode_t renderMode() {
         return mRenderMode;
     }
     void updateVisibility(bool visible);
 
-    lv_disp_t* mDisp;
-    lv_coord_t mDispW;
-    lv_coord_t mDispH;
+    virtual void* onDequeueBuffer() override;
+    virtual void resetBuffer() override;
+
+    lv_display_t* mDisp;
+    int32_t mDispW;
+    int32_t mDispH;
     lv_indev_t* mIndev;
     lv_indev_state_t mLastEventState;
-    lv_disp_render_mode_t mRenderMode;
+    lv_display_render_mode_t mRenderMode;
+    lv_draw_buf_t* mDummyBuffer;
+    ::std::vector<std::shared_ptr<LVGLDrawBuffer>> mDrawBuffers;
 };
 
 } // namespace wm
