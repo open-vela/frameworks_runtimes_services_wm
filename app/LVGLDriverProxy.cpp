@@ -25,27 +25,43 @@
 
 namespace os {
 namespace wm {
-static lv_display_t* _disp_init(LVGLDriverProxy* proxy, uint32_t width, uint32_t height);
+static lv_display_t* _disp_init(LVGLDriverProxy* proxy, uint32_t width, uint32_t height,
+                                uint32_t cf);
 static lv_indev_t* _indev_init(LVGLDriverProxy* proxy);
+
+LVGLDrawBuffer::LVGLDrawBuffer(void* rawBuffer, uint32_t width, uint32_t height,
+                               lv_color_format_t cf, uint32_t size) {
+    uint32_t stride = lv_draw_buf_width_to_stride(width, cf);
+    lv_draw_buf_init(&mDrawBuffer, width, height, cf, stride, rawBuffer, size);
+}
+
+LVGLDrawBuffer::~LVGLDrawBuffer() {
+    FLOGD("");
+}
 
 LVGLDriverProxy::LVGLDriverProxy(std::shared_ptr<BaseWindow> win)
       : UIDriverProxy(win),
         mIndev(NULL),
         mLastEventState(LV_INDEV_STATE_RELEASED),
-        mRenderMode(LV_DISP_RENDER_MODE_FULL) {
-    uint32_t width = 0, height = 0;
+        mRenderMode(LV_DISPLAY_RENDER_MODE_FULL) {
+    lv_color_format_t cf = getLvColorFormatType(win->getLayoutParams().mFormat);
     auto wm = win->getWindowManager();
+    uint32_t width = 0, height = 0;
     wm->getDisplayInfo(&width, &height);
 
-    mDisp = _disp_init(this, width, height);
+    /*set proxy information*/
+    mDisp = _disp_init(this, width, height, cf);
     mDispW = mDisp->hor_res;
     mDispH = mDisp->ver_res;
+
+    mDummyBuffer = mDisp->buf_1;
     lv_display_set_default(mDisp);
 }
 
 LVGLDriverProxy::~LVGLDriverProxy() {
+    FLOGD("");
     if (mDisp) {
-        lv_display_remove(mDisp);
+        lv_display_delete(mDisp);
         mDisp = NULL;
     }
 
@@ -53,6 +69,13 @@ LVGLDriverProxy::~LVGLDriverProxy() {
         lv_indev_delete(mIndev);
         mIndev = NULL;
     }
+
+    mDrawBuffers.clear();
+
+    if (mDummyBuffer) {
+        lv_draw_buf_destroy(mDummyBuffer);
+    }
+
     mLastEventState = LV_INDEV_STATE_RELEASED;
 }
 
@@ -66,17 +89,17 @@ void LVGLDriverProxy::drawFrame(BufferItem* bufItem) {
         return;
     }
 
-    if (oldItem && mRenderMode == LV_DISP_RENDER_MODE_DIRECT) {
+    if (oldItem && mRenderMode == LV_DISPLAY_RENDER_MODE_DIRECT) {
         uint32_t hor_res = lv_display_get_horizontal_resolution(mDisp);
         uint32_t ver_res = lv_display_get_vertical_resolution(mDisp);
         lv_area_t scr_area;
         scr_area.x1 = 0;
         scr_area.y1 = 0;
-        scr_area.x2 = lv_display_get_horizontal_resolution(mDisp) - 1;
-        scr_area.y2 = lv_display_get_vertical_resolution(mDisp) - 1;
+        scr_area.x2 = hor_res - 1;
+        scr_area.y2 = ver_res - 1;
 
-        lv_draw_buf_copy(bufItem->mBuffer, hor_res, ver_res, &scr_area, oldItem->mBuffer, hor_res,
-                         ver_res, &scr_area, lv_display_get_color_format(mDisp));
+        lv_draw_buf_copy((lv_draw_buf_t*)(bufItem->mUserData), &scr_area,
+                         (lv_draw_buf_t*)(oldItem->mUserData), &scr_area);
     }
 
     if (lv_display_get_default() != mDisp) {
@@ -94,7 +117,7 @@ void* LVGLDriverProxy::getRoot() {
 }
 
 void* LVGLDriverProxy::getWindow() {
-    return lv_display_get_screen_act(mDisp);
+    return lv_display_get_screen_active(mDisp);
 }
 
 void LVGLDriverProxy::setInputMonitor(InputMonitor* monitor) {
@@ -109,10 +132,35 @@ void LVGLDriverProxy::setInputMonitor(InputMonitor* monitor) {
     }
 }
 
+void* LVGLDriverProxy::onDequeueBuffer() {
+    BufferItem* item = getBufferItem();
+    if (item == nullptr) return nullptr;
+
+    if (item->mUserData == nullptr) {
+        void* buffer = UIDriverProxy::onDequeueBuffer();
+        if (buffer) {
+            FLOGI("%p init draw buffer", this);
+            lv_color_format_t cf = lv_display_get_color_format(mDisp);
+            auto drawBuffer =
+                    std::make_shared<LVGLDrawBuffer>(buffer, mDispW, mDispH, cf, item->mSize);
+            mDrawBuffers.push_back(drawBuffer);
+            item->mUserData = drawBuffer->getDrawBuffer();
+        }
+    }
+
+    return item->mUserData;
+}
+
+void LVGLDriverProxy::resetBuffer() {
+    mDisp->buf_act = mDummyBuffer;
+    mDrawBuffers.clear();
+    UIDriverProxy::resetBuffer();
+}
+
 void LVGLDriverProxy::updateResolution(int32_t width, int32_t height, uint32_t format) {
     lv_color_format_t color_format = getLvColorFormatType(format);
-    FLOGI("update resolution (%" PRId32 "x%" PRId32 ") format %" PRId32 "->%d", width, height,
-          format, color_format);
+    FLOGI("%p update resolution (%" PRId32 "x%" PRId32 ") format %" PRId32 "->%d", this, width,
+          height, format, color_format);
 
     lv_display_set_resolution(mDisp, width, height);
     lv_display_set_color_format(mDisp, color_format);
@@ -161,12 +209,12 @@ static void _disp_event_cb(lv_event_t* e) {
             void* buffer = proxy->onDequeueBuffer();
             if (buffer) {
                 FLOGD("%p render start", proxy);
-                proxy->mDisp->buf_act = (uint8_t*)buffer;
+                proxy->mDisp->buf_act = (lv_draw_buf_t*)buffer;
             }
             break;
         }
-        case LV_EVENT_REFR_REQUEST:      // for LV_DISP_RENDER_MODE_FULL
-        case LV_EVENT_INVALIDATE_AREA: { // for LV_DISP_RENDER_MODE_DIRECT
+        case LV_EVENT_REFR_REQUEST:      // for LV_DISPLAY_RENDER_MODE_FULL
+        case LV_EVENT_INVALIDATE_AREA: { // for LV_DISPLAY_RENDER_MODE_DIRECT
             LVGLDriverProxy* proxy = reinterpret_cast<LVGLDriverProxy*>(lv_event_get_user_data(e));
             if (proxy == NULL) {
                 FLOGI("Invalidate, proxy is invalid");
@@ -196,19 +244,23 @@ static void _disp_event_cb(lv_event_t* e) {
             lv_display_t* disp = (lv_display_t*)lv_event_get_target(e);
             LVGLDriverProxy* proxy = reinterpret_cast<LVGLDriverProxy*>(lv_event_get_user_data(e));
             if (proxy == NULL) {
-                FLOGI("Resoluation changed, proxy is invalid");
+                FLOGI("Resolution changed, proxy is invalid");
                 return;
             }
-            FLOGD("Resoluation changed from(%" PRId32 "x%" PRId32 ") to (%" PRId32 "x%" PRId32 ")",
-                  proxy->mDispW, proxy->mDispH, disp->hor_res, disp->ver_res);
+            FLOGI("%p Resolution changed from(%" PRId32 "x%" PRId32 ") to (%" PRId32 "x%" PRId32
+                  ")",
+                  proxy, proxy->mDispW, proxy->mDispH, disp->hor_res, disp->ver_res);
 
             WindowEventListener* listener = proxy->getEventListener();
             if (listener) {
-                lv_coord_t oldW = proxy->mDispW;
-                lv_coord_t oldH = proxy->mDispH;
+                int32_t oldW = proxy->mDispW;
+                int32_t oldH = proxy->mDispH;
                 proxy->mDispW = disp->hor_res;
                 proxy->mDispH = disp->ver_res;
                 listener->onSizeChanged(disp->hor_res, disp->ver_res, oldW, oldH);
+            } else {
+                proxy->mDispW = disp->hor_res;
+                proxy->mDispH = disp->ver_res;
             }
 
             break;
@@ -223,8 +275,8 @@ static void _disp_event_cb(lv_event_t* e) {
     }
 }
 
-static char _virt_disp_buffer[4];
-static lv_display_t* _disp_init(LVGLDriverProxy* proxy, uint32_t width, uint32_t height) {
+static lv_display_t* _disp_init(LVGLDriverProxy* proxy, uint32_t width, uint32_t height,
+                                uint32_t cf) {
     lv_display_t* disp = lv_display_create(width, height);
     if (disp == NULL) {
         return NULL;
@@ -233,17 +285,25 @@ static lv_display_t* _disp_init(LVGLDriverProxy* proxy, uint32_t width, uint32_t
     lv_timer_del(disp->refr_timer);
     disp->refr_timer = NULL;
 
-    uint32_t buf_size = sizeof(_virt_disp_buffer);
-    lv_display_set_draw_buffers(disp, _virt_disp_buffer, NULL, buf_size, proxy->renderMode());
+    /*for temporary placeholder buffer*/
+    uint32_t dummyWidth = 1, dummyHeight = 1;
+    uint32_t bufStride = lv_draw_buf_width_to_stride(dummyWidth, cf);
+
+    FLOGI("size(%" LV_PRIu32 "*%" LV_PRIu32 ")", dummyWidth, dummyHeight);
+    lv_draw_buf_t* dummyBuffer = lv_draw_buf_create(dummyWidth, dummyHeight, cf, bufStride);
+    lv_display_set_draw_buffers(disp, dummyBuffer, NULL);
+    lv_display_set_render_mode(disp, proxy->renderMode());
+
     lv_display_set_flush_cb(disp, _disp_flush_cb);
     lv_event_add(&disp->event_list, _disp_event_cb, LV_EVENT_ALL, proxy);
     lv_display_set_user_data(disp, proxy);
 
-    lv_obj_t* screen = lv_display_get_screen_act(disp);
+    lv_obj_t* screen = lv_display_get_screen_active(disp);
     if (screen) {
         lv_obj_set_width(screen, width);
         lv_obj_set_height(screen, height);
     }
+
     return disp;
 }
 
@@ -261,8 +321,8 @@ static void _indev_read(lv_indev_t* drv, lv_indev_data_t* data) {
         if (message.type == INPUT_MESSAGE_TYPE_POINTER) {
             if (message.state == INPUT_MESSAGE_STATE_PRESSED) {
                 const lv_display_t* disp_drv = proxy->mDisp;
-                lv_coord_t ver_max = disp_drv->ver_res - 1;
-                lv_coord_t hor_max = disp_drv->hor_res - 1;
+                int32_t ver_max = disp_drv->ver_res - 1;
+                int32_t hor_max = disp_drv->hor_res - 1;
 
                 data->point.x = LV_CLAMP(0, message.pointer.x, hor_max);
                 data->point.y = LV_CLAMP(0, message.pointer.y, ver_max);

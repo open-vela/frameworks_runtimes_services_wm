@@ -41,7 +41,7 @@ public:
 
     /* ui proxy response window*/
     bool onInvalidate(bool periodic);
-    void* onDequeueBuffer();
+    virtual void* onDequeueBuffer();
     bool onQueueBuffer();
     void onCancelBuffer();
 
@@ -72,7 +72,7 @@ public:
         return mEventListener;
     }
 
-    void resetBuffer() {
+    virtual void resetBuffer() {
         mBufferItem = nullptr;
     }
 

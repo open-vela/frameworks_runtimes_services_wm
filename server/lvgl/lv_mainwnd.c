@@ -67,7 +67,6 @@ static inline void reset_buf_dsc(lv_obj_t* obj) {
     mainwnd->buf_dsc.img_dsc.data = NULL;
     mainwnd->buf_dsc.img_dsc.data_size = 0;
     mainwnd->buf_dsc.img_dsc.header.cf = LV_COLOR_FORMAT_UNKNOWN;
-    mainwnd->buf_dsc.img_dsc.header.always_zero = 0;
     mainwnd->buf_dsc.img_dsc.header.w = 0;
     mainwnd->buf_dsc.img_dsc.header.h = 0;
 }
@@ -121,11 +120,7 @@ bool lv_mainwnd_update_buffer(lv_obj_t* obj, lv_mainwnd_buf_dsc_t* buf_dsc, cons
         lv_obj_clear_flag(obj, LV_OBJ_FLAG_HIDDEN);
     }
 
-    lv_cache_lock();
-    lv_cache_invalidate(lv_cache_find(&mainwnd->buf_dsc.img_dsc, LV_CACHE_SRC_TYPE_PTR, 0, 0));
-    lv_cache_unlock();
     mainwnd->buf_dsc.id = buf_dsc->id;
-
     mainwnd->buf_dsc.img_dsc.data = buf_dsc->img_dsc.data;
     mainwnd->buf_dsc.img_dsc.data_size = buf_dsc->img_dsc.data_size;
     mainwnd->buf_dsc.img_dsc.header.cf = buf_dsc->img_dsc.header.cf;
@@ -228,15 +223,15 @@ static inline void draw_buffer(lv_obj_t* obj, lv_event_t* e) {
     lv_obj_init_draw_image_dsc(obj, LV_PART_MAIN, &img_dsc);
     uint16_t zoom = LV_ZOOM_NONE;
 
-    lv_coord_t img_w = mainwnd->buf_dsc.img_dsc.header.w;
-    lv_coord_t img_h = mainwnd->buf_dsc.img_dsc.header.h;
+    int32_t img_w = mainwnd->buf_dsc.img_dsc.header.w;
+    int32_t img_h = mainwnd->buf_dsc.img_dsc.header.h;
 
     if (mainwnd->flags & LV_MAINWND_FLAG_DRAW_SCALE) {
-        lv_coord_t obj_w = lv_obj_get_width(obj);
+        int32_t obj_w = lv_obj_get_width(obj);
         zoom *= obj_w / img_w;
     }
-    img_dsc.zoom_x = zoom == 0 ? 1 : zoom;
-    img_dsc.zoom_y = img_dsc.zoom_x;
+    img_dsc.scale_x = zoom == 0 ? 1 : zoom;
+    img_dsc.scale_y = img_dsc.scale_x;
     img_dsc.rotation = 0;
     img_dsc.pivot.x = img_w / 2;
     img_dsc.pivot.y = img_h / 2;
