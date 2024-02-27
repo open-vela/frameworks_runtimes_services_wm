@@ -516,7 +516,7 @@ int32_t WindowManagerService::createSurfaceControl(SurfaceControl* outSurfaceCon
     int32_t result = 0;
 
     // double buffer: Create shared memory
-    int32_t size = win->getSurfaceSize();
+    uint32_t size = win->getSurfaceSize();
 
     vector<BufferId> ids;
     for (int32_t i = 0; i < 2; i++) {

@@ -228,7 +228,7 @@ void WindowNode::setParent(void* parent) {
     }
 }
 
-int32_t WindowNode::getSurfaceSize() {
+uint32_t WindowNode::getSurfaceSize() {
     int bpp = lv_color_format_get_bpp(mColorFormat);
     return mRect.getWidth() * mRect.getHeight() * (bpp >> 3);
 }

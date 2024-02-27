@@ -90,11 +90,7 @@ bool BufferQueue::update(const std::shared_ptr<SurfaceControl>& sc) {
     mSurfaceControl = sc;
 
     std::unordered_map<BufferKey, BufferId> bufferIds = sc->bufferIds();
-    uint32_t width = sc->getWidth();
-    uint32_t height = sc->getHeight();
-    // uint32_t format = sc->getFormat();
-    // TODO:parse mformat, temporary value is 4 bytes
-    uint32_t size = width * height * 4;
+    uint32_t size = sc->getBufferSize();
 
     for (auto it = bufferIds.begin(); it != bufferIds.end(); ++it) {
         BufferKey bufferkey = it->first;

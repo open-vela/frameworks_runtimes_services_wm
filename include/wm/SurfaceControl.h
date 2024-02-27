@@ -42,7 +42,7 @@ public:
     ~SurfaceControl();
 
     SurfaceControl(const sp<IBinder>& token, const sp<IBinder>& handle, uint32_t width = 0,
-                   uint32_t height = 0, uint32_t format = 0);
+                   uint32_t height = 0, uint32_t format = 0, uint32_t size = 0);
 
     status_t writeToParcel(Parcel* out) const override;
     status_t readFromParcel(const Parcel* in) override;
@@ -79,8 +79,12 @@ public:
         return mHeight;
     }
 
-    int32_t getFormat() {
+    uint32_t getFormat() {
         return mFormat;
+    }
+
+    uint32_t getBufferSize() {
+        return mBufferSize;
     }
 
     static bool isSameSurface(const std::shared_ptr<SurfaceControl>& lhs,
@@ -100,6 +104,7 @@ private:
     uint32_t mWidth;
     uint32_t mHeight;
     uint32_t mFormat;
+    uint32_t mBufferSize;
 
     // key: server/client unique id
     std::unordered_map<BufferKey, BufferId> mBufferIds;

@@ -175,8 +175,7 @@ std::shared_ptr<SurfaceControl> WindowState::createSurfaceControl(vector<BufferI
     sp<IBinder> handle = new BBinder();
     mSurfaceControl =
             std::make_shared<SurfaceControl>(IInterface::asBinder(mClient), handle, mAttrs.mWidth,
-                                             mAttrs.mHeight, mAttrs.mFormat);
-
+                                             mAttrs.mHeight, mAttrs.mFormat, getSurfaceSize());
     mSurfaceControl->initBufferIds(ids);
     std::shared_ptr<BufferConsumer> buffConsumer =
             std::make_shared<BufferConsumer>(mSurfaceControl);
@@ -351,7 +350,7 @@ void WindowState::setLayoutParams(LayoutParams attrs) {
     mNode->setRect(rect);
 }
 
-int32_t WindowState::getSurfaceSize() {
+uint32_t WindowState::getSurfaceSize() {
     return mNode->getSurfaceSize();
 }
 
