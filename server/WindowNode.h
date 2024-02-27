@@ -57,7 +57,7 @@ public:
     void setParent(void* parent);
     void resetOpaque();
 
-    int32_t getSurfaceSize();
+    uint32_t getSurfaceSize();
 
     DISALLOW_COPY_AND_ASSIGN(WindowNode);
 

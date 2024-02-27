@@ -31,13 +31,17 @@ bool SurfaceControl::isSameSurface(const std::shared_ptr<SurfaceControl>& lhs,
 SurfaceControl::SurfaceControl() {}
 
 SurfaceControl::SurfaceControl(const sp<IBinder>& token, const sp<IBinder>& handle, uint32_t width,
-                               uint32_t height, uint32_t format)
-      : mToken(token), mHandle(handle), mWidth(width), mHeight(height), mFormat(format) {}
+                               uint32_t height, uint32_t format, uint32_t size)
+      : mToken(token),
+        mHandle(handle),
+        mWidth(width),
+        mHeight(height),
+        mFormat(format),
+        mBufferSize(size) {}
 
 SurfaceControl::~SurfaceControl() {
     mToken.clear();
     mHandle.clear();
-    // TODO:
 }
 
 status_t SurfaceControl::writeToParcel(Parcel* out) const {
@@ -46,6 +50,7 @@ status_t SurfaceControl::writeToParcel(Parcel* out) const {
     SAFE_PARCEL(out->writeUint32, mWidth);
     SAFE_PARCEL(out->writeUint32, mHeight);
     SAFE_PARCEL(out->writeUint32, mFormat);
+    SAFE_PARCEL(out->writeUint32, mBufferSize);
 
     SAFE_PARCEL(out->writeInt32, mBufferIds.size());
     for (const auto& entry : mBufferIds) {
@@ -66,6 +71,7 @@ status_t SurfaceControl::readFromParcel(const Parcel* in) {
     SAFE_PARCEL(in->readUint32, &mWidth);
     SAFE_PARCEL(in->readUint32, &mHeight);
     SAFE_PARCEL(in->readUint32, &mFormat);
+    SAFE_PARCEL(in->readUint32, &mBufferSize);
 
     int32_t size;
     SAFE_PARCEL(in->readInt32, &size);
@@ -107,6 +113,7 @@ void SurfaceControl::copyFrom(SurfaceControl& other) {
     mWidth = other.mWidth;
     mHeight = other.mHeight;
     mFormat = other.mFormat;
+    mBufferSize = other.mBufferSize;
     mBufferIds = other.mBufferIds;
 }
 
