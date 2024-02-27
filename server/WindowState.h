@@ -82,7 +82,7 @@ public:
     bool releaseBuffer(BufferItem* buffer);
 
     void setLayoutParams(LayoutParams attrs);
-    int32_t getSurfaceSize();
+    uint32_t getSurfaceSize();
 
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
     void onAnimationFinished(WindowAnimStatus status);
