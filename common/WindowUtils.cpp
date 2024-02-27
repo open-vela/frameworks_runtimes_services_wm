@@ -15,9 +15,10 @@
  */
 
 #include "WindowUtils.h"
-#include "wm/LayoutParams.h"
 
 #include <lvgl/lvgl.h>
+
+#include "wm/LayoutParams.h"
 
 uint32_t getLvColorFormatType(uint32_t format) {
     uint32_t value;
