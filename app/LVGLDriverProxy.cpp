@@ -31,7 +31,6 @@ static lv_indev_t* _indev_init(LVGLDriverProxy* proxy);
 LVGLDriverProxy::LVGLDriverProxy(std::shared_ptr<BaseWindow> win)
       : UIDriverProxy(win),
         mIndev(NULL),
-        mEventFd(-1),
         mLastEventState(LV_INDEV_STATE_RELEASED),
         mRenderMode(LV_DISP_RENDER_MODE_FULL) {
     uint32_t width = 0, height = 0;
@@ -54,7 +53,6 @@ LVGLDriverProxy::~LVGLDriverProxy() {
         lv_indev_delete(mIndev);
         mIndev = NULL;
     }
-    mEventFd = -1;
     mLastEventState = LV_INDEV_STATE_RELEASED;
 }
 

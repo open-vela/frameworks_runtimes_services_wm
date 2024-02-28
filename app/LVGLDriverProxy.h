@@ -45,7 +45,6 @@ public:
     lv_coord_t mDispW;
     lv_coord_t mDispH;
     lv_indev_t* mIndev;
-    int mEventFd;
     lv_indev_state_t mLastEventState;
     lv_disp_render_mode_t mRenderMode;
 };
