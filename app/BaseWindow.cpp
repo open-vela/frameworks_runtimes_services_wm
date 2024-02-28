@@ -166,7 +166,7 @@ void BaseWindow::setSurfaceControl(SurfaceControl* surfaceControl) {
             FLOGI("reset SurfaceControl bufferId:%s,%" PRId32 "", it->second.mName.c_str(),
                   it->second.mKey);
 
-            int32_t fd = shm_open(it->second.mName.c_str(), O_RDWR, S_IRUSR | S_IWUSR);
+            int32_t fd = shm_open(it->second.mName.c_str(), O_RDWR | O_CLOEXEC, S_IRUSR | S_IWUSR);
             ids.push_back({it->second.mName, it->second.mKey, fd});
         }
         mSurfaceControl->initBufferIds(ids);

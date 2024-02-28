@@ -129,7 +129,7 @@ static inline bool createSharedBuffer(int32_t size, BufferId* id) {
     int32_t pid = IPCThreadState::self()->getCallingPid();
 
     std::string bufferPath = genUniquePath(pid, "bq");
-    int fd = shm_open(bufferPath.c_str(), O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+    int fd = shm_open(bufferPath.c_str(), O_CREAT | O_RDWR | O_CLOEXEC, S_IRUSR | S_IWUSR);
     if (fd == -1) {
         FLOGE("[%" PRId32 "] Failed to create shared memory, %s", pid, strerror(errno));
         return false;
