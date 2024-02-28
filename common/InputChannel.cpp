@@ -47,7 +47,7 @@ status_t InputChannel::readFromParcel(const Parcel* in) {
 bool InputChannel::create(const std::string name) {
     const char* cname = name.c_str();
     struct mq_attr mqstat;
-    int oflag = O_CREAT | O_RDWR | O_NONBLOCK;
+    int oflag = O_CREAT | O_RDWR | O_NONBLOCK | O_CLOEXEC;
 
     memset(&mqstat, 0, sizeof(mqstat));
     mqstat.mq_maxmsg = MAX_MSG;
