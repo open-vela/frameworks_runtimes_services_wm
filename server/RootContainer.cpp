@@ -212,7 +212,7 @@ static void toast_fade_anim_cb(void* obj, int32_t v) {
 static void toast_fade_in_anim_ready(lv_anim_t* a) {
     lv_obj_remove_local_style_prop((lv_obj_t*)(a->var), LV_STYLE_OPA, 0);
     lv_obj_t* target = (lv_obj_t*)(a->var);
-    uint32_t duration = (uint32_t)lv_obj_get_user_data(target);
+    uint32_t duration = (uintptr_t)lv_obj_get_user_data(target);
     toast_fade_out(target, lv_anim_get_time(a), duration);
 }
 
