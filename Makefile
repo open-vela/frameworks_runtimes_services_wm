@@ -28,9 +28,9 @@ AIDLFLAGS = --lang=cpp -Iaidl -haidl -oaidl
 
 CXXSRCS  += $(shell find common server app -name *.cpp)
 CXXSRCS  += $(patsubst %$(AIDLEXT),%$(CXXEXT),$(AIDLSRCS))
-endif
 
 CSRCS += $(wildcard server/lvgl/*.c)
+endif
 
 ifneq ($(CONFIG_SYSTEM_WINDOW_SERVICE_TEST),)
 
