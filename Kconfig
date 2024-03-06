@@ -52,4 +52,8 @@ config ENABLE_TRANSITION_ANIMATION
 	default n
 	depends on LVX_USE_ANIMENGINE_ADAPTER
 
+config SYSTEM_WINDOW_USE_VSYNC_EVENT
+	bool "Enable window vsync event"
+	default y
+
 endif

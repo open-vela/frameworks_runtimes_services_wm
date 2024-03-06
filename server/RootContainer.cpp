@@ -27,13 +27,23 @@ namespace os {
 namespace wm {
 
 RootContainer::RootContainer(DeviceEventListener* listener, uv_loop_t* loop)
-      : mListener(listener), mDisp(nullptr), mVsyncTimer(nullptr), mUvData(nullptr), mUvLoop(loop) {
+      : mListener(listener),
+        mDisp(nullptr),
+#ifdef CONFIG_SYSTEM_WINDOW_USE_VSYNC_EVENT
+        mVsyncEnabled(true),
+#else
+        mVsyncTimer(nullptr),
+#endif
+        mUvData(nullptr),
+        mUvLoop(loop) {
     init();
 }
 
 RootContainer::~RootContainer() {
     LV_GLOBAL_DEFAULT()->user_data = nullptr;
+#ifndef CONFIG_SYSTEM_WINDOW_USE_VSYNC_EVENT
     if (mVsyncTimer) lv_timer_del(mVsyncTimer);
+#endif
 
     lv_anim_del_all();
 
@@ -67,6 +77,21 @@ lv_obj_t* RootContainer::getTopLayer() {
     return lv_disp_get_layer_top(mDisp);
 }
 
+#ifdef CONFIG_SYSTEM_WINDOW_USE_VSYNC_EVENT
+static void vsyncEventReceived(lv_event_t* e) {
+    lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_VSYNC) {
+        WM_PROFILER_BEGIN();
+
+        RootContainer* container = reinterpret_cast<RootContainer*>(lv_event_get_user_data(e));
+        if (container && container->vsyncEnabled()) {
+            container->processVsyncEvent();
+        }
+
+        WM_PROFILER_END();
+    }
+}
+#else
 static void vsyncCallback(lv_timer_t* tmr) {
     RootContainer* container = static_cast<RootContainer*>(lv_timer_get_user_data(tmr));
     if (container) {
@@ -88,9 +113,13 @@ static void resetVsyncTimer(lv_event_t* e) {
         }
     }
 }
+#endif
 
 void RootContainer::enableVsync(bool enable) {
     WM_PROFILER_BEGIN();
+#ifdef CONFIG_SYSTEM_WINDOW_USE_VSYNC_EVENT
+    mVsyncEnabled = enable;
+#else
     if (mVsyncTimer) {
         if (enable && mVsyncTimer->paused) {
             lv_timer_resume(mVsyncTimer);
@@ -98,6 +127,7 @@ void RootContainer::enableVsync(bool enable) {
             lv_timer_pause(mVsyncTimer);
         }
     }
+#endif
     WM_PROFILER_END();
 }
 
@@ -165,8 +195,13 @@ bool RootContainer::init() {
     };
     mUvData = lv_nuttx_uv_init(&uv_info);
 
+#ifdef CONFIG_SYSTEM_WINDOW_USE_VSYNC_EVENT
+    lv_display_add_event_cb(mDisp, vsyncEventReceived, LV_EVENT_VSYNC, this);
+    FLOGW("Now server by event");
+#else
     mVsyncTimer = lv_timer_create(vsyncCallback, LV_DEF_REFR_PERIOD, this);
     lv_display_add_event_cb(mDisp, resetVsyncTimer, LV_EVENT_REFR_READY, mVsyncTimer);
+#endif
 
     if (mListener) {
         LV_GLOBAL_DEFAULT()->user_data = this;
