@@ -44,12 +44,22 @@ public:
 
     void readInput(lv_indev_t* drv, lv_indev_data_t* data);
 
+#ifdef CONFIG_SYSTEM_WINDOW_USE_VSYNC_EVENT
+    bool vsyncEnabled() {
+        return mVsyncEnabled;
+    }
+#endif
+
 private:
     bool init();
 
     DeviceEventListener* mListener;
     lv_disp_t* mDisp;
+#ifdef CONFIG_SYSTEM_WINDOW_USE_VSYNC_EVENT
+    bool mVsyncEnabled;
+#else
     lv_timer_t* mVsyncTimer;
+#endif
     void* mUvData;
     uv_loop_t* mUvLoop;
 };
