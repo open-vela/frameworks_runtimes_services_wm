@@ -189,6 +189,7 @@ void RootContainer::readInput(lv_indev_t* indev, lv_indev_data_t* data) {
 
 bool RootContainer::init() {
     lv_init();
+    lv_image_cache_resize(0, false);
 
 #if LV_USE_NUTTX
     lv_nuttx_dsc_t info;
