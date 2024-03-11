@@ -116,6 +116,10 @@ bool BaseWindow::scheduleVsync(VsyncRequest freq) {
     return true;
 }
 
+void* BaseWindow::getNativeDisplay() {
+    return mUIProxy.get() != nullptr ? mUIProxy->getRoot() : nullptr;
+}
+
 void* BaseWindow::getRoot() {
     return mUIProxy.get() != nullptr ? mUIProxy->getWindow() : nullptr;
 }
@@ -324,6 +328,10 @@ void BaseWindow::setLayoutParams(LayoutParams lp) {
 
 void BaseWindow::setType(int32_t type) {
     mAttrs.mType = type;
+}
+
+bool BaseWindow::onFBVsyncRequest(bool enable) {
+    return mWindowManager->onFBVsyncRequest(shared_from_this(), enable);
 }
 
 } // namespace wm

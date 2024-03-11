@@ -82,6 +82,7 @@ public:
     }
 
     void* getRoot();
+    void* getNativeDisplay();
 
     void setUIProxy(const std::shared_ptr<UIDriverProxy>& proxy) {
         mUIProxy = proxy;
@@ -114,6 +115,7 @@ public:
     void doDie();
 
     void setEventListener(WindowEventListener* listener);
+    bool onFBVsyncRequest(bool enable);
 
     DISALLOW_COPY_AND_ASSIGN(BaseWindow);
 
