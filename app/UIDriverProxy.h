@@ -77,6 +77,7 @@ public:
     }
 
     virtual void updateVisibility(bool visible);
+    bool onFBVsyncRequest(bool enable);
 
 private:
     std::weak_ptr<BaseWindow> mBaseWindow;

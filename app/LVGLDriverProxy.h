@@ -17,6 +17,9 @@
 #pragma once
 
 #include <lvgl/lvgl.h>
+#ifdef CONFIG_LVGL_EXTENSION
+#include <ext/lv_ext.h>
+#endif
 
 #include <vector>
 
@@ -24,6 +27,9 @@
 
 namespace os {
 namespace wm {
+
+#define UI_PROXY_TIMER_PERIOD LV_DEF_REFR_PERIOD
+#define UI_PROXY_TIMER_READY LV_NO_TIMER_READY
 
 class LVGLDrawBuffer {
 public:
@@ -59,6 +65,21 @@ public:
 
     virtual void* onDequeueBuffer() override;
     virtual void resetBuffer() override;
+
+    static void init();
+    static void deinit();
+    static void vsyncPollEvent(vector<std::shared_ptr<BaseWindow>> listeners);
+    static inline uint32_t getTimerPeriod() {
+        return LV_DEF_REFR_PERIOD;
+    }
+
+    static inline uint32_t timerHandler() {
+        return lv_timer_handler();
+    }
+
+    static inline void setTimerResumeHandler(lv_timer_handler_resume_cb_t cb, void* data) {
+        lv_timer_handler_set_resume_cb(cb, data);
+    }
 
     lv_display_t* mDisp;
     int32_t mDispW;

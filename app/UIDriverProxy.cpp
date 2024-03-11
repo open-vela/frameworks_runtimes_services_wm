@@ -89,5 +89,12 @@ void UIDriverProxy::updateResolution(int32_t width, int32_t height, uint32_t for
 
 void UIDriverProxy::updateVisibility(bool visible) {}
 
+bool UIDriverProxy::onFBVsyncRequest(bool enable) {
+    if (!mBaseWindow.expired()) {
+        return mBaseWindow.lock()->onFBVsyncRequest(enable);
+    }
+    return false;
+}
+
 } // namespace wm
 } // namespace os

@@ -265,6 +265,17 @@ static void _disp_event_cb(lv_event_t* e) {
 
             break;
         }
+        case LV_EVENT_VSYNC_REQUEST: {
+            LVGLDriverProxy* proxy = reinterpret_cast<LVGLDriverProxy*>(lv_event_get_user_data(e));
+            void* param = lv_event_get_param(e);
+            if (proxy == NULL) {
+                FLOGI("Vsync Request, proxy is invalid");
+                return;
+            }
+
+            proxy->onFBVsyncRequest(param ? true : false);
+            break;
+        }
 
         case LV_EVENT_DELETE:
             FLOGD("try to delete window");
@@ -349,6 +360,30 @@ static lv_indev_t* _indev_init(LVGLDriverProxy* proxy) {
     lv_timer_del(indev->read_timer);
     indev->read_timer = NULL;
     return indev;
+}
+
+void LVGLDriverProxy::vsyncPollEvent(vector<std::shared_ptr<BaseWindow>> listeners) {
+    for (const auto& win : listeners) {
+        lv_display_send_vsync_event((lv_display_t*)(win->getNativeDisplay()), NULL);
+    }
+}
+
+void LVGLDriverProxy::init() {
+    lv_init();
+#if LV_USE_NUTTX
+    lv_nuttx_init(NULL, NULL);
+#endif
+
+#ifdef CONFIG_LVGL_EXTENSION
+    lv_ext_init();
+#endif
+}
+
+void LVGLDriverProxy::deinit() {
+#ifdef CONFIG_LVGL_EXTENSION
+    lv_ext_deinit();
+#endif
+    lv_deinit();
 }
 
 } // namespace wm

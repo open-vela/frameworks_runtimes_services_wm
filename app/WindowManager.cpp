@@ -20,12 +20,8 @@
 
 #include <binder/IInterface.h>
 #include <binder/IServiceManager.h>
-#include <lvgl/lvgl.h>
 #include <nuttx/tls.h>
 #include <utils/RefBase.h>
-#ifdef CONFIG_LVGL_EXTENSION
-#include <ext/lv_ext.h>
-#endif
 
 #include "../common/WindowUtils.h"
 #include "DummyDriverProxy.h"
@@ -33,10 +29,19 @@
 #include "SurfaceTransaction.h"
 #include "uv.h"
 
-static void _wm_lv_timer_cb(uv_timer_t* handle) {
-    uint32_t sleep_ms = lv_timer_handler();
+static void _wm_vsync_poll_cb(uv_poll_t* handle, int status, int events) {
+    (void)(status);
+    (void)(events);
+    ::os::wm::WindowManager* wm = reinterpret_cast<::os::wm::WindowManager*>(handle->data);
+    if (wm) {
+        ::os::wm::LVGLDriverProxy::vsyncPollEvent(wm->getVsyncListeners());
+    }
+}
 
-    if (sleep_ms == LV_NO_TIMER_READY) {
+static void _wm_timer_cb(uv_timer_t* handle) {
+    uint32_t sleep_ms = ::os::wm::LVGLDriverProxy::timerHandler();
+
+    if (sleep_ms == UI_PROXY_TIMER_READY) {
         FLOGD("stop timer event.");
         uv_timer_stop(handle);
         return;
@@ -49,13 +54,13 @@ static void _wm_lv_timer_cb(uv_timer_t* handle) {
     }
 
     FLOGD("sleep_ms = %" PRIu32, sleep_ms);
-    uv_timer_start(handle, _wm_lv_timer_cb, sleep_ms, 0);
+    uv_timer_start(handle, _wm_timer_cb, sleep_ms, 0);
 }
 
-static void _wm_lv_timer_resume(void* data) {
+static void _wm_timer_resume(void* data) {
     uv_timer_t* timer = (uv_timer_t*)data;
     FLOGD("resume timer event.");
-    if (timer) uv_timer_start(timer, _wm_lv_timer_cb, 0, 0);
+    if (timer) uv_timer_start(timer, _wm_timer_cb, 0, 0);
 }
 
 namespace os {
@@ -71,6 +76,50 @@ static inline bool getWindowService(sp<IWindowManager>& service) {
         return true;
     }
     return true;
+}
+
+bool WindowManager::onFBVsyncRequest(std::shared_ptr<BaseWindow> window, bool enable) {
+    if (window == nullptr) return false;
+
+    if (enable) {
+        if (mVsyncFd <= 0) {
+            mVsyncFd = open(CONFIG_LV_FBDEV_INTERFACE_DEFAULT_DEVICEPATH, O_RDWR);
+            if (mVsyncFd <= 0) {
+                FLOGE("Failed to listen framebuffer device");
+                return false;
+            }
+
+            mVsyncPoll.data = this;
+            uv_poll_init(window->getContext()->getMainLoop()->get(), &mVsyncPoll, mVsyncFd);
+        }
+
+        auto it = std::find(mVsyncListeners.begin(), mVsyncListeners.end(), window);
+        if (it == mVsyncListeners.end()) {
+            mVsyncListeners.push_back(window);
+        }
+        uv_poll_start(&mVsyncPoll, UV_PRIORITIZED, _wm_vsync_poll_cb);
+        FLOGW("window start listening vsync event");
+        return true;
+    } else {
+        if (mVsyncFd > 0 && mVsyncListeners.size() > 0) {
+            FLOGW("window cancel listening vsync event");
+            auto it = std::find(mVsyncListeners.begin(), mVsyncListeners.end(), window);
+            if (it == mVsyncListeners.end()) {
+                return true;
+            }
+
+            mVsyncListeners.erase(it);
+            if (mVsyncListeners.size() == 0) {
+                uv_poll_stop(&mVsyncPoll);
+                uv_close((uv_handle_t*)&mVsyncPoll, NULL);
+
+                close(mVsyncFd);
+                mVsyncFd = 0;
+            }
+            return true;
+        }
+    }
+    return false;
 }
 
 std::shared_ptr<InputMonitor> WindowManager::monitorInput(const ::std::string& name,
@@ -122,27 +171,14 @@ WindowManager::WindowManager() : mService(nullptr), mTimerInited(false) {
     mService->getPhysicalDisplayInfo(1, &displayInfo, &result);
     mDispWidth = displayInfo.width;
     mDispHeight = displayInfo.height;
-
-    lv_init();
-#if LV_USE_NUTTX
-    lv_nuttx_init(NULL, NULL);
-#endif
-
-#ifdef CONFIG_LVGL_EXTENSION
-    lv_ext_init();
-#endif
+    LVGLDriverProxy::init();
 }
 
 WindowManager::~WindowManager() {
     toBackground();
     mWindows.clear();
     mService = nullptr;
-
-#ifdef CONFIG_LVGL_EXTENSION
-    lv_ext_deinit();
-#endif
-    lv_deinit();
-
+    LVGLDriverProxy::deinit();
     FLOGD("WindowManager destructor");
 }
 
@@ -163,8 +199,8 @@ std::shared_ptr<BaseWindow> WindowManager::newWindow(::os::app::Context* context
     window->setUIProxy(std::dynamic_pointer_cast<::os::wm::UIDriverProxy>(proxy));
     if (!mTimerInited) {
         uv_timer_init(context->getMainLoop()->get(), &mEventTimer);
-        uv_timer_start(&mEventTimer, _wm_lv_timer_cb, LV_DEF_REFR_PERIOD, 0);
-        lv_timer_handler_set_resume_cb(_wm_lv_timer_resume, &mEventTimer);
+        uv_timer_start(&mEventTimer, _wm_timer_cb, LVGLDriverProxy::getTimerPeriod(), 0);
+        LVGLDriverProxy::setTimerResumeHandler(_wm_timer_resume, &mEventTimer);
         FLOGD("init event timer.");
         /* for video feature */
         lv_ext_uv_init(context->getMainLoop()->get());
@@ -220,6 +256,9 @@ bool WindowManager::removeWindow(std::shared_ptr<BaseWindow> window) {
     FLOGI("%p", window.get());
 
     mTransaction->clean();
+
+    onFBVsyncRequest(window, false);
+
     mService->removeWindow(window->getIWindow());
     window->doDie();
     auto it = std::find(mWindows.begin(), mWindows.end(), window);
@@ -228,7 +267,7 @@ bool WindowManager::removeWindow(std::shared_ptr<BaseWindow> window) {
     }
     if (mWindows.size() == 0) {
         if (mTimerInited) {
-            lv_timer_handler_set_resume_cb(NULL, NULL);
+            LVGLDriverProxy::setTimerResumeHandler(NULL, NULL);
             uv_close((uv_handle_t*)&mEventTimer, NULL);
             mTimerInited = false;
             FLOGD("close event timer.");
