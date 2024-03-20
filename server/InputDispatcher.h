@@ -46,6 +46,7 @@ public:
 
 private:
     InputChannel mInputChannel;
+    int mErrCount;
 };
 
 } // namespace wm
