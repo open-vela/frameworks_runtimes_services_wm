@@ -26,7 +26,9 @@
 namespace os {
 namespace wm {
 
-InputDispatcher::InputDispatcher() {}
+InputDispatcher::InputDispatcher() {
+    mErrCount = 0;
+}
 
 InputDispatcher::~InputDispatcher() {
     release();
@@ -56,9 +58,15 @@ int InputDispatcher::sendMessage(const InputMessage* ie) {
     int ret = mq_send(fd, (const char*)ie, sizeof(InputMessage), 100);
 
     if (ret < 0) {
-        FLOGW("send message to %d, failed: %d - '%s(%d)'", fd, ret, strerror(errno), errno);
+        mErrCount++;
+        if (mErrCount >= 30) {
+            FLOGW("send message to %d, failed: %d - '%s(%d)'", fd, ret, strerror(errno), errno);
+            mErrCount = 0;
+        }
         return ret;
     }
+
+    mErrCount = 0;
     return 0;
 }
 
