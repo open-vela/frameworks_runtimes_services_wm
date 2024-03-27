@@ -128,19 +128,21 @@ void WindowState::sendAppVisibilityToClients(int32_t visibility) {
 
     if (!visible) {
         scheduleVsync(VsyncRequest::VSYNC_REQ_NONE);
+        if (!isVisible()) {
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
-        if (mAttrs.mWindowTransitionState == LayoutParams::WINDOW_TRANSITION_ENABLE) {
-            mAnimRunning = true;
-            mWinAnimator->startAnimation(mService->getAnimConfig(false, this),
-                                         [this](WindowAnimStatus status) {
-                                             this->onAnimationFinished(status);
-                                         });
-        } else {
-            mClient->dispatchAppVisibility(visible);
-        }
+            if (mAttrs.mWindowTransitionState == LayoutParams::WINDOW_TRANSITION_ENABLE) {
+                mAnimRunning = true;
+                mWinAnimator->startAnimation(mService->getAnimConfig(false, this),
+                                             [this](WindowAnimStatus status) {
+                                                 this->onAnimationFinished(status);
+                                             });
+            } else {
+                mClient->dispatchAppVisibility(visible);
+            }
 #else
-        mClient->dispatchAppVisibility(visible);
+            mClient->dispatchAppVisibility(visible);
 #endif
+        }
     } else {
         if (mVsyncRequest == VsyncRequest::VSYNC_REQ_NONE) {
             scheduleVsync(VsyncRequest::VSYNC_REQ_SINGLE);
@@ -355,7 +357,7 @@ uint32_t WindowState::getSurfaceSize() {
 }
 
 bool WindowState::isVisible() {
-    return mVisibility == LayoutParams::WINDOW_VISIBLE ? true : false;
+    return mVisibility != LayoutParams::WINDOW_GONE ? true : false;
 }
 
 } // namespace wm
