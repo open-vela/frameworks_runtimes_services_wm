@@ -84,6 +84,8 @@ public:
     void postWindowRemoveCleanup(WindowState* state);
     bool removeWindowTokenInner(sp<IBinder>& token);
 
+    bool ready();
+
 private:
     class WindowDeathRecipient : public IBinder::DeathRecipient {
     public:

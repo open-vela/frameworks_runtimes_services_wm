@@ -161,9 +161,12 @@ void WindowManagerService::WindowDeathRecipient::binderDied(const wp<IBinder>& w
     }
 }
 
-WindowManagerService::WindowManagerService(uv_loop_t* looper) : mLooper(looper) {
+WindowManagerService::WindowManagerService(uv_loop_t* looper)
+      : mLooper(looper), mWinAnimEngine(nullptr) {
     FLOGI("WMS init");
     mContainer = new RootContainer(this, looper);
+    if (!ready()) return;
+
     mWindowDeathRecipient = sp<WindowDeathRecipient>::make(this);
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
     mWinAnimEngine = new WindowAnimEngine();
@@ -176,11 +179,16 @@ WindowManagerService::WindowManagerService(uv_loop_t* looper) : mLooper(looper) 
 
 WindowManagerService::~WindowManagerService() {
     mInputMonitorMap.clear();
-    delete mContainer;
+    if (mContainer) delete mContainer;
+    mWindowDeathRecipient = nullptr;
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
-    delete mWinAnimEngine;
+    if (mWinAnimEngine) delete mWinAnimEngine;
     mAnimConfigMap.clear();
 #endif
+}
+
+bool WindowManagerService::ready() {
+    return mContainer->ready();
 }
 
 Status WindowManagerService::getPhysicalDisplayInfo(int32_t displayId, DisplayInfo* info,

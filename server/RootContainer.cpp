@@ -39,14 +39,14 @@ RootContainer::RootContainer(DeviceEventListener* listener, uv_loop_t* loop)
 #endif
         mUvData(nullptr),
         mUvLoop(loop) {
-    init();
+    mReady = init();
 }
 
 RootContainer::~RootContainer() {
     LV_GLOBAL_DEFAULT()->user_data = nullptr;
 
 #ifdef CONFIG_SYSTEM_WINDOW_USE_VSYNC_EVENT
-    if (mVsyncEnabled) lv_display_unregister_vsync_event(mDisp, vsyncEventReceived, this);
+    if (mVsyncEnabled && mDisp) lv_display_unregister_vsync_event(mDisp, vsyncEventReceived, this);
 #else
     if (mVsyncTimer) lv_timer_del(mVsyncTimer);
 #endif
@@ -200,6 +200,12 @@ bool RootContainer::init() {
     info.input_path = CONFIG_LV_TOUCHPAD_INTERFACE_DEFAULT_DEVICEPATH;
 
     lv_nuttx_init(&info, &result);
+    if (result.disp == nullptr) {
+        FLOGE("Failed to open fb device:%s. Please check device node and its access permissions.",
+              info.fb_path);
+        return false;
+    }
+
     mDisp = result.disp;
     lv_nuttx_uv_t uv_info = {
             .loop = mUvLoop,

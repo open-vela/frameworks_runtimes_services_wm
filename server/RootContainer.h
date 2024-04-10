@@ -49,6 +49,9 @@ public:
         return mVsyncEnabled;
     }
 #endif
+    bool ready() {
+        return mReady;
+    }
 
 private:
     bool init();
@@ -62,6 +65,7 @@ private:
 #endif
     void* mUvData;
     uv_loop_t* mUvLoop;
+    bool mReady;
 };
 
 } // namespace wm
