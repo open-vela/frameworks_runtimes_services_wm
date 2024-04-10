@@ -56,4 +56,12 @@ config SYSTEM_WINDOW_USE_VSYNC_EVENT
 	bool "Enable window vsync event"
 	default y
 
+config SYSTEM_WINDOW_FBDEV_DEVICEPATH
+	string "Wms framebuffer device path"
+	default "/dev/fb0"
+
+config SYSTEM_WINDOW_TOUCHPAD_DEVICEPATH
+	string "Wms touchpad device path"
+	default "/dev/input0"
+
 endif

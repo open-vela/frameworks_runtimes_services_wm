@@ -83,7 +83,7 @@ bool WindowManager::onFBVsyncRequest(std::shared_ptr<BaseWindow> window, bool en
 
     if (enable) {
         if (mVsyncFd <= 0) {
-            mVsyncFd = open(CONFIG_LV_FBDEV_INTERFACE_DEFAULT_DEVICEPATH, O_RDWR);
+            mVsyncFd = open(CONFIG_SYSTEM_WINDOW_FBDEV_DEVICEPATH, O_RDWR);
             if (mVsyncFd <= 0) {
                 FLOGE("Failed to listen framebuffer device");
                 return false;

@@ -196,8 +196,8 @@ bool RootContainer::init() {
     lv_nuttx_result_t result;
 
     lv_nuttx_dsc_init(&info);
-    info.fb_path = CONFIG_LV_FBDEV_INTERFACE_DEFAULT_DEVICEPATH;
-    info.input_path = CONFIG_LV_TOUCHPAD_INTERFACE_DEFAULT_DEVICEPATH;
+    info.fb_path = CONFIG_SYSTEM_WINDOW_FBDEV_DEVICEPATH;
+    info.input_path = CONFIG_SYSTEM_WINDOW_TOUCHPAD_DEVICEPATH;
 
     lv_nuttx_init(&info, &result);
     if (result.disp == nullptr) {
