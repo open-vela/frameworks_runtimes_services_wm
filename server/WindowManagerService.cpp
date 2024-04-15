@@ -379,7 +379,7 @@ Status WindowManagerService::removeWindowToken(const sp<IBinder>& token, int32_t
 
     auto it = mTokenMap.find(token);
     if (it != mTokenMap.end()) {
-        it->second->removeImmediately();
+        it->second->removeIfPossible();
     }
     WM_PROFILER_END();
 
@@ -481,7 +481,7 @@ void WindowManagerService::postWindowRemoveCleanup(WindowState* state) {
     }
 
     if (token && token.get() && token->isEmpty() && !token->isPersistOnEmpty()) {
-        token->removeImmediately();
+        token->removeIfPossible();
     }
 }
 

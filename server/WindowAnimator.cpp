@@ -49,6 +49,7 @@ WindowAnimator::~WindowAnimator() {
 #ifdef CONFIG_ANIMATION_ENGINE
         anim_listener(mAnimEngine, mAnimId, nullptr, nullptr, (void*)this);
 #endif
+        FLOGI("%p", this);
         cancelAnimation();
     }
 }
