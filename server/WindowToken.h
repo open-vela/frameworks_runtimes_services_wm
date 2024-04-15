@@ -61,7 +61,7 @@ public:
         return mPersistOnEmpty;
     }
 
-    void removeImmediately();
+    void removeIfPossible();
     int32_t getType() {
         return mType;
     }
