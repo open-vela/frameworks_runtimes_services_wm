@@ -71,14 +71,14 @@ void WindowToken::setClientVisibility(int32_t visibility) {
     }
 }
 
-void WindowToken::removeImmediately() {
+void WindowToken::removeIfPossible() {
     if (mRemoved) return;
     mRemoved = true;
 
     for (auto it = mChildren.begin(); it != mChildren.end();) {
         WindowState* state = *it;
         it = mChildren.erase(it);
-        state->removeImmediately();
+        state->removeIfPossible();
     }
 
     mService->removeWindowTokenInner(mToken);
