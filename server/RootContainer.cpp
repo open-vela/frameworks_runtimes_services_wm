@@ -40,6 +40,10 @@ RootContainer::RootContainer(DeviceEventListener* listener, uv_loop_t* loop)
         mUvData(nullptr),
         mUvLoop(loop) {
     mReady = init();
+    if (mReady) {
+        // set bg color to black for lvgl
+        lv_obj_set_style_bg_color(lv_display_get_screen_active(mDisp), lv_color_black(), 0);
+    }
 }
 
 RootContainer::~RootContainer() {
