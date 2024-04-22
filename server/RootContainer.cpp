@@ -101,6 +101,20 @@ static void vsyncEventReceived(lv_event_t* e) {
         WM_PROFILER_END();
     }
 }
+
+static void asyncEnableVsync(lv_timer_t* tmr) {
+    RootContainer* container = static_cast<RootContainer*>(lv_timer_get_user_data(tmr));
+    if (!container) return;
+
+    if (container->vsyncEnabled()) {
+        FLOGD("register");
+        lv_display_register_vsync_event(container->getRoot(), vsyncEventReceived, container);
+    } else {
+        FLOGD("unregister");
+        lv_display_unregister_vsync_event(container->getRoot(), vsyncEventReceived, container);
+    }
+}
+
 #else
 static void vsyncCallback(lv_timer_t* tmr) {
     RootContainer* container = static_cast<RootContainer*>(lv_timer_get_user_data(tmr));
@@ -130,10 +144,8 @@ void RootContainer::enableVsync(bool enable) {
 #ifdef CONFIG_SYSTEM_WINDOW_USE_VSYNC_EVENT
     if (mVsyncEnabled != enable) {
         mVsyncEnabled = enable;
-        if (mVsyncEnabled)
-            lv_display_register_vsync_event(mDisp, vsyncEventReceived, this);
-        else
-            lv_display_unregister_vsync_event(mDisp, vsyncEventReceived, this);
+        lv_timer_t* timer = lv_timer_create(asyncEnableVsync, 0, this);
+        lv_timer_set_repeat_count(timer, 1);
     }
 #else
     if (mVsyncTimer) {
@@ -205,7 +217,8 @@ bool RootContainer::init() {
 
     lv_nuttx_init(&info, &result);
     if (result.disp == nullptr) {
-        FLOGE("Failed to open fb device:%s. Please check device node and its access permissions.",
+        FLOGE("Failed to open fb device:%s. Please check device node and its access "
+              "permissions.",
               info.fb_path);
         return false;
     }
