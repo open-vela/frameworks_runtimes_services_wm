@@ -42,7 +42,7 @@ public:
 
     void showToast(const char* text, uint32_t duration);
 
-    void readInput(lv_indev_t* drv, lv_indev_data_t* data);
+    bool readInput(lv_indev_t* drv, lv_indev_data_t* data);
 
 #ifdef CONFIG_SYSTEM_WINDOW_USE_VSYNC_EVENT
     bool vsyncEnabled() {

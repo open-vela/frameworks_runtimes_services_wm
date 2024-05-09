@@ -71,7 +71,7 @@ public:
     Status releaseInput(const sp<IBinder>& token);
 
     bool responseVsync() override;
-    void responseInput(const InputMessage* msg) override;
+    bool responseInput(InputMessage* msg) override;
 
     RootContainer* getRootContainer() {
         return mContainer;
