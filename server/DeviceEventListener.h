@@ -24,7 +24,7 @@ namespace wm {
 class DeviceEventListener {
 public:
     virtual bool responseVsync() = 0;
-    virtual void responseInput(const InputMessage* msg) = 0;
+    virtual bool responseInput(InputMessage* msg) = 0;
 };
 
 } // namespace wm

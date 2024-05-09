@@ -31,6 +31,7 @@ extern "C" {
  *********************/
 
 #include <lvgl/lvgl.h>
+#include <wm/InputMessageBase.h>
 
 /*********************
  *      DEFINES
@@ -59,19 +60,7 @@ typedef struct {
     lv_img_dsc_t img_dsc;
 } lv_mainwnd_buf_dsc_t;
 
-typedef struct {
-    lv_indev_type_t type;
-    lv_indev_state_t state;
-    union {
-        struct {
-            uint32_t key_code;
-        } keypad;
-        struct {
-            int32_t x, y;
-            int32_t raw_x, raw_y;
-        } pointer;
-    };
-} lv_mainwnd_input_event_t;
+typedef InputMessage lv_mainwnd_input_event_t;
 
 typedef struct _lv_mainwnd_metainfo_t {
     // acquire buffer before drawing content

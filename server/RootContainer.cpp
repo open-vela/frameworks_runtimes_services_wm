@@ -173,39 +173,36 @@ void RootContainer::processVsyncEvent() {
     WM_PROFILER_END();
 }
 
-static void monitor_indev_read(lv_indev_t* indev, lv_indev_data_t* data) {
-    if (!data) return;
+static bool monitor_indev_read(lv_indev_t* indev, lv_indev_data_t* data) {
+    if (!data) return false;
 
     RootContainer* container = reinterpret_cast<RootContainer*>(LV_GLOBAL_DEFAULT()->user_data);
-    if (container) container->readInput(indev, data);
+    if (container) return container->readInput(indev, data);
+    return false;
 }
 
-void RootContainer::readInput(lv_indev_t* indev, lv_indev_data_t* data) {
-    lv_indev_read_cb_t read_cb = (lv_indev_read_cb_t)lv_indev_get_user_data(indev);
-    if (!read_cb) return;
-
-    read_cb(indev, data);
-
-    if (!mListener) return;
+bool RootContainer::readInput(lv_indev_t* indev, lv_indev_data_t* data) {
+    if (!mListener) return false;
 
     int type = lv_indev_get_type(indev);
     InputMessage msg;
-    msg.type = (InputMessageType)type;
-    msg.state = (InputMessageState)data->state;
 
     switch (type) {
         case LV_INDEV_TYPE_POINTER:
             msg.pointer.x = msg.pointer.raw_x = data->point.x;
             msg.pointer.y = msg.pointer.raw_y = data->point.y;
+            msg.pointer.gesture_state = 0;
             break;
         case LV_INDEV_TYPE_KEYPAD:
             msg.keypad.key_code = data->key;
             break;
         default:
-            return;
+            return false;
     }
 
-    mListener->responseInput(&msg);
+    msg.type = (InputMessageType)type;
+    msg.state = (InputMessageState)data->state;
+    return mListener->responseInput(&msg);
 }
 
 bool RootContainer::init() {
@@ -244,9 +241,7 @@ bool RootContainer::init() {
 
     if (mListener) {
         LV_GLOBAL_DEFAULT()->user_data = this;
-
-        lv_indev_set_user_data(result.indev, (void*)lv_indev_get_read_cb(result.indev));
-        lv_indev_set_read_cb(result.indev, monitor_indev_read);
+        lv_indev_set_read_preprocess_cb(result.indev, monitor_indev_read);
     }
 #endif
 

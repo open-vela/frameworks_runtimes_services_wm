@@ -489,9 +489,13 @@ void WindowManagerService::postWindowRemoveCleanup(WindowState* state) {
     });
 }
 
-void WindowManagerService::responseInput(const InputMessage* msg) {
-    if (!msg) return;
+bool WindowManagerService::responseInput(InputMessage* msg) {
+    if (!msg) return false;
 
+    /*sync: system gesture recognize*/
+    bool has_gesture = false; // recognizeGesture(&msg);
+
+    /* async: input monitor notification */
     int ret = 0;
     for (const auto& [token, dispatcher] : mInputMonitorMap) {
         ret = dispatcher->sendMessage(msg);
@@ -500,6 +504,7 @@ void WindowManagerService::responseInput(const InputMessage* msg) {
                   dispatcher->getInputChannel().getEventFd(), ret);
         }
     }
+    return has_gesture;
 }
 
 bool WindowManagerService::responseVsync() {
