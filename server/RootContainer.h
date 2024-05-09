@@ -48,6 +48,7 @@ public:
     bool vsyncEnabled() {
         return mVsyncEnabled;
     }
+    void onVsyncReceived();
 #endif
     bool ready() {
         return mReady;
@@ -60,9 +61,8 @@ private:
     lv_disp_t* mDisp;
 #ifdef CONFIG_SYSTEM_WINDOW_USE_VSYNC_EVENT
     bool mVsyncEnabled;
-#else
-    lv_timer_t* mVsyncTimer;
 #endif
+    lv_timer_t* mVsyncTimer;
     void* mUvData;
     uv_loop_t* mUvLoop;
     bool mReady;
