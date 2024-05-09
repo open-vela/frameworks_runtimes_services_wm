@@ -256,11 +256,11 @@ static inline void dump_input_event(lv_mainwnd_input_event_t* ie) {
     if (!ie) return;
 
     LV_LOG_TRACE("input event dump: type(%d), state(%d)", ie->type, ie->state);
-    if (ie->type == LV_INDEV_TYPE_POINTER) {
+    if (ie->type == INPUT_MESSAGE_TYPE_POINTER) {
         LV_LOG_TRACE("\t\traw pos(%d, %d), pos(%d, %d)", ie->pointer.raw_x, ie->pointer.raw_y,
                      ie->pointer.x, ie->pointer.y);
 
-    } else if (ie->type == LV_INDEV_TYPE_KEYPAD) {
+    } else if (ie->type == INPUT_MESSAGE_TYPE_KEYPAD) {
         LV_LOG_TRACE("\t\tkeycode(%d)", ie->keypad.key_code);
     }
 }
@@ -273,7 +273,6 @@ static inline void send_input_event(lv_mainwnd_t* mainwnd, lv_event_code_t code,
 
     if (code == LV_EVENT_KEY) {
         ie.state = lv_indev_get_state(indev);
-        ie.type = LV_MAINWND_EVENT_TYPE_KEYPAD;
         ie.keypad.key_code = lv_indev_get_key(indev);
         dump_input_event(&ie);
         mainwnd->meta_info.send_input_event(&(mainwnd->meta_info), &ie);
@@ -296,6 +295,7 @@ static inline void send_input_event(lv_mainwnd_t* mainwnd, lv_event_code_t code,
         } else {
             return;
         }
+        ie.pointer.gesture_state = 0;
 
         if (code == LV_EVENT_PRESSED || code == LV_EVENT_PRESSING) {
             ie.state = LV_INDEV_STATE_PRESSED;
