@@ -22,6 +22,7 @@
 
 #include "DeviceEventListener.h"
 #include "WindowConfig.h"
+#include "app/UvLoop.h"
 #include "os/wm/BnWindowManager.h"
 
 namespace os {
@@ -102,6 +103,7 @@ private:
     WindowStateMap mWindowMap;
     RootContainer* mContainer;
     uv_loop_t* mLooper;
+    std::shared_ptr<::os::app::UvLoop> mUvLooper;
     InputMonitorMap mInputMonitorMap;
     sp<WindowDeathRecipient> mWindowDeathRecipient;
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
