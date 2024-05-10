@@ -167,6 +167,8 @@ WindowManagerService::WindowManagerService(uv_loop_t* looper)
     mContainer = new RootContainer(this, looper);
     if (!ready()) return;
 
+    mUvLooper = std::make_shared<::os::app::UvLoop>(looper);
+
     mWindowDeathRecipient = sp<WindowDeathRecipient>::make(this);
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
     mWinAnimEngine = new WindowAnimEngine();
@@ -470,19 +472,21 @@ Status WindowManagerService::releaseInput(const sp<IBinder>& token) {
 }
 
 void WindowManagerService::postWindowRemoveCleanup(WindowState* state) {
-    sp<IBinder> binder = IInterface::asBinder(state->getClient());
-    auto token = state->getToken();
+    mUvLooper->postTask([this, state]() {
+        sp<IBinder> binder = IInterface::asBinder(state->getClient());
+        auto token = state->getToken();
 
-    auto itState = mWindowMap.find(binder);
-    if (itState != mWindowMap.end()) {
-        itState->first->unlinkToDeath(mWindowDeathRecipient);
-        delete itState->second;
-        mWindowMap.erase(binder);
-    }
+        auto itState = mWindowMap.find(binder);
+        if (itState != mWindowMap.end()) {
+            itState->first->unlinkToDeath(mWindowDeathRecipient);
+            delete itState->second;
+            mWindowMap.erase(binder);
+        }
 
-    if (token && token.get() && token->isEmpty() && !token->isPersistOnEmpty()) {
-        token->removeIfPossible();
-    }
+        if (token && token.get() && token->isEmpty() && !token->isPersistOnEmpty()) {
+            token->removeIfPossible();
+        }
+    });
 }
 
 void WindowManagerService::responseInput(const InputMessage* msg) {
