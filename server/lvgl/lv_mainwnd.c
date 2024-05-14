@@ -210,8 +210,6 @@ static void lv_mainwnd_destructor(const lv_obj_class_t* class_p, lv_obj_t* obj) 
 }
 
 static inline void draw_buffer(lv_obj_t* obj, lv_event_t* e) {
-    WM_PROFILER_BEGIN();
-
     lv_layer_t* layer = lv_event_get_layer(e);
     lv_mainwnd_t* mainwnd = (lv_mainwnd_t*)obj;
 
@@ -249,7 +247,6 @@ static inline void draw_buffer(lv_obj_t* obj, lv_event_t* e) {
     LV_LOG_TRACE("draw (%p) with (%d) (%dx%d)", mainwnd, mainwnd->buf_dsc.id, img_w, img_h);
     img_dsc.src = &mainwnd->buf_dsc.img_dsc;
     lv_draw_image(layer, &img_dsc, &win_coords);
-    WM_PROFILER_END();
 }
 
 static inline void dump_input_event(lv_mainwnd_input_event_t* ie) {
