@@ -18,5 +18,8 @@
 
 #include <nuttx/trace.h>
 
-#define WM_PROFILER_BEGIN() graphics_trace_begin();
-#define WM_PROFILER_END() graphics_trace_end();
+#define WM_PROFILER_BEGIN() sched_note_beginex(NOTE_TAG_GRAPHICS, __func__);
+#define WM_PROFILER_END() sched_note_endex(NOTE_TAG_GRAPHICS, __func__);
+
+#define WM_PROFILER_BEGINEX(str) sched_note_beginex(NOTE_TAG_GRAPHICS, str);
+#define WM_PROFILER_ENDEX(str) sched_note_endex(NOTE_TAG_GRAPHICS, str);
