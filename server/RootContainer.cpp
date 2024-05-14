@@ -233,6 +233,7 @@ bool RootContainer::init() {
             .loop = mUvLoop,
             .disp = result.disp,
             .indev = result.indev,
+            .uindev = result.utouch_indev,
     };
     mUvData = lv_nuttx_uv_init(&uv_info);
 
