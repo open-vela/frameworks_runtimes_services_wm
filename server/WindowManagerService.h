@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "DeviceEventListener.h"
+#include "GestureDetector.h"
 #include "WindowConfig.h"
 #include "app/UvLoop.h"
 #include "os/wm/BnWindowManager.h"
@@ -109,6 +110,7 @@ private:
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
     WindowAnimEngine* mWinAnimEngine;
 #endif
+    GestureDetector mGestureDetector;
 };
 
 } // namespace wm

@@ -30,10 +30,12 @@
 #include "rapidjson/writer.h"
 #endif
 #include "../common/WindowUtils.h"
+#include "GestureDetector.h"
 #include "InputDispatcher.h"
 #include "RootContainer.h"
 #include "WindowState.h"
 #include "WindowToken.h"
+#include "wm/GestureDetectorState.h"
 #include "wm/SurfaceControl.h"
 
 namespace os {
@@ -162,12 +164,17 @@ void WindowManagerService::WindowDeathRecipient::binderDied(const wp<IBinder>& w
 }
 
 WindowManagerService::WindowManagerService(uv_loop_t* looper)
-      : mLooper(looper), mWinAnimEngine(nullptr) {
+      : mLooper(looper),
+        mUvLooper(std::make_shared<::os::app::UvLoop>(looper)),
+        mWinAnimEngine(nullptr),
+        mGestureDetector(mUvLooper) {
     FLOGI("WMS init");
     mContainer = new RootContainer(this, looper);
-    if (!ready()) return;
+    DisplayInfo disp_info;
+    mContainer->getDisplayInfo(&disp_info);
+    mGestureDetector.setDisplayInfo(&disp_info);
 
-    mUvLooper = std::make_shared<::os::app::UvLoop>(looper);
+    if (!ready()) return;
 
     mWindowDeathRecipient = sp<WindowDeathRecipient>::make(this);
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
@@ -492,8 +499,9 @@ void WindowManagerService::postWindowRemoveCleanup(WindowState* state) {
 bool WindowManagerService::responseInput(InputMessage* msg) {
     if (!msg) return false;
 
-    /*sync: system gesture recognize*/
-    bool has_gesture = false; // recognizeGesture(&msg);
+    /* sync: system gesture recognize */
+    msg->pointer.gesture_state = mGestureDetector.recognizeGesture(msg);
+    bool has_gesture = msg->pointer.gesture_state != 0;
 
     /* async: input monitor notification */
     int ret = 0;
