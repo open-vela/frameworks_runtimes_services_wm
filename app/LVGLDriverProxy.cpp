@@ -41,9 +41,10 @@ LVGLDrawBuffer::~LVGLDrawBuffer() {
 
 LVGLDriverProxy::LVGLDriverProxy(std::shared_ptr<BaseWindow> win)
       : UIDriverProxy(win),
-        mIndev(NULL),
         mLastEventState(LV_INDEV_STATE_RELEASED),
-        mRenderMode(LV_DISPLAY_RENDER_MODE_FULL) {
+        mIndev(NULL),
+        mRenderMode(LV_DISPLAY_RENDER_MODE_DIRECT),
+        mEnableDrawAll(true) {
     lv_color_format_t cf = getLvColorFormatType(win->getLayoutParams().mFormat);
     auto wm = win->getWindowManager();
     uint32_t width = 0, height = 0;
@@ -80,8 +81,6 @@ LVGLDriverProxy::~LVGLDriverProxy() {
 }
 
 void LVGLDriverProxy::drawFrame(BufferItem* bufItem) {
-    FLOGD("");
-
     BufferItem* oldItem = getBufferItem();
     UIDriverProxy::drawFrame(bufItem);
     if (!bufItem) {
@@ -89,15 +88,17 @@ void LVGLDriverProxy::drawFrame(BufferItem* bufItem) {
         return;
     }
 
-    if (oldItem && mRenderMode == LV_DISPLAY_RENDER_MODE_DIRECT) {
-        uint32_t hor_res = lv_display_get_horizontal_resolution(mDisp);
-        uint32_t ver_res = lv_display_get_vertical_resolution(mDisp);
+    if (!mEnableDrawAll && oldItem && mRenderMode == LV_DISPLAY_RENDER_MODE_DIRECT) {
+        if (bufItem->mUserData == nullptr) {
+            void* buffer = onDequeueBuffer();
+            if (buffer == nullptr) return;
+        }
+
         lv_area_t scr_area;
         scr_area.x1 = 0;
         scr_area.y1 = 0;
-        scr_area.x2 = hor_res - 1;
-        scr_area.y2 = ver_res - 1;
-
+        scr_area.x2 = mDispW - 1;
+        scr_area.y2 = mDispH - 1;
         lv_draw_buf_copy((lv_draw_buf_t*)(bufItem->mUserData), &scr_area,
                          (lv_draw_buf_t*)(oldItem->mUserData), &scr_area);
     }
@@ -106,6 +107,7 @@ void LVGLDriverProxy::drawFrame(BufferItem* bufItem) {
         lv_display_set_default(mDisp);
     }
     _lv_display_refr_timer(NULL);
+    mEnableDrawAll = false;
 }
 
 void LVGLDriverProxy::handleEvent() {
@@ -221,15 +223,22 @@ static void _disp_event_cb(lv_event_t* e) {
                 return;
             }
 
-            if (code == LV_EVENT_INVALIDATE_AREA && !proxy->getBufferItem()) {
-                /* need to invalidate the whole screen*/
-                lv_display_t* disp = (lv_display_t*)lv_event_get_target(e);
+            if (code == LV_EVENT_INVALIDATE_AREA) {
                 lv_area_t* area = (lv_area_t*)lv_event_get_param(e);
                 if (area) {
-                    area->x1 = 0;
-                    area->y1 = 0;
-                    area->x2 = lv_display_get_horizontal_resolution(disp) - 1;
-                    area->y2 = lv_display_get_vertical_resolution(disp) - 1;
+                    lv_display_t* disp = (lv_display_t*)lv_event_get_target(e);
+                    int width = lv_display_get_horizontal_resolution(disp);
+                    int height = lv_display_get_vertical_resolution(disp);
+
+                    if (!proxy->getBufferItem() ||
+                        (lv_area_get_width(area) > width * 3 >> 2 &&
+                         lv_area_get_height(area) > height * 3 >> 2)) {
+                        proxy->enableDrawAll(true);
+                        area->x1 = 0;
+                        area->y1 = 0;
+                        area->x2 = width - 1;
+                        area->y2 = height - 1;
+                    }
                 }
             }
 
@@ -337,15 +346,15 @@ static void _indev_read(lv_indev_t* drv, lv_indev_data_t* data) {
 
                 data->point.x = LV_CLAMP(0, message.pointer.x, hor_max);
                 data->point.y = LV_CLAMP(0, message.pointer.y, ver_max);
-                proxy->mLastEventState = LV_INDEV_STATE_PRESSED;
+                proxy->setLastEventState(LV_INDEV_STATE_PRESSED);
             } else if (message.state == INPUT_MESSAGE_STATE_RELEASED) {
-                proxy->mLastEventState = LV_INDEV_STATE_RELEASED;
+                proxy->setLastEventState(LV_INDEV_STATE_RELEASED);
             }
 
             data->continue_reading = false;
         }
     }
-    data->state = proxy->mLastEventState;
+    data->state = proxy->getLastEventState();
 }
 
 static lv_indev_t* _indev_init(LVGLDriverProxy* proxy) {

@@ -81,14 +81,29 @@ public:
         lv_timer_handler_set_resume_cb(cb, data);
     }
 
+    void setLastEventState(lv_indev_state_t state) {
+        mLastEventState = state;
+    }
+
+    lv_indev_state_t getLastEventState() {
+        return mLastEventState;
+    }
+
+    void enableDrawAll(bool enable) {
+        mEnableDrawAll = enable;
+    }
+
     lv_display_t* mDisp;
     int32_t mDispW;
     int32_t mDispH;
-    lv_indev_t* mIndev;
+
+private:
     lv_indev_state_t mLastEventState;
+    lv_indev_t* mIndev;
     lv_display_render_mode_t mRenderMode;
     lv_draw_buf_t* mDummyBuffer;
     ::std::vector<std::shared_ptr<LVGLDrawBuffer>> mDrawBuffers;
+    bool mEnableDrawAll;
 };
 
 } // namespace wm
