@@ -33,15 +33,13 @@ namespace wm {
 
 static inline void* getLayerByType(WindowManagerService* service, int type) {
     switch (type) {
-        case LayoutParams::TYPE_SYSTEM_WINDOW:
         case LayoutParams::TYPE_DIALOG: {
-            return service->getRootContainer()->getTopLayer();
-        }
-
-        case LayoutParams::TYPE_TOAST: {
             return service->getRootContainer()->getSysLayer();
         }
-
+        case LayoutParams::TYPE_SYSTEM_WINDOW:
+        case LayoutParams::TYPE_TOAST: {
+            return service->getRootContainer()->getTopLayer();
+        }
         case LayoutParams::TYPE_APPLICATION:
         default: {
             return service->getRootContainer()->getDefLayer();
