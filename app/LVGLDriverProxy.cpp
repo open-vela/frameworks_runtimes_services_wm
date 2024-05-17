@@ -43,7 +43,7 @@ LVGLDriverProxy::LVGLDriverProxy(std::shared_ptr<BaseWindow> win)
       : UIDriverProxy(win),
         mLastEventState(LV_INDEV_STATE_RELEASED),
         mIndev(NULL),
-        mRenderMode(LV_DISPLAY_RENDER_MODE_DIRECT),
+        mRenderMode(LV_DISPLAY_RENDER_MODE_FULL),
         mEnableDrawAll(true) {
     lv_color_format_t cf = getLvColorFormatType(win->getLayoutParams().mFormat);
     auto wm = win->getWindowManager();
