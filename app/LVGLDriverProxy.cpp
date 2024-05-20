@@ -43,8 +43,9 @@ LVGLDriverProxy::LVGLDriverProxy(std::shared_ptr<BaseWindow> win)
       : UIDriverProxy(win),
         mLastEventState(LV_INDEV_STATE_RELEASED),
         mIndev(NULL),
-        mRenderMode(LV_DISPLAY_RENDER_MODE_FULL),
-        mEnableDrawAll(true) {
+        mRenderMode(CONFIG_APP_WINDOW_RENDER_MODE),
+        mAllAreaDirty(true),
+        mPrevBuffer(NULL) {
     lv_color_format_t cf = getLvColorFormatType(win->getLayoutParams().mFormat);
     auto wm = win->getWindowManager();
     uint32_t width = 0, height = 0;
@@ -54,8 +55,8 @@ LVGLDriverProxy::LVGLDriverProxy(std::shared_ptr<BaseWindow> win)
     mDisp = _disp_init(this, width, height, cf);
     mDispW = mDisp->hor_res;
     mDispH = mDisp->ver_res;
-
     mDummyBuffer = mDisp->buf_1;
+
     lv_display_set_default(mDisp);
 }
 
@@ -81,33 +82,74 @@ LVGLDriverProxy::~LVGLDriverProxy() {
 }
 
 void LVGLDriverProxy::drawFrame(BufferItem* bufItem) {
-    BufferItem* oldItem = getBufferItem();
     UIDriverProxy::drawFrame(bufItem);
     if (!bufItem) {
         FLOGI("buffer is invalid");
         return;
     }
-
-    if (!mEnableDrawAll && oldItem && mRenderMode == LV_DISPLAY_RENDER_MODE_DIRECT) {
-        if (bufItem->mUserData == nullptr) {
-            void* buffer = onDequeueBuffer();
-            if (buffer == nullptr) return;
-        }
-
-        lv_area_t scr_area;
-        scr_area.x1 = 0;
-        scr_area.y1 = 0;
-        scr_area.x2 = mDispW - 1;
-        scr_area.y2 = mDispH - 1;
-        lv_draw_buf_copy((lv_draw_buf_t*)(bufItem->mUserData), &scr_area,
-                         (lv_draw_buf_t*)(oldItem->mUserData), &scr_area);
-    }
-
     if (lv_display_get_default() != mDisp) {
         lv_display_set_default(mDisp);
     }
     _lv_display_refr_timer(NULL);
-    mEnableDrawAll = false;
+    mAllAreaDirty = false;
+}
+
+void LVGLDriverProxy::onRenderStart() {
+    void* buffer = onDequeueBuffer();
+    if (!buffer) {
+        FLOGE("no valid render buffer");
+        return;
+    }
+
+    mDisp->buf_act = (lv_draw_buf_t*)buffer;
+
+    if (mRenderMode == LV_DISPLAY_RENDER_MODE_DIRECT && mPrevBuffer && !mAllAreaDirty) {
+        lv_area_t area = {0, 0, mDispW - 1, mDispH - 1};
+        lv_draw_buf_copy((lv_draw_buf_t*)buffer, &area, (lv_draw_buf_t*)(mPrevBuffer->mUserData),
+                         &area);
+    }
+}
+
+void LVGLDriverProxy::onRenderEnd() {
+    onQueueBuffer();
+    if (mRenderMode == LV_DISPLAY_RENDER_MODE_DIRECT) {
+        mPrevBuffer = getBufferItem();
+
+        lv_area_t area;
+        lv_display_get_dirty_area(mDisp, &area);
+        Rect inv_rect = Rect(area.x1, area.y1, area.x2, area.y2);
+        onRectCrop(inv_rect);
+    }
+}
+
+void LVGLDriverProxy::onResolutionChanged(int32_t width, int32_t height) {
+    FLOGI("Resolution changed from(%" PRId32 "x%" PRId32 ") to (%" PRId32 "x%" PRId32 ")", mDispW,
+          mDispH, width, height);
+
+    int32_t oldW = mDispW;
+    int32_t oldH = mDispH;
+
+    mDispW = width;
+    mDispH = height;
+
+    WindowEventListener* listener = getEventListener();
+    if (listener) {
+        listener->onSizeChanged(width, height, oldW, oldH);
+    }
+}
+
+bool LVGLDriverProxy::updateDirtyArea(const lv_area_t* area) {
+    if (mRenderMode != LV_DISPLAY_RENDER_MODE_DIRECT) return false;
+
+    if (!area) return false;
+
+    if (!getBufferItem() ||
+        (lv_area_get_width(area) >= mDispW * 3 >> 2 &&
+         lv_area_get_height(area) >= mDispH * 3 >> 2)) {
+        mAllAreaDirty = true;
+        return true;
+    }
+    return false;
 }
 
 void LVGLDriverProxy::handleEvent() {
@@ -154,6 +196,7 @@ void* LVGLDriverProxy::onDequeueBuffer() {
 }
 
 void LVGLDriverProxy::resetBuffer() {
+    mPrevBuffer = NULL;
     mDisp->buf_act = mDummyBuffer;
     mDrawBuffers.clear();
     UIDriverProxy::resetBuffer();
@@ -184,64 +227,40 @@ void LVGLDriverProxy::updateVisibility(bool visible) {
     }
 }
 
-static void _disp_flush_cb(lv_display_t* disp, const lv_area_t* area_p, uint8_t* color_p) {
+static void _disp_flush_cb(lv_display_t* disp, const lv_area_t* area, uint8_t* color) {
+    if (!lv_display_flush_is_last(disp)) {
+        lv_display_flush_ready(disp);
+        return;
+    }
+
     LVGLDriverProxy* proxy = reinterpret_cast<LVGLDriverProxy*>(lv_display_get_user_data(disp));
     if (proxy) {
-        proxy->onQueueBuffer();
-
-        Rect inv_rect = Rect(area_p->x1, area_p->y1, area_p->x2, area_p->y2);
-        proxy->onRectCrop(inv_rect);
-        FLOGD("%p display flush area (%" PRId32 ",%" PRId32 ")->(%" PRId32 ",%" PRId32 ")", proxy,
-              area_p->x1, area_p->y1, area_p->x2, area_p->y2);
+        proxy->onRenderEnd();
     }
+
     lv_display_flush_ready(disp);
 }
+
+#define CHECK_PROXY_OBJECT(e)                                                               \
+    LVGLDriverProxy* proxy = reinterpret_cast<LVGLDriverProxy*>(lv_event_get_user_data(e)); \
+    if (proxy == NULL) {                                                                    \
+        FLOGI("proxy is invalid");                                                          \
+        return;                                                                             \
+    }
 
 static void _disp_event_cb(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);
 
     switch (code) {
         case LV_EVENT_RENDER_START: {
-            LVGLDriverProxy* proxy = reinterpret_cast<LVGLDriverProxy*>(lv_event_get_user_data(e));
-            if (proxy == NULL) {
-                FLOGI("Render start, proxy is invalid");
-                return;
-            }
-
-            void* buffer = proxy->onDequeueBuffer();
-            if (buffer) {
-                FLOGD("%p render start", proxy);
-                proxy->mDisp->buf_act = (lv_draw_buf_t*)buffer;
-            }
+            CHECK_PROXY_OBJECT(e);
+            proxy->onRenderStart();
             break;
         }
-        case LV_EVENT_REFR_REQUEST:      // for LV_DISPLAY_RENDER_MODE_FULL
-        case LV_EVENT_INVALIDATE_AREA: { // for LV_DISPLAY_RENDER_MODE_DIRECT
-            LVGLDriverProxy* proxy = reinterpret_cast<LVGLDriverProxy*>(lv_event_get_user_data(e));
-            if (proxy == NULL) {
-                FLOGI("Invalidate, proxy is invalid");
-                return;
-            }
 
-            if (code == LV_EVENT_INVALIDATE_AREA) {
-                lv_area_t* area = (lv_area_t*)lv_event_get_param(e);
-                if (area) {
-                    lv_display_t* disp = (lv_display_t*)lv_event_get_target(e);
-                    int width = lv_display_get_horizontal_resolution(disp);
-                    int height = lv_display_get_vertical_resolution(disp);
-
-                    if (!proxy->getBufferItem() ||
-                        (lv_area_get_width(area) > width * 3 >> 2 &&
-                         lv_area_get_height(area) > height * 3 >> 2)) {
-                        proxy->enableDrawAll(true);
-                        area->x1 = 0;
-                        area->y1 = 0;
-                        area->x2 = width - 1;
-                        area->y2 = height - 1;
-                    }
-                }
-            }
-
+        /* for FULL & DIRECT render mode */
+        case LV_EVENT_REFR_REQUEST: {
+            CHECK_PROXY_OBJECT(e);
             bool periodic = lv_anim_get_timer()->paused ? false : true;
             if (proxy->onInvalidate(periodic)) {
                 FLOGD("%p invalidate area", proxy);
@@ -249,39 +268,31 @@ static void _disp_event_cb(lv_event_t* e) {
             break;
         }
 
-        case LV_EVENT_RESOLUTION_CHANGED: {
-            lv_display_t* disp = (lv_display_t*)lv_event_get_target(e);
-            LVGLDriverProxy* proxy = reinterpret_cast<LVGLDriverProxy*>(lv_event_get_user_data(e));
-            if (proxy == NULL) {
-                FLOGI("Resolution changed, proxy is invalid");
-                return;
+        case LV_EVENT_INVALIDATE_AREA: {
+            CHECK_PROXY_OBJECT(e);
+            lv_area_t* area = (lv_area_t*)lv_event_get_param(e);
+            if (proxy->updateDirtyArea(area)) {
+                lv_display_t* disp = (lv_display_t*)lv_event_get_target(e);
+                int width = lv_display_get_horizontal_resolution(disp);
+                int height = lv_display_get_vertical_resolution(disp);
+                area->x1 = 0;
+                area->y1 = 0;
+                area->x2 = width - 1;
+                area->y2 = height - 1;
             }
-            FLOGI("%p Resolution changed from(%" PRId32 "x%" PRId32 ") to (%" PRId32 "x%" PRId32
-                  ")",
-                  proxy, proxy->mDispW, proxy->mDispH, disp->hor_res, disp->ver_res);
-
-            WindowEventListener* listener = proxy->getEventListener();
-            if (listener) {
-                int32_t oldW = proxy->mDispW;
-                int32_t oldH = proxy->mDispH;
-                proxy->mDispW = disp->hor_res;
-                proxy->mDispH = disp->ver_res;
-                listener->onSizeChanged(disp->hor_res, disp->ver_res, oldW, oldH);
-            } else {
-                proxy->mDispW = disp->hor_res;
-                proxy->mDispH = disp->ver_res;
-            }
-
             break;
         }
-        case LV_EVENT_VSYNC_REQUEST: {
-            LVGLDriverProxy* proxy = reinterpret_cast<LVGLDriverProxy*>(lv_event_get_user_data(e));
-            void* param = lv_event_get_param(e);
-            if (proxy == NULL) {
-                FLOGI("Vsync Request, proxy is invalid");
-                return;
-            }
 
+        case LV_EVENT_RESOLUTION_CHANGED: {
+            CHECK_PROXY_OBJECT(e);
+            lv_display_t* disp = (lv_display_t*)lv_event_get_target(e);
+            if (disp) proxy->onResolutionChanged(disp->hor_res, disp->ver_res);
+            break;
+        }
+
+        case LV_EVENT_VSYNC_REQUEST: {
+            CHECK_PROXY_OBJECT(e);
+            void* param = lv_event_get_param(e);
             proxy->onFBVsyncRequest(param ? true : false);
             break;
         }
@@ -312,7 +323,7 @@ static lv_display_t* _disp_init(LVGLDriverProxy* proxy, uint32_t width, uint32_t
     FLOGI("size(%" LV_PRIu32 "*%" LV_PRIu32 ")", dummyWidth, dummyHeight);
     lv_draw_buf_t* dummyBuffer = lv_draw_buf_create(dummyWidth, dummyHeight, cf, bufStride);
     lv_display_set_draw_buffers(disp, dummyBuffer, NULL);
-    lv_display_set_render_mode(disp, proxy->renderMode());
+    lv_display_set_render_mode(disp, (lv_display_render_mode_t)proxy->renderMode());
 
     lv_display_set_flush_cb(disp, _disp_flush_cb);
     lv_event_add(&disp->event_list, _disp_event_cb, LV_EVENT_ALL, proxy);
@@ -340,7 +351,7 @@ static void _indev_read(lv_indev_t* drv, lv_indev_data_t* data) {
         dumpInputMessage(&message);
         if (message.type == INPUT_MESSAGE_TYPE_POINTER) {
             if (message.state == INPUT_MESSAGE_STATE_PRESSED) {
-                const lv_display_t* disp_drv = proxy->mDisp;
+                const lv_display_t* disp_drv = (lv_display_t*)(proxy->getRoot());
                 int32_t ver_max = disp_drv->ver_res - 1;
                 int32_t hor_max = disp_drv->hor_res - 1;
 

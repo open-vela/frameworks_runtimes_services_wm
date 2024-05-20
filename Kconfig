@@ -44,7 +44,7 @@ config ENABLE_BUFFER_QUEUE_BY_NAME
 	default y
 
 config ENABLE_WINDOW_LIMIT_MAX
-	int "support max application window numbers"
+	int "Support max application window"
 	default 10
 
 config ENABLE_TRANSITION_ANIMATION
@@ -54,7 +54,7 @@ config ENABLE_TRANSITION_ANIMATION
 
 config SYSTEM_WINDOW_USE_VSYNC_EVENT
 	bool "Enable window vsync event"
-	default y
+	default n
 
 config SYSTEM_WINDOW_FBDEV_DEVICEPATH
 	string "Wms framebuffer device path"
@@ -63,5 +63,21 @@ config SYSTEM_WINDOW_FBDEV_DEVICEPATH
 config SYSTEM_WINDOW_TOUCHPAD_DEVICEPATH
 	string "Wms touchpad device path"
 	default "/dev/input0"
+
+choice
+    prompt "App window render mode based on WMS"
+    default APP_WINDOW_RENDER_MODE_FULL
+
+    config APP_WINDOW_RENDER_MODE_PARTIAL
+        bool "Partial window render mode"
+
+    config APP_WINDOW_RENDER_MODE_FULL
+        bool "Full window render mode"
+endchoice
+
+config APP_WINDOW_RENDER_MODE
+	int
+	default 1 if APP_WINDOW_RENDER_MODE_PARTIAL
+	default 2 if APP_WINDOW_RENDER_MODE_FULL
 
 endif
