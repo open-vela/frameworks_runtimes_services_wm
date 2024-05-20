@@ -58,13 +58,26 @@ public:
     void handleEvent() override;
     void setInputMonitor(InputMonitor* monitor) override;
 
-    lv_display_render_mode_t renderMode() {
+    void updateVisibility(bool visible) override;
+    void* onDequeueBuffer() override;
+    void resetBuffer() override;
+
+    bool updateDirtyArea(const lv_area_t* area);
+    void onResolutionChanged(int32_t width, int32_t height);
+    void onRenderStart();
+    void onRenderEnd();
+
+    int renderMode() {
         return mRenderMode;
     }
-    void updateVisibility(bool visible);
 
-    virtual void* onDequeueBuffer() override;
-    virtual void resetBuffer() override;
+    void setLastEventState(lv_indev_state_t state) {
+        mLastEventState = state;
+    }
+
+    lv_indev_state_t getLastEventState() {
+        return mLastEventState;
+    }
 
     static void init();
     static void deinit();
@@ -81,29 +94,18 @@ public:
         lv_timer_handler_set_resume_cb(cb, data);
     }
 
-    void setLastEventState(lv_indev_state_t state) {
-        mLastEventState = state;
-    }
-
-    lv_indev_state_t getLastEventState() {
-        return mLastEventState;
-    }
-
-    void enableDrawAll(bool enable) {
-        mEnableDrawAll = enable;
-    }
-
+private:
     lv_display_t* mDisp;
+
     int32_t mDispW;
     int32_t mDispH;
-
-private:
     lv_indev_state_t mLastEventState;
     lv_indev_t* mIndev;
-    lv_display_render_mode_t mRenderMode;
+    int mRenderMode;
     lv_draw_buf_t* mDummyBuffer;
     ::std::vector<std::shared_ptr<LVGLDrawBuffer>> mDrawBuffers;
-    bool mEnableDrawAll;
+    bool mAllAreaDirty;
+    BufferItem* mPrevBuffer;
 };
 
 } // namespace wm
