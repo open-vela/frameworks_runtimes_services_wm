@@ -57,8 +57,12 @@ static const std::string defaultEnterConfigJson =
             },
             "config": {
                 "ease": [
-                    "cubicInOut",
-                    0.3
+                    "cubic-bezier",
+                    0.3,
+                    0.42, 
+                    0.0, 
+                    0.58, 
+                    1.0
                 ]
             }
         })";
@@ -75,8 +79,56 @@ static const std::string defaultExitConfigJson =
             },
             "config": {
                 "ease": [
-                    "cubicInOut",
-                    0.2
+                    "cubic-bezier",
+                    0.2,
+                    0.42, 
+                    0.0, 
+                    0.58, 
+                    1.0
+                ]
+            }
+        })";
+
+static const std::string defaultSystemWindowEnterConfigJson =
+        R"({
+            "fromState": {
+                "opacity": 0.0,
+                "y": -480.0
+            },
+            "toState": {
+                "opacity": 1.0,
+                "y": 0.0
+            },
+            "config": {
+                "ease": [
+                    "cubic-bezier",
+                    0.3,
+                    0.42, 
+                    0.0, 
+                    0.58, 
+                    1.0
+                ]
+            }
+        })";
+
+static const std::string defaultSystemWindowExitConfigJson =
+        R"({
+            "fromState": {
+                "opacity": 1.0,
+                "y": 0.0
+            },
+            "toState": {
+                "opacity": 0.0,
+                "y": -480.0
+            },
+            "config": {
+                "ease": [
+                    "cubic-bezier",
+                    0.3,
+                    0.42, 
+                    0.0, 
+                    0.58, 
+                    1.0
                 ]
             }
         })";
@@ -572,7 +624,12 @@ AnimEngineHandle WindowManagerService::getAnimEngine() {
 
 std::string WindowManagerService::getAnimConfig(bool animMode, WindowState* win) {
     return (mAnimConfigMap.size() < 2)
-            ? ((animMode) ? defaultEnterConfigJson : defaultExitConfigJson)
+            ? ((animMode) ? ((win->getToken()->getType() == LayoutParams::TYPE_SYSTEM_WINDOW)
+                                     ? defaultSystemWindowEnterConfigJson
+                                     : defaultEnterConfigJson)
+                          : ((win->getToken()->getType() == LayoutParams::TYPE_SYSTEM_WINDOW)
+                                     ? defaultSystemWindowExitConfigJson
+                                     : defaultExitConfigJson))
             : ((animMode) ? mAnimConfigMap[1] : mAnimConfigMap[2]);
 }
 #endif
