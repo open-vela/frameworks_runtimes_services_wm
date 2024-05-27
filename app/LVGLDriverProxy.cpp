@@ -58,6 +58,9 @@ LVGLDriverProxy::LVGLDriverProxy(std::shared_ptr<BaseWindow> win)
     mDummyBuffer = mDisp->buf_1;
 
     lv_display_set_default(mDisp);
+
+    if (mRenderMode == LV_DISPLAY_RENDER_MODE_DIRECT)
+        FLOGW("app window is using partial render mode");
 }
 
 LVGLDriverProxy::~LVGLDriverProxy() {
@@ -105,8 +108,10 @@ void LVGLDriverProxy::onRenderStart() {
 
     if (mRenderMode == LV_DISPLAY_RENDER_MODE_DIRECT && mPrevBuffer && !mAllAreaDirty) {
         lv_area_t area = {0, 0, mDispW - 1, mDispH - 1};
+        WM_PROFILER_BEGIN();
         lv_draw_buf_copy((lv_draw_buf_t*)buffer, &area, (lv_draw_buf_t*)(mPrevBuffer->mUserData),
                          &area);
+        WM_PROFILER_END();
     }
 }
 
