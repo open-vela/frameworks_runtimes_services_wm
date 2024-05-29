@@ -18,8 +18,16 @@
 
 #include <nuttx/trace.h>
 
+#ifdef CONFIG_SYSTEM_SERVER_USE_PROFILER
 #define WM_PROFILER_BEGIN() sched_note_beginex(NOTE_TAG_GRAPHICS, __func__);
 #define WM_PROFILER_END() sched_note_endex(NOTE_TAG_GRAPHICS, __func__);
 
 #define WM_PROFILER_BEGINEX(str) sched_note_beginex(NOTE_TAG_GRAPHICS, str);
 #define WM_PROFILER_ENDEX(str) sched_note_endex(NOTE_TAG_GRAPHICS, str);
+#else
+#define WM_PROFILER_BEGIN()
+#define WM_PROFILER_END()
+
+#define WM_PROFILER_BEGINEX(str)
+#define WM_PROFILER_ENDEX(str)
+#endif
