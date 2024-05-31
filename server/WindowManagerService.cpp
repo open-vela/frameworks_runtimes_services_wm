@@ -23,6 +23,8 @@
 #include <sys/stat.h>
 #include <utils/Log.h>
 
+#include "wm/WMService.h"
+
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
 #include "WindowAnimEngine.h"
 #include "rapidjson/document.h"
@@ -37,6 +39,22 @@
 #include "WindowToken.h"
 #include "wm/GestureDetectorState.h"
 #include "wm/SurfaceControl.h"
+
+using ::android::IServiceManager;
+using ::android::sp;
+using ::android::String16;
+using ::os::wm::IWindowManager;
+using ::os::wm::WindowManagerService;
+
+sp<IWindowManager> startWMService(sp<IServiceManager> sm, uv_loop_t* looper) {
+    if (!looper) return nullptr;
+
+    sp<WindowManagerService> wms = sp<WindowManagerService>::make(looper);
+    if (!wms->ready()) return nullptr;
+
+    sm->addService(String16(WindowManagerService::name()), wms);
+    return wms;
+}
 
 namespace os {
 namespace wm {
