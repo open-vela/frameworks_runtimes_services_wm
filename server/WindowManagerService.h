@@ -103,7 +103,6 @@ private:
     WindowTokenMap mTokenMap;
     WindowStateMap mWindowMap;
     RootContainer* mContainer;
-    uv_loop_t* mLooper;
     std::shared_ptr<::os::app::UvLoop> mUvLooper;
     InputMonitorMap mInputMonitorMap;
     sp<WindowDeathRecipient> mWindowDeathRecipient;
