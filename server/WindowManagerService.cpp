@@ -234,9 +234,10 @@ void WindowManagerService::WindowDeathRecipient::binderDied(const wp<IBinder>& w
 }
 
 WindowManagerService::WindowManagerService(uv_loop_t* looper)
-      : mLooper(looper),
-        mUvLooper(std::make_shared<::os::app::UvLoop>(looper)),
+      : mUvLooper(std::make_shared<::os::app::UvLoop>(looper)),
+#ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
         mWinAnimEngine(nullptr),
+#endif
         mGestureDetector(mUvLooper) {
     FLOGI("WMS init");
     mContainer = new RootContainer(this, looper);
