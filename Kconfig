@@ -23,6 +23,8 @@ config SYSTEM_WINDOW_SERVICE
 	depends on LV_ENABLE_GLOBAL_CUSTOM
 	depends on LV_USE_NUTTX
 	depends on LV_USE_NUTTX_LIBUV
+	depends on LVGL_EXTENSION
+	depends on KVDB
 
 if SYSTEM_WINDOW_SERVICE
 
@@ -37,7 +39,7 @@ config SYSTEM_WINDOW_SERVICE_PRIORITY
 config SYSTEM_WINDOW_SERVICE_TEST
 	tristate "Enable WMS test"
 	default n
-        depends on GOOGLE_TEST
+	depends on LIB_GOOGLETEST
 
 config ENABLE_BUFFER_QUEUE_BY_NAME
 	bool "Enable buffer queue by name"
