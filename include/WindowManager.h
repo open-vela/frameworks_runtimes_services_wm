@@ -79,7 +79,7 @@ private:
     uint32_t mDispWidth, mDispHeight;
 
     int mVsyncFd;
-    uv_poll_t mVsyncPoll;
+    uv_poll_t* mVsyncPoll;
     vector<std::shared_ptr<BaseWindow>> mVsyncListeners;
 };
 
