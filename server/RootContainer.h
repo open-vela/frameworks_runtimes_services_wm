@@ -56,6 +56,7 @@ public:
 
 private:
     bool init();
+    lv_nuttx_result_t mResult;
 
     DeviceEventListener* mListener;
     lv_disp_t* mDisp;
