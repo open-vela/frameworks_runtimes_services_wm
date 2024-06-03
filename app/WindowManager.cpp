@@ -88,17 +88,20 @@ bool WindowManager::onFBVsyncRequest(std::shared_ptr<BaseWindow> window, bool en
                 FLOGE("Failed to listen framebuffer device");
                 return false;
             }
-
-            mVsyncPoll.data = this;
-            uv_poll_init(window->getContext()->getMainLoop()->get(), &mVsyncPoll, mVsyncFd);
+        }
+        if (mVsyncPoll == nullptr) {
+            mVsyncPoll = new uv_poll_t;
+            mVsyncPoll->data = this;
+            uv_poll_init(window->getContext()->getMainLoop()->get(), mVsyncPoll, mVsyncFd);
         }
 
         auto it = std::find(mVsyncListeners.begin(), mVsyncListeners.end(), window);
         if (it == mVsyncListeners.end()) {
             mVsyncListeners.push_back(window);
         }
-        uv_poll_start(&mVsyncPoll, UV_PRIORITIZED, _wm_vsync_poll_cb);
         FLOGW("window start listening vsync event");
+
+        if (mVsyncPoll) uv_poll_start(mVsyncPoll, UV_PRIORITIZED, _wm_vsync_poll_cb);
         return true;
     } else {
         if (mVsyncFd > 0 && mVsyncListeners.size() > 0) {
@@ -109,9 +112,13 @@ bool WindowManager::onFBVsyncRequest(std::shared_ptr<BaseWindow> window, bool en
             }
 
             mVsyncListeners.erase(it);
-            if (mVsyncListeners.size() == 0) {
-                uv_poll_stop(&mVsyncPoll);
-                uv_close((uv_handle_t*)&mVsyncPoll, NULL);
+            if (mVsyncListeners.size() == 0 && mVsyncPoll) {
+                uv_poll_stop(mVsyncPoll);
+                mVsyncPoll->data = nullptr;
+
+                uv_close(reinterpret_cast<uv_handle_t*>(mVsyncPoll),
+                         [](uv_handle_t* handle) { delete reinterpret_cast<uv_poll_t*>(handle); });
+                mVsyncPoll = nullptr;
 
                 close(mVsyncFd);
                 mVsyncFd = 0;
@@ -160,7 +167,7 @@ void WindowManager::releaseInput(InputMonitor* monitor) {
     FLOGI("success");
 }
 
-WindowManager::WindowManager() : mService(nullptr), mTimerInited(false) {
+WindowManager::WindowManager() : mService(nullptr), mTimerInited(false), mVsyncPoll(nullptr) {
     mTransaction = std::make_shared<SurfaceTransaction>();
     mTransaction->setWindowManager(this);
     getService();
