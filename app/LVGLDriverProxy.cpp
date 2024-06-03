@@ -409,6 +409,10 @@ void LVGLDriverProxy::deinit() {
     lv_ext_deinit();
 #endif
     lv_deinit();
+
+#if LV_USE_NUTTX
+    lv_nuttx_deinit(NULL);
+#endif
 }
 
 } // namespace wm

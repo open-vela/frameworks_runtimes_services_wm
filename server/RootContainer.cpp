@@ -66,6 +66,8 @@ RootContainer::~RootContainer() {
 
     mListener = nullptr;
 
+    lv_nuttx_deinit(&mResult);
+
     lv_deinit();
 }
 
@@ -211,26 +213,25 @@ bool RootContainer::init() {
 
 #if LV_USE_NUTTX
     lv_nuttx_dsc_t info;
-    lv_nuttx_result_t result;
 
     lv_nuttx_dsc_init(&info);
     info.fb_path = CONFIG_SYSTEM_WINDOW_FBDEV_DEVICEPATH;
     info.input_path = CONFIG_SYSTEM_WINDOW_TOUCHPAD_DEVICEPATH;
 
-    lv_nuttx_init(&info, &result);
-    if (result.disp == nullptr) {
+    lv_nuttx_init(&info, &mResult);
+    if (mResult.disp == nullptr) {
         FLOGE("Failed to open fb device:%s. Please check device node and its access "
               "permissions.",
               info.fb_path);
         return false;
     }
 
-    mDisp = result.disp;
+    mDisp = mResult.disp;
     lv_nuttx_uv_t uv_info = {
             .loop = mUvLoop,
-            .disp = result.disp,
-            .indev = result.indev,
-            .uindev = result.utouch_indev,
+            .disp = mResult.disp,
+            .indev = mResult.indev,
+            .uindev = mResult.utouch_indev,
     };
     mUvData = lv_nuttx_uv_init(&uv_info);
 
@@ -241,10 +242,10 @@ bool RootContainer::init() {
 
     if (mListener) {
         LV_GLOBAL_DEFAULT()->user_data = this;
-        lv_indev_set_read_preprocess_cb(result.indev, monitor_indev_read);
-
-        if (result.utouch_indev)
-            lv_indev_set_read_preprocess_cb(result.utouch_indev, monitor_indev_read);
+        lv_indev_set_read_preprocess_cb(mResult.indev, monitor_indev_read);
+        if (mResult.utouch_indev) {
+            lv_indev_set_read_preprocess_cb(mResult.utouch_indev, monitor_indev_read);
+        }
     }
 #endif
 
