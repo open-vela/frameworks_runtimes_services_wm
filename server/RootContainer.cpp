@@ -242,6 +242,9 @@ bool RootContainer::init() {
     if (mListener) {
         LV_GLOBAL_DEFAULT()->user_data = this;
         lv_indev_set_read_preprocess_cb(result.indev, monitor_indev_read);
+
+        if (result.utouch_indev)
+            lv_indev_set_read_preprocess_cb(result.utouch_indev, monitor_indev_read);
     }
 #endif
 
