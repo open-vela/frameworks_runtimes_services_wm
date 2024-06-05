@@ -92,7 +92,16 @@ bool WindowManager::onFBVsyncRequest(std::shared_ptr<BaseWindow> window, bool en
         if (mVsyncPoll == nullptr) {
             mVsyncPoll = new uv_poll_t;
             mVsyncPoll->data = this;
-            uv_poll_init(window->getContext()->getMainLoop()->get(), mVsyncPoll, mVsyncFd);
+            int uvError =
+                    uv_poll_init(window->getContext()->getMainLoop()->get(), mVsyncPoll, mVsyncFd);
+            if (uvError != 0) {
+                FLOGW("Failed to init vsync poll, error code: %d", uvError);
+                close(mVsyncFd);
+                mVsyncFd = 0;
+                delete mVsyncPoll;
+                mVsyncPoll = nullptr;
+                return false;
+            }
         }
 
         auto it = std::find(mVsyncListeners.begin(), mVsyncListeners.end(), window);
@@ -167,7 +176,8 @@ void WindowManager::releaseInput(InputMonitor* monitor) {
     FLOGI("success");
 }
 
-WindowManager::WindowManager() : mService(nullptr), mTimerInited(false), mVsyncPoll(nullptr) {
+WindowManager::WindowManager()
+      : mService(nullptr), mTimerInited(false), mVsyncFd(0), mVsyncPoll(nullptr) {
     mTransaction = std::make_shared<SurfaceTransaction>();
     mTransaction->setWindowManager(this);
     getService();
