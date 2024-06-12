@@ -18,7 +18,8 @@
 #include <binder/IServiceManager.h>
 #include <os/wm/IWindowManager.h>
 #include <utils/String8.h>
-#include <uv.h>
+
+#include "app/UvLoop.h"
 
 ::android::sp<::os::wm::IWindowManager> startWMService(::android::sp<::android::IServiceManager> sm,
-                                                       uv_loop_t* looper);
+                                                       std::shared_ptr<::os::app::UvLoop> uvLooper);

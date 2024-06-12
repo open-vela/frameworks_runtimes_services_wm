@@ -46,10 +46,11 @@ using ::android::String16;
 using ::os::wm::IWindowManager;
 using ::os::wm::WindowManagerService;
 
-sp<IWindowManager> startWMService(sp<IServiceManager> sm, uv_loop_t* looper) {
-    if (!looper) return nullptr;
+sp<IWindowManager> startWMService(sp<IServiceManager> sm,
+                                  std::shared_ptr<::os::app::UvLoop> uvLooper) {
+    if (!uvLooper) return nullptr;
 
-    sp<WindowManagerService> wms = sp<WindowManagerService>::make(looper);
+    sp<WindowManagerService> wms = sp<WindowManagerService>::make(uvLooper);
     if (!wms->ready()) return nullptr;
 
     sm->addService(String16(WindowManagerService::name()), wms);
@@ -233,14 +234,14 @@ void WindowManagerService::WindowDeathRecipient::binderDied(const wp<IBinder>& w
     }
 }
 
-WindowManagerService::WindowManagerService(uv_loop_t* looper)
-      : mUvLooper(std::make_shared<::os::app::UvLoop>(looper)),
+WindowManagerService::WindowManagerService(std::shared_ptr<::os::app::UvLoop> uvLooper)
+      : mUvLooper(uvLooper),
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
         mWinAnimEngine(nullptr),
 #endif
         mGestureDetector(mUvLooper) {
     FLOGI("WMS init");
-    mContainer = new RootContainer(this, looper);
+    mContainer = new RootContainer(this, mUvLooper->get());
     DisplayInfo disp_info;
     mContainer->getDisplayInfo(&disp_info);
     mGestureDetector.setDisplayInfo(&disp_info);

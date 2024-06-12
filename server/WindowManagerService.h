@@ -43,7 +43,7 @@ typedef map<sp<IBinder>, std::shared_ptr<InputDispatcher>> InputMonitorMap;
 
 class WindowManagerService : public BnWindowManager, DeviceEventListener {
 public:
-    WindowManagerService(uv_loop_t* looper);
+    WindowManagerService(std::shared_ptr<::os::app::UvLoop> uvLooper);
     ~WindowManagerService();
 
     static inline const char* name() {
