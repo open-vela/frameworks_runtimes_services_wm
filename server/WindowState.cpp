@@ -172,7 +172,7 @@ std::shared_ptr<SurfaceControl> WindowState::createSurfaceControl(vector<BufferI
     setHasSurface(false);
     FLOGI("");
 
-    sp<IBinder> handle = new BBinder();
+    sp<IBinder> handle = sp<BBinder>::make();
     mSurfaceControl =
             std::make_shared<SurfaceControl>(IInterface::asBinder(mClient), handle, mAttrs.mWidth,
                                              mAttrs.mHeight, mAttrs.mFormat, getSurfaceSize());
