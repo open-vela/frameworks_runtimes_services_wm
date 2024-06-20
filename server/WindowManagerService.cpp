@@ -354,9 +354,7 @@ Status WindowManagerService::removeWindow(const sp<IWindow>& window) {
     sp<IBinder> client = IInterface::asBinder(window);
     auto itState = mWindowMap.find(client);
     if (itState != mWindowMap.end()) {
-        itState->first->unlinkToDeath(mWindowDeathRecipient);
         itState->second->removeIfPossible();
-        mWindowMap.erase(client);
     } else {
         return Status::fromExceptionCode(1, "can't find winstate in map");
     }
