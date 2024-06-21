@@ -52,10 +52,12 @@ void WindowToken::addWindow(WindowState* win) {
 }
 
 void WindowToken::removeWindow(WindowState* win) {
+    if (!win) return;
+
     for (auto it = mChildren.begin(); it != mChildren.end(); it++) {
         if ((*it) == win) {
             mChildren.erase(it);
-            return;
+            break;
         }
     }
 }
@@ -77,7 +79,7 @@ void WindowToken::removeIfPossible() {
 
     for (auto it = mChildren.begin(); it != mChildren.end();) {
         WindowState* state = *it;
-        it = mChildren.erase(it);
+        /* TODO: async remove state */
         state->removeIfPossible();
     }
 

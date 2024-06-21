@@ -19,8 +19,6 @@
 #include "WindowManagerService.h"
 
 #include <binder/IPCThreadState.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
 #include <utils/Log.h>
 
 #include "wm/WMService.h"
@@ -196,32 +194,6 @@ static inline std::string genUniquePath(int32_t pid, const std::string& prefix,
 
     FLOGD("'%s', length is %d", path.c_str(), path.size());
     return path.size() <= MQ_PATH_MAXLEN ? path : path.substr(0, MQ_PATH_MAXLEN);
-}
-
-static inline bool createSharedBuffer(int32_t size, BufferId* id) {
-    int32_t pid = IPCThreadState::self()->getCallingPid();
-
-    std::string bufferPath = genUniquePath(pid, "bq");
-    int fd = shm_open(bufferPath.c_str(), O_CREAT | O_RDWR | O_CLOEXEC, S_IRUSR | S_IWUSR);
-    if (fd == -1) {
-        FLOGE("[%" PRId32 "] Failed to create shared memory, %s", pid, strerror(errno));
-        return false;
-    }
-
-    if (ftruncate(fd, size) == -1) {
-        FLOGE("[%" PRId32 "] Failed to resize shared memory", pid);
-        close(fd);
-        return false;
-    }
-
-    int32_t bufferKey = std::rand();
-#ifdef CONFIG_ENABLE_BUFFER_QUEUE_BY_NAME
-    *id = {bufferPath, bufferKey, fd};
-#else
-    *id = {bufferKey, fd};
-#endif
-
-    return true;
 }
 
 void WindowManagerService::WindowDeathRecipient::binderDied(const wp<IBinder>& who) {
@@ -553,6 +525,8 @@ void WindowManagerService::postWindowRemoveCleanup(WindowState* state) {
         sp<IBinder> binder = IInterface::asBinder(state->getClient());
         auto token = state->getToken();
 
+        if (token && token.get()) token->removeWindow(state);
+
         auto itState = mWindowMap.find(binder);
         if (itState != mWindowMap.end()) {
             itState->first->unlinkToDeath(mWindowDeathRecipient);
@@ -609,31 +583,25 @@ bool WindowManagerService::responseVsync() {
 
 int32_t WindowManagerService::createSurfaceControl(SurfaceControl* outSurfaceControl,
                                                    WindowState* win) {
-    int32_t result = 0;
-
-    // double buffer: Create shared memory
-    uint32_t size = win->getSurfaceSize();
-
     vector<BufferId> ids;
+    int32_t pid = IPCThreadState::self()->getCallingPid();
+
     for (int32_t i = 0; i < 2; i++) {
         BufferId id;
-        if (!createSharedBuffer(size, &id)) {
-            for (int32_t j = 0; j < (int)ids.size(); j++) {
-                close(ids[j].mFd);
-            }
-            ids.clear();
-            FLOGE("createSharedBuffer failed, clear buffer ids!");
-            return -1;
-        }
+        std::string bufferPath = genUniquePath(pid, "bq");
+        int32_t bufferKey = std::rand();
+        id = {bufferPath, bufferKey, -1};
         ids.push_back(id);
     }
     std::shared_ptr<SurfaceControl> surfaceControl = win->createSurfaceControl(ids);
+
+    if (!surfaceControl->isValid()) return -1;
 
     if (surfaceControl != nullptr) {
         outSurfaceControl->copyFrom(*surfaceControl);
     }
 
-    return result;
+    return 0;
 }
 
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION

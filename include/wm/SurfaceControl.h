@@ -49,11 +49,14 @@ public:
 
     bool isValid();
 
-    std::unordered_map<BufferKey, BufferId>& bufferIds() {
+    std::vector<BufferId>& bufferIds() {
         return mBufferIds;
     }
 
     void initBufferIds(std::vector<BufferId>& ids);
+    void clearBufferIds() {
+        mBufferIds.clear();
+    }
 
     void setBufferQueue(const std::shared_ptr<BufferQueue>& bq) {
         mBufferQueue = bq;
@@ -106,10 +109,12 @@ private:
     uint32_t mFormat;
     uint32_t mBufferSize;
 
-    // key: server/client unique id
-    std::unordered_map<BufferKey, BufferId> mBufferIds;
+    std::vector<BufferId> mBufferIds;
     std::shared_ptr<BufferQueue> mBufferQueue;
 };
+
+void initSurfaceBuffer(const std::shared_ptr<SurfaceControl>& sc, bool isServer);
+void uninitSurfaceBuffer(const std::shared_ptr<SurfaceControl>& sc);
 
 } // namespace wm
 } // namespace os

@@ -21,11 +21,6 @@
 
 #include "../common/WindowUtils.h"
 #include "SurfaceTransaction.h"
-#ifdef CONFIG_ENABLE_BUFFER_QUEUE_BY_NAME
-#include <sys/mman.h>
-#include <sys/stat.h>
-#endif
-
 #include "UIDriverProxy.h"
 #include "uv.h"
 #include "wm/InputChannel.h"
@@ -79,7 +74,8 @@ BaseWindow::BaseWindow(::os::app::Context* context, WindowManager* wm)
         mWindowManager(wm),
         mVsyncRequest(VsyncRequest::VSYNC_REQ_NONE),
         mAppVisible(false),
-        mFrameDone(true) {
+        mFrameDone(true),
+        mSurfaceBufferReady(false) {
     if (mWindowManager == nullptr) {
         FLOGE("no valid window manager");
         return;
@@ -136,7 +132,10 @@ void BaseWindow::doDie() {
     if (mInputMonitor) {
         mInputMonitor.reset();
     }
-    if (mSurfaceControl) mSurfaceControl.reset();
+    if (mSurfaceControl) {
+        clearSurfaceBuffer();
+        mSurfaceControl.reset();
+    }
 
     mUIProxy.reset();
     mIWindow->clear();
@@ -154,26 +153,29 @@ void BaseWindow::setInputChannel(InputChannel* inputChannel) {
     }
 }
 
+void BaseWindow::clearSurfaceBuffer() {
+#ifdef CONFIG_ENABLE_BUFFER_QUEUE_BY_NAME
+    /*destroy current sc buffers */
+    if (mSurfaceBufferReady) {
+        uninitSurfaceBuffer(mSurfaceControl);
+        mSurfaceBufferReady = false;
+    }
+#endif
+}
+
 void BaseWindow::setSurfaceControl(SurfaceControl* surfaceControl) {
     /*reset current buffer when surface changed*/
     mUIProxy->resetBuffer();
+
+    clearSurfaceBuffer();
     mSurfaceControl.reset(surfaceControl);
 
     if (surfaceControl != nullptr && surfaceControl->isValid()) {
         mUIProxy->updateResolution(surfaceControl->getWidth(), surfaceControl->getHeight(),
                                    surfaceControl->getFormat());
-
 #ifdef CONFIG_ENABLE_BUFFER_QUEUE_BY_NAME
-        vector<BufferId> ids;
-        std::unordered_map<BufferKey, BufferId> bufferIds = mSurfaceControl->bufferIds();
-        for (auto it = bufferIds.begin(); it != bufferIds.end(); ++it) {
-            FLOGI("reset SurfaceControl bufferId:%s,%" PRId32 "", it->second.mName.c_str(),
-                  it->second.mKey);
-
-            int32_t fd = shm_open(it->second.mName.c_str(), O_RDWR | O_CLOEXEC, S_IRUSR | S_IWUSR);
-            ids.push_back({it->second.mName, it->second.mKey, fd});
-        }
-        mSurfaceControl->initBufferIds(ids);
+        initSurfaceBuffer(mSurfaceControl, false);
+        mSurfaceBufferReady = true;
 #endif
     }
 }
