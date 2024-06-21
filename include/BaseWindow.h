@@ -126,6 +126,7 @@ private:
     std::shared_ptr<BufferProducer> getBufferProducer();
     void updateOrCreateBufferQueue();
     void handleOnFrame(int32_t seq);
+    void clearSurfaceBuffer();
 
     ::os::app::Context* mContext;
     WindowManager* mWindowManager;
@@ -138,6 +139,7 @@ private:
     VsyncRequest mVsyncRequest;
     bool mAppVisible;
     atomic_bool mFrameDone;
+    bool mSurfaceBufferReady;
 };
 
 } // namespace wm
