@@ -19,9 +19,7 @@
 
 #include <list>
 #include <memory>
-#ifdef CONFIG_ENABLE_BUFFER_QUEUE_BY_NAME
 #include <string>
-#endif
 #include <unordered_map>
 
 namespace os {
@@ -38,9 +36,7 @@ typedef enum {
 
 typedef int32_t BufferKey;
 typedef struct {
-#ifdef CONFIG_ENABLE_BUFFER_QUEUE_BY_NAME
     std::string mName;
-#endif
     BufferKey mKey;
     int mFd;
 } BufferId;
