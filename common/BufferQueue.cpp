@@ -31,6 +31,7 @@ BufferQueue::BufferQueue(const std::shared_ptr<SurfaceControl>& sc) {
 BufferQueue::~BufferQueue() {
     mSurfaceControl.reset();
 
+    FLOGI(" ");
     if (!mBuffers.empty()) {
         clearBuffers();
     }
@@ -54,12 +55,15 @@ bool BufferQueue::cancelBuffer(BufferItem* item) {
 void BufferQueue::clearBuffers() {
     for (auto it = mBuffers.begin(); it != mBuffers.end(); ++it) {
         it->second.mUserData = nullptr;
+
+        FLOGI("%d unmap shared memory", it->second.mFd);
+
         if (it->second.mBuffer && munmap(it->second.mBuffer, it->second.mSize) == -1) {
-            FLOGE("munmap");
+            FLOGE("munmap failure");
         }
 
         if (close(it->second.mFd) == -1) {
-            FLOGE("close");
+            FLOGE("close failure");
         }
     }
     mBuffers.clear();
@@ -90,12 +94,12 @@ bool BufferQueue::update(const std::shared_ptr<SurfaceControl>& sc) {
 
     mSurfaceControl = sc;
 
-    std::unordered_map<BufferKey, BufferId> bufferIds = sc->bufferIds();
+    auto bufferIds = sc->bufferIds();
     uint32_t size = sc->getBufferSize();
 
-    for (auto it = bufferIds.begin(); it != bufferIds.end(); ++it) {
-        BufferKey bufferkey = it->first;
-        int bufferFd = it->second.mFd;
+    for (const auto& id : bufferIds) {
+        BufferKey bufferkey = id.mKey;
+        int bufferFd = id.mFd;
 
         if (bufferFd == -1) {
             return false;
@@ -108,6 +112,7 @@ bool BufferQueue::update(const std::shared_ptr<SurfaceControl>& sc) {
             return false;
         }
 
+        FLOGI("%d map shared memory success", bufferFd);
         BufferItem buffItem = {bufferkey, bufferFd, buffer, size, BSTATE_FREE, nullptr};
         mBuffers[bufferkey] = buffItem;
         mFreeSlot.push_back(bufferkey);

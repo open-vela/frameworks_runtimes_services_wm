@@ -170,13 +170,14 @@ void WindowState::onAnimationFinished(WindowAnimStatus status) {
 std::shared_ptr<SurfaceControl> WindowState::createSurfaceControl(vector<BufferId> ids) {
     WM_PROFILER_BEGIN();
     setHasSurface(false);
-    FLOGI("");
 
     sp<IBinder> handle = sp<BBinder>::make();
     mSurfaceControl =
             std::make_shared<SurfaceControl>(IInterface::asBinder(mClient), handle, mAttrs.mWidth,
                                              mAttrs.mHeight, mAttrs.mFormat, getSurfaceSize());
     mSurfaceControl->initBufferIds(ids);
+    initSurfaceBuffer(mSurfaceControl, true);
+
     std::shared_ptr<BufferConsumer> buffConsumer =
             std::make_shared<BufferConsumer>(mSurfaceControl);
     mSurfaceControl->setBufferQueue(buffConsumer);
@@ -199,14 +200,7 @@ void WindowState::destroySurfaceControl() {
 #endif
         }
         scheduleVsync(VsyncRequest::VSYNC_REQ_NONE);
-#ifdef CONFIG_ENABLE_BUFFER_QUEUE_BY_NAME
-        if (mSurfaceControl.get() != nullptr) {
-            std::unordered_map<BufferKey, BufferId> bufferIds = mSurfaceControl->bufferIds();
-            for (const auto& entry : bufferIds) {
-                shm_unlink(entry.second.mName.c_str());
-            }
-        }
-#endif
+        uninitSurfaceBuffer(mSurfaceControl);
         mSurfaceControl.reset();
     }
 }
@@ -307,8 +301,6 @@ void WindowState::removeImmediately() {
     if (mInputDispatcher.get() != nullptr) {
         mInputDispatcher->release();
     }
-
-    if (mToken) mToken->removeWindow(this);
 
     mService->postWindowRemoveCleanup(this);
 }

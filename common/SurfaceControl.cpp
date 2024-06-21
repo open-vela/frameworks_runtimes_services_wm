@@ -18,16 +18,21 @@
 
 #include "wm/SurfaceControl.h"
 
+#include <sys/mman.h>
+#include <sys/stat.h>
+
 #include "WindowUtils.h"
 
 namespace os {
 namespace wm {
+
 bool SurfaceControl::isSameSurface(const std::shared_ptr<SurfaceControl>& lhs,
                                    const std::shared_ptr<SurfaceControl>& rhs) {
     if (lhs == nullptr || rhs == nullptr) return false;
 
     return lhs->mHandle == rhs->mHandle;
 }
+
 SurfaceControl::SurfaceControl() {}
 
 SurfaceControl::SurfaceControl(const sp<IBinder>& token, const sp<IBinder>& handle, uint32_t width,
@@ -40,8 +45,11 @@ SurfaceControl::SurfaceControl(const sp<IBinder>& token, const sp<IBinder>& hand
         mBufferSize(size) {}
 
 SurfaceControl::~SurfaceControl() {
+    FLOGI("%p", this);
+    clearBufferIds();
     mToken.clear();
     mHandle.clear();
+    mBufferQueue = nullptr;
 }
 
 status_t SurfaceControl::writeToParcel(Parcel* out) const {
@@ -53,14 +61,13 @@ status_t SurfaceControl::writeToParcel(Parcel* out) const {
     SAFE_PARCEL(out->writeUint32, mBufferSize);
 
     SAFE_PARCEL(out->writeInt32, mBufferIds.size());
-    for (const auto& entry : mBufferIds) {
-        SAFE_PARCEL(out->writeInt32, entry.first);
+    for (const auto& id : mBufferIds) {
 #ifdef CONFIG_ENABLE_BUFFER_QUEUE_BY_NAME
-        SAFE_PARCEL(out->writeCString, entry.second.mName.c_str());
+        SAFE_PARCEL(out->writeCString, id.mName.c_str());
 #else
-        SAFE_PARCEL(out->writeDupFileDescriptor, entry.second.mFd);
+        SAFE_PARCEL(out->writeDupFileDescriptor, id.mFd);
 #endif
-        SAFE_PARCEL(out->writeInt32, entry.second.mKey);
+        SAFE_PARCEL(out->writeInt32, id.mKey);
     }
     return android::OK;
 }
@@ -76,26 +83,22 @@ status_t SurfaceControl::readFromParcel(const Parcel* in) {
     int32_t size;
     SAFE_PARCEL(in->readInt32, &size);
     for (int32_t i = 0; i < size; i++) {
-        BufferKey buffKey;
-        SAFE_PARCEL(in->readInt32, &buffKey);
-
         BufferId buffId;
 #ifdef CONFIG_ENABLE_BUFFER_QUEUE_BY_NAME
         buffId.mName = in->readCString();
+        buffId.mFd = -1;
 #else
+        buffId.mName = "";
         buffId.mFd = dup(in->readFileDescriptor());
 #endif
         SAFE_PARCEL(in->readInt32, &buffId.mKey);
-        mBufferIds[buffKey] = buffId;
+        mBufferIds.push_back(buffId);
     }
     return android::OK;
 }
 
 void SurfaceControl::initBufferIds(std::vector<BufferId>& ids) {
-    mBufferIds.clear();
-    for (uint32_t i = 0; i < ids.size(); i++) {
-        mBufferIds.insert(std::make_pair(ids[i].mKey, ids[i]));
-    }
+    mBufferIds = ids;
 }
 
 bool SurfaceControl::isValid() {
@@ -115,6 +118,83 @@ void SurfaceControl::copyFrom(SurfaceControl& other) {
     mFormat = other.mFormat;
     mBufferSize = other.mBufferSize;
     mBufferIds = other.mBufferIds;
+}
+
+static inline bool initSharedBuffer(std::string name, int32_t* pfd, int32_t size) {
+    int32_t flag = O_RDWR | O_CLOEXEC;
+
+    if (size > 0) flag |= O_CREAT;
+
+    *pfd = -1;
+    int fd = shm_open(name.c_str(), flag, S_IRUSR | S_IWUSR);
+    if (fd == -1) {
+        FLOGE("Failed to open shared memory for %s, %s", name.c_str(), strerror(errno));
+        return false;
+    }
+
+    /* only for server */
+    if (size > 0 && ftruncate(fd, size) == -1) {
+        FLOGE("Failed to resize shared memory for %s", name.c_str());
+        close(fd);
+        return false;
+    }
+
+    FLOGI("init shared memory success for %s", name.c_str());
+    *pfd = fd;
+    return true;
+}
+
+static inline void uninitSharedBuffer(int32_t fd, std::string name) {
+    if (fd > 0) {
+        int result = shm_unlink(name.c_str());
+        FLOGI("unlink shared memory %s, result: %d", name.c_str(), result);
+    }
+}
+
+/* Surface control only record bufferIds, don't control shared memory's lifecycle */
+
+void initSurfaceBuffer(const std::shared_ptr<SurfaceControl>& sc, bool isServer) {
+    if (sc.get() == nullptr) return;
+
+    auto bufferIds = sc->bufferIds();
+    std::vector<BufferId> ids;
+    bool result = true;
+
+    int32_t size = isServer ? sc->getBufferSize() : 0;
+
+    /* create shared memory */
+    for (const auto& id : bufferIds) {
+        int32_t fd = -1;
+
+        if (!initSharedBuffer(id.mName, &fd, size)) {
+            result = false;
+            break;
+        }
+        ids.push_back({id.mName, id.mKey, fd});
+    }
+
+    /* failure : free shared memory*/
+    if (isServer && !result) {
+        for (const auto& id : ids) {
+            uninitSharedBuffer(id.mFd, id.mName);
+        }
+        ids.clear();
+    }
+
+    FLOGI("%p", sc.get());
+    /* update buffer ids*/
+    sc->initBufferIds(ids);
+}
+
+void uninitSurfaceBuffer(const std::shared_ptr<SurfaceControl>& sc) {
+    if (sc.get() == nullptr) return;
+
+    FLOGI("%p", sc.get());
+    auto bufferIds = sc->bufferIds();
+    for (auto it : bufferIds) {
+        uninitSharedBuffer(it.mFd, it.mName);
+    }
+    sc->clearBufferIds();
 }
 
 } // namespace wm
