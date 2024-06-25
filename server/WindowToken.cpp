@@ -77,9 +77,8 @@ void WindowToken::removeIfPossible() {
     if (mRemoved) return;
     mRemoved = true;
 
-    for (auto it = mChildren.begin(); it != mChildren.end();) {
+    for (auto it = mChildren.begin(); it != mChildren.end(); it++) {
         WindowState* state = *it;
-        /* TODO: async remove state */
         state->removeIfPossible();
     }
 
