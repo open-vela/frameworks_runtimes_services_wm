@@ -546,7 +546,6 @@ bool WindowManagerService::responseInput(InputMessage* msg) {
     /* sync: system gesture recognize */
     msg->pointer.gesture_state = mGestureDetector.recognizeGesture(msg);
     bool has_gesture = msg->pointer.gesture_state != 0;
-    FLOGW("system gesture recognize msg->pointer.gesture_state:%d", msg->pointer.gesture_state);
 
     /* async: input monitor notification */
     int ret = 0;
