@@ -115,7 +115,6 @@ public:
     void doDie();
 
     void setEventListener(WindowEventListener* listener);
-    bool onFBVsyncRequest(bool enable);
 
     DISALLOW_COPY_AND_ASSIGN(BaseWindow);
 

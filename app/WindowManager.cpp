@@ -29,15 +29,6 @@
 #include "SurfaceTransaction.h"
 #include "uv.h"
 
-static void _wm_vsync_poll_cb(uv_poll_t* handle, int status, int events) {
-    (void)(status);
-    (void)(events);
-    ::os::wm::WindowManager* wm = reinterpret_cast<::os::wm::WindowManager*>(handle->data);
-    if (wm) {
-        ::os::wm::LVGLDriverProxy::vsyncPollEvent(wm->getVsyncListeners());
-    }
-}
-
 static void _wm_timer_cb(uv_timer_t* handle) {
     uint32_t sleep_ms = ::os::wm::LVGLDriverProxy::timerHandler();
 
@@ -78,66 +69,6 @@ static inline bool getWindowService(sp<IWindowManager>& service) {
     return true;
 }
 
-bool WindowManager::onFBVsyncRequest(std::shared_ptr<BaseWindow> window, bool enable) {
-    if (window == nullptr) return false;
-
-    if (enable) {
-        if (mVsyncFd <= 0) {
-            mVsyncFd = open(CONFIG_SYSTEM_WINDOW_FBDEV_DEVICEPATH, O_RDWR | O_CLOEXEC);
-            if (mVsyncFd <= 0) {
-                FLOGE("Failed to listen framebuffer device");
-                return false;
-            }
-        }
-        if (mVsyncPoll == nullptr) {
-            mVsyncPoll = new uv_poll_t;
-            mVsyncPoll->data = this;
-            int uvError =
-                    uv_poll_init(window->getContext()->getMainLoop()->get(), mVsyncPoll, mVsyncFd);
-            if (uvError != 0) {
-                FLOGW("Failed to init vsync poll, error code: %d", uvError);
-                close(mVsyncFd);
-                mVsyncFd = 0;
-                delete mVsyncPoll;
-                mVsyncPoll = nullptr;
-                return false;
-            }
-        }
-
-        auto it = std::find(mVsyncListeners.begin(), mVsyncListeners.end(), window);
-        if (it == mVsyncListeners.end()) {
-            mVsyncListeners.push_back(window);
-        }
-        FLOGW("window start listening vsync event");
-
-        if (mVsyncPoll) uv_poll_start(mVsyncPoll, UV_PRIORITIZED, _wm_vsync_poll_cb);
-        return true;
-    } else {
-        if (mVsyncFd > 0 && mVsyncListeners.size() > 0) {
-            FLOGW("window cancel listening vsync event");
-            auto it = std::find(mVsyncListeners.begin(), mVsyncListeners.end(), window);
-            if (it == mVsyncListeners.end()) {
-                return true;
-            }
-
-            mVsyncListeners.erase(it);
-            if (mVsyncListeners.size() == 0 && mVsyncPoll) {
-                uv_poll_stop(mVsyncPoll);
-                mVsyncPoll->data = nullptr;
-
-                uv_close(reinterpret_cast<uv_handle_t*>(mVsyncPoll),
-                         [](uv_handle_t* handle) { delete reinterpret_cast<uv_poll_t*>(handle); });
-                mVsyncPoll = nullptr;
-
-                close(mVsyncFd);
-                mVsyncFd = 0;
-            }
-            return true;
-        }
-    }
-    return false;
-}
-
 std::shared_ptr<InputMonitor> WindowManager::monitorInput(const ::std::string& name,
                                                           int32_t displayId) {
     sp<IWindowManager> service;
@@ -176,8 +107,7 @@ void WindowManager::releaseInput(InputMonitor* monitor) {
     FLOGI("success");
 }
 
-WindowManager::WindowManager()
-      : mService(nullptr), mTimerInited(false), mVsyncFd(0), mVsyncPoll(nullptr) {
+WindowManager::WindowManager() : mService(nullptr), mTimerInited(false) {
     mTransaction = std::make_shared<SurfaceTransaction>();
     mTransaction->setWindowManager(this);
     getService();
@@ -273,8 +203,6 @@ bool WindowManager::removeWindow(std::shared_ptr<BaseWindow> window) {
     FLOGI("%p", window.get());
 
     mTransaction->clean();
-
-    onFBVsyncRequest(window, false);
 
     mService->removeWindow(window->getIWindow());
     window->doDie();

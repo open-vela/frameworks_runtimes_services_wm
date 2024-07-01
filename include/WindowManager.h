@@ -61,11 +61,6 @@ public:
         if (height) *height = mDispHeight;
     }
 
-    bool onFBVsyncRequest(std::shared_ptr<BaseWindow> window, bool enable);
-    vector<std::shared_ptr<BaseWindow>> getVsyncListeners() {
-        return mVsyncListeners;
-    }
-
     static std::shared_ptr<InputMonitor> monitorInput(const ::std::string& name, int32_t displayId);
     static void releaseInput(InputMonitor* monitor);
 
@@ -77,10 +72,6 @@ private:
     uv_timer_t mEventTimer;
     bool mTimerInited;
     uint32_t mDispWidth, mDispHeight;
-
-    int mVsyncFd;
-    uv_poll_t* mVsyncPoll;
-    vector<std::shared_ptr<BaseWindow>> mVsyncListeners;
 };
 
 } // namespace wm

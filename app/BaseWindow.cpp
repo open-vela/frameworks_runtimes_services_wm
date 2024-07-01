@@ -222,6 +222,10 @@ void BaseWindow::setVisible(bool visible) {
 }
 
 void BaseWindow::handleOnFrame(int32_t seq) {
+    if (mUIProxy.get()) {
+        mUIProxy->notifyVsyncEvent();
+    }
+
     if (!mAppVisible) {
         FLOGD("window needn't update.");
         return;
@@ -330,10 +334,6 @@ void BaseWindow::setLayoutParams(LayoutParams lp) {
 
 void BaseWindow::setType(int32_t type) {
     mAttrs.mType = type;
-}
-
-bool BaseWindow::onFBVsyncRequest(bool enable) {
-    return mWindowManager->onFBVsyncRequest(shared_from_this(), enable);
 }
 
 } // namespace wm
