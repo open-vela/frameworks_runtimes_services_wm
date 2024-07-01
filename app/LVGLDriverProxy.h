@@ -79,9 +79,19 @@ public:
         return mLastEventState;
     }
 
+    bool vsyncEventEnabled() {
+        return mVsyncEnabled;
+    }
+    void onFBVsyncRequest(bool enable) override {
+        mVsyncEnabled = enable;
+    }
+
+    void notifyVsyncEvent() override {
+        if (mVsyncEnabled) lv_display_send_vsync_event(mDisp, NULL);
+    }
+
     static void init();
     static void deinit();
-    static void vsyncPollEvent(vector<std::shared_ptr<BaseWindow>> listeners);
     static inline uint32_t getTimerPeriod() {
         return LV_DEF_REFR_PERIOD;
     }
@@ -106,6 +116,7 @@ private:
     ::std::vector<std::shared_ptr<LVGLDrawBuffer>> mDrawBuffers;
     bool mAllAreaDirty;
     BufferItem* mPrevBuffer;
+    bool mVsyncEnabled;
 };
 
 } // namespace wm
