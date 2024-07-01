@@ -45,7 +45,8 @@ LVGLDriverProxy::LVGLDriverProxy(std::shared_ptr<BaseWindow> win)
         mIndev(NULL),
         mRenderMode(CONFIG_APP_WINDOW_RENDER_MODE),
         mAllAreaDirty(true),
-        mPrevBuffer(NULL) {
+        mPrevBuffer(NULL),
+        mVsyncEnabled(false) {
     lv_color_format_t cf = getLvColorFormatType(win->getLayoutParams().mFormat);
     auto wm = win->getWindowManager();
     uint32_t width = 0, height = 0;
@@ -266,7 +267,8 @@ static void _disp_event_cb(lv_event_t* e) {
         /* for FULL & DIRECT render mode */
         case LV_EVENT_REFR_REQUEST: {
             CHECK_PROXY_OBJECT(e);
-            bool periodic = lv_anim_get_timer()->paused ? false : true;
+            bool periodic =
+                    (proxy->vsyncEventEnabled() || !lv_anim_get_timer()->paused) ? true : false;
             if (proxy->onInvalidate(periodic)) {
                 FLOGD("%p invalidate area", proxy);
             }
@@ -385,12 +387,6 @@ static lv_indev_t* _indev_init(LVGLDriverProxy* proxy) {
     lv_timer_del(indev->read_timer);
     indev->read_timer = NULL;
     return indev;
-}
-
-void LVGLDriverProxy::vsyncPollEvent(vector<std::shared_ptr<BaseWindow>> listeners) {
-    for (const auto& win : listeners) {
-        lv_display_send_vsync_event((lv_display_t*)(win->getNativeDisplay()), NULL);
-    }
 }
 
 void LVGLDriverProxy::init() {
