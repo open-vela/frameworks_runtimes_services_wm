@@ -181,18 +181,17 @@ static int parseAnimJsonFile(const char* filename) {
 
 #endif
 
-static inline std::string getUniqueId() {
-    return std::to_string(std::rand());
-}
-
 /* limited by mq_open */
 #define MQ_PATH_MAXLEN 50
-static inline std::string genUniquePath(int32_t pid, const std::string& prefix,
+static inline std::string genUniquePath(bool needpath, int32_t pid, const std::string& prefix,
                                         const std::string name = "") {
-    std::string path = "/var/xms/" + std::to_string(pid) + "/" + prefix;
-    path += "/" + (name.size() > 0 ? name : getUniqueId());
+    /* xms:bq-300-1234567890 or /var/run/xms:event-301-2345167890 */
 
-    FLOGD("'%s', length is %d", path.c_str(), path.size());
+    std::string path = (needpath ? "/var/run/xms:" : "xms:") + prefix;
+    path += "-" + std::to_string(pid) + "-" +
+            (name.size() > 0 ? name : std::to_string(std::rand()));
+
+    FLOGI("'%s', length is %d", path.c_str(), path.size());
     return path.size() <= MQ_PATH_MAXLEN ? path : path.substr(0, MQ_PATH_MAXLEN);
 }
 
@@ -308,7 +307,7 @@ Status WindowManagerService::addWindow(const sp<IWindow>& window, const LayoutPa
     winToken->addWindow(win);
 
     if (outInputChannel != nullptr && attrs.hasInput()) {
-        std::string name = genUniquePath(pid, "event");
+        std::string name = genUniquePath(true, pid, "event");
         std::shared_ptr<InputDispatcher> inputDispatcher = win->createInputDispatcher(name);
         outInputChannel->copyFrom(inputDispatcher->getInputChannel());
     }
@@ -495,7 +494,7 @@ Status WindowManagerService::monitorInput(const sp<IBinder>& token, const ::std:
         return Status::fromExceptionCode(1, "don't register input monitor repeatly");
     }
 
-    std::string input_name = genUniquePath(pid, "monitor", name);
+    std::string input_name = genUniquePath(true, pid, "monitor", name);
     auto dispatcher = InputDispatcher::create(input_name);
     if (dispatcher == nullptr) {
         return Status::fromExceptionCode(2, "monitor input is failure!");
@@ -587,7 +586,7 @@ int32_t WindowManagerService::createSurfaceControl(SurfaceControl* outSurfaceCon
 
     for (int32_t i = 0; i < 2; i++) {
         BufferId id;
-        std::string bufferPath = genUniquePath(pid, "bq");
+        std::string bufferPath = genUniquePath(false, pid, "bq");
         int32_t bufferKey = std::rand();
         id = {bufferPath, bufferKey, -1};
         ids.push_back(id);
