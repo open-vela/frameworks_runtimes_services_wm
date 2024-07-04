@@ -40,7 +40,7 @@ public:
         return mInputChannel;
     }
 
-    static std::shared_ptr<InputDispatcher> create(const std::string name);
+    static std::shared_ptr<InputDispatcher> create(const std::string& name);
 
     DISALLOW_COPY_AND_ASSIGN(InputDispatcher);
 

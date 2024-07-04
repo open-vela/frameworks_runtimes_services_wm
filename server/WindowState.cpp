@@ -90,7 +90,7 @@ std::shared_ptr<BufferConsumer> WindowState::getBufferConsumer() {
     return nullptr;
 }
 
-std::shared_ptr<InputDispatcher> WindowState::createInputDispatcher(const std::string name) {
+std::shared_ptr<InputDispatcher> WindowState::createInputDispatcher(const std::string& name) {
     if (mInputDispatcher != nullptr) {
         FLOGE("mInputDispatcher has existed, needn't create again.");
         return nullptr;
@@ -167,7 +167,8 @@ void WindowState::onAnimationFinished(WindowAnimStatus status) {
 }
 #endif
 
-std::shared_ptr<SurfaceControl> WindowState::createSurfaceControl(vector<BufferId> ids) {
+std::shared_ptr<SurfaceControl> WindowState::createSurfaceControl(
+        const std::vector<BufferId>& ids) {
     WM_PROFILER_BEGIN();
     setHasSurface(false);
 
