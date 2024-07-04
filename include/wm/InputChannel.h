@@ -53,7 +53,7 @@ public:
         return mEventFd != -1 ? true : false;
     }
 
-    bool create(const std::string name);
+    bool create(const std::string& name);
     void release();
 
     DISALLOW_COPY_AND_ASSIGN(InputChannel);

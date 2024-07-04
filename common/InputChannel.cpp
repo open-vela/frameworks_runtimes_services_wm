@@ -44,7 +44,7 @@ status_t InputChannel::readFromParcel(const Parcel* in) {
     return android::OK;
 }
 
-bool InputChannel::create(const std::string name) {
+bool InputChannel::create(const std::string& name) {
     const char* cname = name.c_str();
     struct mq_attr mqstat;
     int oflag = O_CREAT | O_RDWR | O_NONBLOCK | O_CLOEXEC;
