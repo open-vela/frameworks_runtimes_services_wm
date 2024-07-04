@@ -56,8 +56,8 @@ public:
     void removeIfPossible();
     void removeImmediately();
 
-    std::shared_ptr<InputDispatcher> createInputDispatcher(const std::string name);
-    std::shared_ptr<SurfaceControl> createSurfaceControl(vector<BufferId> ids);
+    std::shared_ptr<InputDispatcher> createInputDispatcher(const std::string& name);
+    std::shared_ptr<SurfaceControl> createSurfaceControl(const std::vector<BufferId>& ids);
     std::shared_ptr<BufferConsumer> getBufferConsumer();
     void destroySurfaceControl();
 

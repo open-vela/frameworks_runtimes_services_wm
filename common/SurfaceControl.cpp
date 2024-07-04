@@ -97,7 +97,7 @@ status_t SurfaceControl::readFromParcel(const Parcel* in) {
     return android::OK;
 }
 
-void SurfaceControl::initBufferIds(std::vector<BufferId>& ids) {
+void SurfaceControl::initBufferIds(const std::vector<BufferId>& ids) {
     mBufferIds = ids;
 }
 
