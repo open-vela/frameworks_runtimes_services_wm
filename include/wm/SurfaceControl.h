@@ -53,7 +53,7 @@ public:
         return mBufferIds;
     }
 
-    void initBufferIds(std::vector<BufferId>& ids);
+    void initBufferIds(const std::vector<BufferId>& ids);
     void clearBufferIds() {
         mBufferIds.clear();
     }

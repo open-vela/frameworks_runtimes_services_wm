@@ -34,7 +34,7 @@ InputDispatcher::~InputDispatcher() {
     release();
 }
 
-std::shared_ptr<InputDispatcher> InputDispatcher::create(const std::string name) {
+std::shared_ptr<InputDispatcher> InputDispatcher::create(const std::string& name) {
     WM_PROFILER_BEGIN();
     auto dispatcher = std::make_shared<InputDispatcher>();
     if (!dispatcher->getInputChannel().create(name)) {
