@@ -42,10 +42,12 @@ SurfaceControl::SurfaceControl(const sp<IBinder>& token, const sp<IBinder>& hand
         mWidth(width),
         mHeight(height),
         mFormat(format),
-        mBufferSize(size) {}
+        mBufferSize(size) {
+    FLOGI("%p, create surface for handle %p \n", this, mHandle.get());
+}
 
 SurfaceControl::~SurfaceControl() {
-    FLOGI("%p", this);
+    FLOGI("%p, free surface for handle %p \n", this, mHandle.get());
     clearBufferIds();
     mToken.clear();
     mHandle.clear();
