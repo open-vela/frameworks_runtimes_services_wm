@@ -20,7 +20,7 @@
 #include "wm/Rect.h"
 
 #ifdef CONFIG_ANIMATION_ENGINE
-#include <anim_api.h>
+#include <animengine/anim_api.h>
 #endif
 #include <fstream>
 #include <functional>
