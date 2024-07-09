@@ -20,7 +20,7 @@
 
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
 
-#include "ext/animengine/lvx_animengine_adapter.h"
+#include "animengine/lvx_animengine_adapter.h"
 
 namespace os {
 namespace wm {
