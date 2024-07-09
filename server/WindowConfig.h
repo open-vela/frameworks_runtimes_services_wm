@@ -17,7 +17,7 @@
 #pragma once
 
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
-#include <anim_api.h>
+#include <animengine/anim_api.h>
 #endif
 
 #include <nuttx/config.h>
