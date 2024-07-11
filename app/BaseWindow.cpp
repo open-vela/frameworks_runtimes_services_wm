@@ -106,7 +106,15 @@ bool BaseWindow::scheduleVsync(VsyncRequest freq) {
     WM_PROFILER_BEGIN();
 
     mVsyncRequest = freq;
-    mWindowManager->getService()->requestVsync(getIWindow(), freq);
+    if (!mFrameDone.load(std::memory_order_acquire)) {
+        mContext->getMainLoop()->postTask([this, freq]() {
+            FLOGD("%p async request vsync %" PRId32 "", this, (int32_t)freq);
+            mWindowManager->getService()->requestVsync(getIWindow(), freq);
+        });
+    } else {
+        FLOGD("%p request vsync %" PRId32 "", this, (int32_t)freq);
+        mWindowManager->getService()->requestVsync(getIWindow(), freq);
+    }
 
     WM_PROFILER_END();
     return true;
