@@ -270,7 +270,7 @@ static void _disp_event_cb(lv_event_t* e) {
             bool periodic =
                     (proxy->vsyncEventEnabled() || !lv_anim_get_timer()->paused) ? true : false;
             if (proxy->onInvalidate(periodic)) {
-                FLOGD("%p invalidate area", proxy);
+                FLOGD("%p refresh request", proxy);
             }
             break;
         }
