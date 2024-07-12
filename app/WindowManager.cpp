@@ -192,9 +192,16 @@ void WindowManager::relayoutWindow(std::shared_ptr<BaseWindow> window) {
     SurfaceControl* surfaceControl =
             new SurfaceControl(lp.mToken, handle, lp.mWidth, lp.mHeight, lp.mFormat);
     int32_t result = 0;
-    mService->relayout(window->getIWindow(), lp, lp.mWidth, lp.mHeight, window->getVisibility(),
-                       surfaceControl, &result);
-    window->setSurfaceControl(surfaceControl);
+    Status status = mService->relayout(window->getIWindow(), lp, lp.mWidth, lp.mHeight,
+                                       window->getVisibility(), surfaceControl, &result);
+
+    if (!status.isOk()) {
+        FLOGE("relayout window failure!");
+        window->setSurfaceControl(nullptr);
+    } else {
+        window->setSurfaceControl(surfaceControl);
+    }
+
     WM_PROFILER_END();
 }
 
@@ -228,17 +235,16 @@ bool WindowManager::removeWindow(std::shared_ptr<BaseWindow> window) {
 void WindowManager::toBackground() {}
 
 bool WindowManager::dumpWindows() {
-    int number = 1;
+    int number = 0;
     for (const auto& ptr : mWindows) {
         LayoutParams lp = ptr->getLayoutParams();
-        FLOGI("Window %d", number);
+        FLOGI("Window %d", ++number);
         FLOGI("\t\t size:%" PRId32 "x%" PRId32 "", lp.mWidth, lp.mHeight);
         FLOGI("\t\t position:[%" PRId32 ",%" PRId32 "]", lp.mX, lp.mY);
         FLOGI("\t\t visibility:%" PRId32 "", ptr->getVisibility());
         FLOGI("\t\t type:%" PRId32 "", lp.mType);
         FLOGI("\t\t flags:%" PRId32 "", lp.mFlags);
         FLOGI("\t\t format:%" PRId32 "", lp.mFormat);
-        number++;
     }
     return true;
 }

@@ -37,10 +37,10 @@ public:
 
     status_t writeToParcel(Parcel* out) const override;
     status_t readFromParcel(const Parcel* in) override;
-    int32_t getEventFd() {
+    int getEventFd() {
         return mEventFd;
     }
-    void setEventFd(int32_t fd) {
+    void setEventFd(int fd) {
         mEventFd = fd;
     }
 
