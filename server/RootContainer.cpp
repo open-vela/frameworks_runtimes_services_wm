@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "RootContainer"
+#define LOG_TAG "WMS:Root"
 
 #include "RootContainer.h"
 

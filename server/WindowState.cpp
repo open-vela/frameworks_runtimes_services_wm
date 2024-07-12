@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "WindowState"
+#define LOG_TAG "WMS:WindowState"
 
 #include "WindowState.h"
 
@@ -170,6 +170,8 @@ void WindowState::onAnimationFinished(WindowAnimStatus status) {
 std::shared_ptr<SurfaceControl> WindowState::createSurfaceControl(
         const std::vector<BufferId>& ids) {
     WM_PROFILER_BEGIN();
+
+    destroySurfaceControl();
     setHasSurface(false);
 
     sp<IBinder> handle = sp<BBinder>::make();
@@ -207,7 +209,7 @@ void WindowState::destroySurfaceControl() {
 }
 
 void WindowState::applyTransaction(LayerState layerState) {
-    FLOGD("[%" PRId32 "] (%p)", mToken->getClientPid(), this);
+    FLOGD("[%d] (%p)", mToken->getClientPid(), this);
     WM_PROFILER_BEGIN();
 
     BufferItem* buffItem = nullptr;
@@ -272,8 +274,8 @@ VsyncRequest WindowState::onVsync() {
     if (mVsyncRequest == VsyncRequest::VSYNC_REQ_NONE) return mVsyncRequest;
     WM_PROFILER_BEGIN();
 
-    FLOGD("(%p)-%d(-2:none, -1:single, 0:suppress, 1:period) send vsync to client [%" PRId32 "]",
-          this, (int)mVsyncRequest, mToken->getClientPid());
+    FLOGD("(%p)-%d (-2:none, -1:single, 0:suppress, 1:period) send vsync to client [%d]", this,
+          (int)mVsyncRequest, mToken->getClientPid());
     mVsyncRequest = nextVsyncState(mVsyncRequest);
     mClient->onFrame(++mFrameReq);
     WM_PROFILER_END();

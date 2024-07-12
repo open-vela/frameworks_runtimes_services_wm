@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "InputDispatcher"
+#define LOG_TAG "WMS:InputDispatcher"
 
 #include "InputDispatcher.h"
 

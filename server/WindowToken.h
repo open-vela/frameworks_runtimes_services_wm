@@ -45,7 +45,7 @@ public:
         return mClientVisibility;
     }
     void setClientVisibility(int32_t visibility);
-    int32_t getClientPid() {
+    int getClientPid() {
         return mClientPid;
     }
 
@@ -72,7 +72,7 @@ private:
     int32_t mType;
     std::vector<WindowState*> mChildren;
     int32_t mClientVisibility;
-    int32_t mClientPid;
+    int mClientPid;
     bool mPersistOnEmpty;
     bool mRemoved;
 };

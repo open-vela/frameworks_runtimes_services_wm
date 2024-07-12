@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "WindowAnimator"
+#define LOG_TAG "WMS:Animator"
 
 #include "WindowAnimator.h"
 
