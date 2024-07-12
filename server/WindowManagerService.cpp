@@ -196,12 +196,11 @@ static inline std::string genUniquePath(bool needpath, int32_t pid, const std::s
 }
 
 void WindowManagerService::WindowDeathRecipient::binderDied(const wp<IBinder>& who) {
-    FLOGI("IWindow binder Died");
+    FLOGW("window binder died");
     auto key = who.promote();
     auto it = mService->mWindowMap.find(key);
     if (it != mService->mWindowMap.end()) {
-        it->second->removeImmediately();
-        mService->mWindowMap.erase(key);
+        it->second->removeIfPossible();
     }
 }
 
@@ -265,7 +264,7 @@ Status WindowManagerService::addWindow(const sp<IWindow>& window, const LayoutPa
           attrs.mWidth, attrs.mHeight);
 
     if (mWindowMap.size() >= CONFIG_ENABLE_WINDOW_LIMIT_MAX) {
-        ALOGE("failure, exceed maximum window limit!");
+        FLOGE("failure, exceed maximum window limit!");
         *_aidl_return = -1;
         mContainer->showToast("Warn: exceed maximum window limit!", 1500);
         return Status::fromExceptionCode(1, "exceed maximum window limit!");
@@ -344,13 +343,14 @@ Status WindowManagerService::relayout(const sp<IWindow>& window, const LayoutPar
     FLOGI("[%" PRId32 "] window(%p) size(%" PRId32 "x%" PRId32 ")", pid, window.get(),
           requestedWidth, requestedHeight);
 
-    *_aidl_return = -1;
+    *_aidl_return = 0;
     sp<IBinder> client = IInterface::asBinder(window);
     WindowState* win;
     auto it = mWindowMap.find(client);
     if (it != mWindowMap.end()) {
         win = it->second;
     } else {
+        *_aidl_return = -1;
         FLOGW("[%" PRId32 "] please add window firstly", pid);
         WM_PROFILER_END();
         return Status::fromExceptionCode(1, "please add window firstly");
@@ -369,6 +369,10 @@ Status WindowManagerService::relayout(const sp<IWindow>& window, const LayoutPar
             win->setLayoutParams(attrs);
         }
         *_aidl_return = createSurfaceControl(outSurfaceControl, win);
+        if (*_aidl_return != 0) {
+            FLOGE("failure, cann't create valid surface!");
+            outSurfaceControl = nullptr;
+        }
     } else {
         outSurfaceControl = nullptr;
     }
@@ -376,7 +380,9 @@ Status WindowManagerService::relayout(const sp<IWindow>& window, const LayoutPar
     win->setVisibility(visibility);
 
     WM_PROFILER_END();
-    return Status::ok();
+    return *_aidl_return == 0
+            ? Status::ok()
+            : Status::fromExceptionCode(2, "now no valid surface, please retry it!");
 }
 
 Status WindowManagerService::isWindowToken(const sp<IBinder>& binder, bool* _aidl_return) {
@@ -503,7 +509,7 @@ Status WindowManagerService::monitorInput(const sp<IBinder>& token, const ::std:
     mInputMonitorMap.emplace(token, dispatcher);
     outInputChannel->copyFrom(dispatcher->getInputChannel());
 
-    FLOGI("for %" PRId32 "", dispatcher->getInputChannel().getEventFd());
+    FLOGI("for %d", dispatcher->getInputChannel().getEventFd());
     return Status::ok();
 }
 
@@ -551,7 +557,7 @@ bool WindowManagerService::responseInput(InputMessage* msg) {
     for (const auto& [token, dispatcher] : mInputMonitorMap) {
         ret = dispatcher->sendMessage(msg);
         if (ret != 0) {
-            FLOGW("dispatch input monitor for %" PRId32 " failure: %d",
+            FLOGW("dispatch input monitor for %d failure: %d",
                   dispatcher->getInputChannel().getEventFd(), ret);
         }
     }
@@ -593,7 +599,10 @@ int32_t WindowManagerService::createSurfaceControl(SurfaceControl* outSurfaceCon
     }
     std::shared_ptr<SurfaceControl> surfaceControl = win->createSurfaceControl(ids);
 
-    if (!surfaceControl->isValid()) return -1;
+    if (!surfaceControl->isValid()) {
+        outSurfaceControl = nullptr;
+        return -1;
+    }
 
     if (surfaceControl != nullptr) {
         outSurfaceControl->copyFrom(*surfaceControl);

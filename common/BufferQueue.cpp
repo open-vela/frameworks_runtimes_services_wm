@@ -56,14 +56,14 @@ void BufferQueue::clearBuffers() {
     for (auto it = mBuffers.begin(); it != mBuffers.end(); ++it) {
         it->second.mUserData = nullptr;
 
-        FLOGI("%d unmap shared memory", it->second.mFd);
+        FLOGI("now unmap and close shared memory for %d", it->second.mFd);
 
         if (it->second.mBuffer && munmap(it->second.mBuffer, it->second.mSize) == -1) {
-            FLOGE("munmap failure");
+            FLOGE("failed to unmap shared memory for %d", it->second.mFd);
         }
 
         if (close(it->second.mFd) == -1) {
-            FLOGE("close failure");
+            FLOGE("failed to close shared memory for %d", it->second.mFd);
         }
     }
     mBuffers.clear();
@@ -108,11 +108,11 @@ bool BufferQueue::update(const std::shared_ptr<SurfaceControl>& sc) {
         void* buffer = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, bufferFd, 0);
 
         if (buffer == MAP_FAILED) {
-            FLOGE("Failed to map shared memory");
+            FLOGE("failed to map shared memory for %d", bufferFd);
             return false;
         }
 
-        FLOGI("%d map shared memory success", bufferFd);
+        FLOGI("map shared memory success for %d", bufferFd);
         BufferItem buffItem = {bufferkey, bufferFd, buffer, size, BSTATE_FREE, nullptr};
         mBuffers[bufferkey] = buffItem;
         mFreeSlot.push_back(bufferkey);

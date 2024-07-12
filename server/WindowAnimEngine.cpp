@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "WindowAnimEngine"
+#define LOG_TAG "WMS:AnimEngine"
 
 #include "WindowAnimEngine.h"
 
