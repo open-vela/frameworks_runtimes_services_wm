@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "WindowNode"
+#define LOG_TAG "WMS:Node"
 
 #include "WindowNode.h"
 

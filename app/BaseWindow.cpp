@@ -176,7 +176,10 @@ void BaseWindow::setSurfaceControl(SurfaceControl* surfaceControl) {
     mUIProxy->resetBuffer();
 
     clearSurfaceBuffer();
-    mSurfaceControl.reset(surfaceControl);
+    if (surfaceControl == nullptr)
+        mSurfaceControl.reset();
+    else
+        mSurfaceControl.reset(surfaceControl);
 
     if (surfaceControl != nullptr && surfaceControl->isValid()) {
         mUIProxy->updateResolution(surfaceControl->getWidth(), surfaceControl->getHeight(),
@@ -244,7 +247,7 @@ void BaseWindow::handleOnFrame(int32_t seq) {
 
     if (mSurfaceControl.get() == nullptr) {
         mWindowManager->relayoutWindow(shared_from_this());
-        if (mSurfaceControl->isValid()) {
+        if (mSurfaceControl.get() && mSurfaceControl->isValid()) {
             updateOrCreateBufferQueue();
         }
     } else {

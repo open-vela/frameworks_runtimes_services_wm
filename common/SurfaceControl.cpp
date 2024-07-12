@@ -122,34 +122,36 @@ void SurfaceControl::copyFrom(SurfaceControl& other) {
     mBufferIds = other.mBufferIds;
 }
 
-static inline bool initSharedBuffer(std::string name, int32_t* pfd, int32_t size) {
+static inline bool initSharedBuffer(std::string name, int* pfd, int32_t size) {
     int32_t flag = O_RDWR | O_CLOEXEC;
 
     if (size > 0) flag |= O_CREAT;
 
     *pfd = -1;
-    int fd = shm_open(name.c_str(), flag, S_IRUSR | S_IWUSR);
+    const char* cname = name.c_str();
+    int fd = shm_open(cname, flag, S_IRUSR | S_IWUSR);
     if (fd == -1) {
-        FLOGE("Failed to open shared memory for %s, %s", name.c_str(), strerror(errno));
+        FLOGE("failed to open shared memory for %s, %s", cname, strerror(errno));
         return false;
     }
 
     /* only for server */
     if (size > 0 && ftruncate(fd, size) == -1) {
-        FLOGE("Failed to resize shared memory for %s", name.c_str());
+        int result = shm_unlink(cname);
+        FLOGE("failed to resize shared memory for %s, unlink return %d", cname, result);
         close(fd);
         return false;
     }
 
-    FLOGI("init shared memory success for %s", name.c_str());
+    FLOGI("init shared memory success for %s, size is %" PRId32 " ", cname, size);
     *pfd = fd;
     return true;
 }
 
-static inline void uninitSharedBuffer(int32_t fd, std::string name) {
+static inline void uninitSharedBuffer(int fd, std::string name) {
     if (fd > 0) {
         int result = shm_unlink(name.c_str());
-        FLOGI("unlink shared memory %s, result: %d", name.c_str(), result);
+        FLOGI("uninit shared memory %s, result: %d", name.c_str(), result);
     }
 }
 
@@ -166,7 +168,7 @@ void initSurfaceBuffer(const std::shared_ptr<SurfaceControl>& sc, bool isServer)
 
     /* create shared memory */
     for (const auto& id : bufferIds) {
-        int32_t fd = -1;
+        int fd = -1;
 
         if (!initSharedBuffer(id.mName, &fd, size)) {
             result = false;
@@ -191,7 +193,7 @@ void initSurfaceBuffer(const std::shared_ptr<SurfaceControl>& sc, bool isServer)
 void uninitSurfaceBuffer(const std::shared_ptr<SurfaceControl>& sc) {
     if (sc.get() == nullptr) return;
 
-    FLOGI("%p", sc.get());
+    FLOGI("try to uninit shared memory");
     auto bufferIds = sc->bufferIds();
     for (auto it : bufferIds) {
         uninitSharedBuffer(it.mFd, it.mName);
