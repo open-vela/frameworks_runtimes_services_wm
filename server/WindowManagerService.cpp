@@ -191,7 +191,7 @@ static inline std::string genUniquePath(bool needpath, int32_t pid, const std::s
     path += "-" + std::to_string(pid) + "-" +
             (name.size() > 0 ? name : std::to_string(std::rand()));
 
-    FLOGI("'%s', length is %d", path.c_str(), path.size());
+    FLOGI("'%s', length is %d", path.c_str(), (int)path.size());
     return path.size() <= MQ_PATH_MAXLEN ? path : path.substr(0, MQ_PATH_MAXLEN);
 }
 
