@@ -48,7 +48,7 @@ void WindowToken::addWindow(WindowState* win) {
         }
     }
     mChildren.push_back(win);
-    FLOGI("[%d] add window ok, now child count:%d", mClientPid, mChildren.size());
+    FLOGI("[%d] add window ok, now child count:%d", mClientPid, (int)mChildren.size());
 }
 
 void WindowToken::removeWindow(WindowState* win) {

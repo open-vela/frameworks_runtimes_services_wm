@@ -273,7 +273,7 @@ void RootContainer::showToast(const char* text, uint32_t duration) {
     lv_obj_set_style_pad_all(label, 5, 0);
     lv_obj_set_style_radius(label, 10, 0);
     lv_obj_align(label, LV_ALIGN_BOTTOM_MID, 0, -40);
-    lv_obj_set_user_data(label, (void*)duration);
+    lv_obj_set_user_data(label, (void*)(uintptr_t)duration);
 
     toast_fade_in(label, 500, 100);
 }
