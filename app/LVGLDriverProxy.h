@@ -82,9 +82,7 @@ public:
     bool vsyncEventEnabled() {
         return mVsyncEnabled;
     }
-    void onFBVsyncRequest(bool enable) override {
-        mVsyncEnabled = enable;
-    }
+    void onFBVsyncRequest(bool enable) override;
 
     void notifyVsyncEvent() override {
         if (mVsyncEnabled) lv_display_send_vsync_event(mDisp, NULL);
