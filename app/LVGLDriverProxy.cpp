@@ -233,6 +233,15 @@ void LVGLDriverProxy::updateVisibility(bool visible) {
     }
 }
 
+void LVGLDriverProxy::onFBVsyncRequest(bool enable) {
+    FLOGD("update vsync listener from %d to %d", (int)mVsyncEnabled, (int)enable);
+    if (mVsyncEnabled == enable) return;
+
+    mVsyncEnabled = enable;
+    /* update vsync reqeust to server */
+    onInvalidate(mVsyncEnabled);
+}
+
 static void _disp_flush_cb(lv_display_t* disp, const lv_area_t* area, uint8_t* color) {
     if (!lv_display_flush_is_last(disp)) {
         lv_display_flush_ready(disp);
