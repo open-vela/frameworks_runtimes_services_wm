@@ -181,6 +181,7 @@ void initSurfaceBuffer(const std::shared_ptr<SurfaceControl>& sc, bool isServer)
     if (isServer && !result) {
         for (const auto& id : ids) {
             uninitSharedBuffer(id.mFd, id.mName);
+            close(id.mFd);
         }
         ids.clear();
     }
