@@ -392,6 +392,7 @@ static lv_indev_t* _indev_init(LVGLDriverProxy* proxy) {
     indev->type = LV_INDEV_TYPE_POINTER;
     indev->read_cb = _indev_read;
     indev->user_data = proxy;
+    indev->scroll_throw = 1;
 
     lv_timer_del(indev->read_timer);
     indev->read_timer = NULL;
