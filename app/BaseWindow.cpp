@@ -105,16 +105,9 @@ bool BaseWindow::scheduleVsync(VsyncRequest freq) {
 
     WM_PROFILER_BEGIN();
 
+    FLOGD("%p request vsync %" PRId32 "", this, (int32_t)freq);
     mVsyncRequest = freq;
-    if (!mFrameDone.load(std::memory_order_acquire)) {
-        mContext->getMainLoop()->postTask([this, freq]() {
-            FLOGD("%p async request vsync %" PRId32 "", this, (int32_t)freq);
-            mWindowManager->getService()->requestVsync(getIWindow(), freq);
-        });
-    } else {
-        FLOGD("%p request vsync %" PRId32 "", this, (int32_t)freq);
-        mWindowManager->getService()->requestVsync(getIWindow(), freq);
-    }
+    mWindowManager->getService()->requestVsync(getIWindow(), freq);
 
     WM_PROFILER_END();
     return true;
@@ -263,6 +256,8 @@ void BaseWindow::handleOnFrame(int32_t seq) {
         }
         BufferItem* item = buffProducer->dequeueBuffer();
         if (!item) {
+            if (mVsyncRequest != VsyncRequest::VSYNC_REQ_PERIODIC)
+                scheduleVsync(VsyncRequest::VSYNC_REQ_SINGLESUPPRESS);
             FLOGI("onFrame, no valid buffer!\n");
             return;
         }
