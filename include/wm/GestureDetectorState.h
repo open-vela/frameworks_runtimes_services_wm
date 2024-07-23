@@ -19,7 +19,7 @@
 
 #define GESTURE_DETECTOR_TRIGGER_DISTANCE 13
 #define GESTURE_DETECTOR_INVALID_DISTANCE 57
-#define GESTURE_SCREEN_STATUS_KVDB_KEY "tmp.es.screen_status"
+#define GESTURE_SCREEN_STATUS_KVDB_KEY "persist.brightness.target"
 
 namespace os::wm {
 

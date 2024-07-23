@@ -35,20 +35,24 @@ class GestureDetector {
 public:
     GestureDetector() = delete;
     explicit GestureDetector(std::shared_ptr<::os::app::UvLoop> uvLoop)
-          : mIsScreenOn(property_get_bool(GESTURE_SCREEN_STATUS_KVDB_KEY, 1)),
+          : mIsScreenOn(property_get_int32(GESTURE_SCREEN_STATUS_KVDB_KEY, 1) > 0),
             mUvLoop(uvLoop),
             mFD(property_monitor_open(GESTURE_SCREEN_STATUS_KVDB_KEY)) {
-        mUvPoll = std::make_shared<::os::app::UvPoll>(mUvLoop->get(), mFD);
-        mUvPoll->start(
-                UV_READABLE,
-                [](int fd, int status, int events, void* data) {
-                    auto* gd = ((GestureDetector*)data);
-                    char tmpKey[30];
-                    char tmpVal[10];
-                    property_monitor_read(gd->mFD, tmpKey, tmpVal);
-                    gd->mIsScreenOn = strcmp(tmpVal, "true") == 0;
-                },
-                this);
+        if (mFD > 0) {
+            mUvPoll = std::make_shared<::os::app::UvPoll>(mUvLoop->get(), mFD);
+            mUvPoll->start(
+                    UV_READABLE,
+                    [](int fd, int status, int events, void* data) {
+                        auto* gd = ((GestureDetector*)data);
+                        char tmpKey[30];
+                        char tmpVal[10];
+                        property_monitor_read(gd->mFD, tmpKey, tmpVal);
+                        gd->mIsScreenOn = strcmp(tmpVal, "-1") != 0;
+                    },
+                    this);
+        } else {
+            ALOGE("FATAL ERROR, mFD=%d\n", mFD);
+        }
     }
 
     ~GestureDetector() {
