@@ -45,8 +45,7 @@ LVGLDriverProxy::LVGLDriverProxy(std::shared_ptr<BaseWindow> win)
         mIndev(NULL),
         mRenderMode(CONFIG_APP_WINDOW_RENDER_MODE),
         mAllAreaDirty(true),
-        mPrevBuffer(NULL),
-        mVsyncEnabled(false) {
+        mPrevBuffer(NULL) {
     lv_color_format_t cf = getLvColorFormatType(win->getLayoutParams().mFormat);
     auto wm = win->getWindowManager();
     uint32_t width = 0, height = 0;
@@ -233,13 +232,11 @@ void LVGLDriverProxy::updateVisibility(bool visible) {
     }
 }
 
-void LVGLDriverProxy::onFBVsyncRequest(bool enable) {
-    FLOGD("update vsync listener from %d to %d", (int)mVsyncEnabled, (int)enable);
-    if (mVsyncEnabled == enable) return;
-
-    mVsyncEnabled = enable;
-    /* update vsync reqeust to server */
-    onInvalidate(mVsyncEnabled);
+void LVGLDriverProxy::notifyVsyncEvent() {
+    if (vsyncEventEnabled()) {
+        FLOGI("send vsync event");
+        lv_display_send_vsync_event(mDisp, NULL);
+    }
 }
 
 static void _disp_flush_cb(lv_display_t* disp, const lv_area_t* area, uint8_t* color) {
