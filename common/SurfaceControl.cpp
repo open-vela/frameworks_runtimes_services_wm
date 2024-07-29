@@ -139,6 +139,8 @@ static inline bool initSharedBuffer(std::string name, int* pfd, int32_t size) {
     if (size > 0 && ftruncate(fd, size) == -1) {
         int result = shm_unlink(cname);
         FLOGE("failed to resize shared memory for %s, unlink return %d", cname, result);
+        //for debug:print info when resized failed
+        system("ps; free; ls -l /var/shm");
         close(fd);
         return false;
     }
