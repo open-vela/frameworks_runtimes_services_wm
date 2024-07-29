@@ -44,12 +44,9 @@ public:
 
     bool readInput(lv_indev_t* drv, lv_indev_data_t* data);
 
-#ifdef CONFIG_SYSTEM_WINDOW_USE_VSYNC_EVENT
     bool vsyncEnabled() {
         return mVsyncEnabled;
     }
-    void onVsyncReceived();
-#endif
     bool ready() {
         return mReady;
     }
@@ -60,10 +57,10 @@ private:
 
     DeviceEventListener* mListener;
     lv_disp_t* mDisp;
-#ifdef CONFIG_SYSTEM_WINDOW_USE_VSYNC_EVENT
     bool mVsyncEnabled;
-#endif
+#ifndef CONFIG_SYSTEM_WINDOW_USE_VSYNC_EVENT
     lv_timer_t* mVsyncTimer;
+#endif
     void* mUvData;
     uv_loop_t* mUvLoop;
     bool mReady;

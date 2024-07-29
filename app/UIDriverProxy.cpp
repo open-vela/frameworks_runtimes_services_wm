@@ -16,6 +16,7 @@
 
 #include "UIDriverProxy.h"
 
+#include "../common/WindowUtils.h"
 #include "BaseWindow.h"
 #include "os/wm/VsyncRequest.h"
 
@@ -27,7 +28,8 @@ UIDriverProxy::UIDriverProxy(std::shared_ptr<BaseWindow> win)
         mBufferItem(nullptr),
         mFlags(0),
         mInputMonitor(nullptr),
-        mEventListener(nullptr) {}
+        mEventListener(nullptr),
+        mVsyncEnabled(false) {}
 
 UIDriverProxy::~UIDriverProxy() {
     mBufferItem = nullptr;
@@ -88,6 +90,15 @@ bool UIDriverProxy::readEvent(InputMessage* message) {
 void UIDriverProxy::updateResolution(int32_t width, int32_t height, uint32_t format) {}
 
 void UIDriverProxy::updateVisibility(bool visible) {}
+
+void UIDriverProxy::onFBVsyncRequest(bool enable) {
+    if (mVsyncEnabled == enable) return;
+    FLOGI("app %s to listen vsync event", enable ? "start" : "stop");
+
+    mVsyncEnabled = enable;
+    /* update vsync reqeust to server */
+    onInvalidate(mVsyncEnabled);
+}
 
 } // namespace wm
 } // namespace os

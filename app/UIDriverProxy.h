@@ -78,7 +78,10 @@ public:
 
     virtual void updateVisibility(bool visible);
 
-    virtual void onFBVsyncRequest(bool enable) {}
+    bool vsyncEventEnabled() {
+        return mVsyncEnabled;
+    }
+    void onFBVsyncRequest(bool enable);
     virtual void notifyVsyncEvent() {}
 
 private:
@@ -88,6 +91,7 @@ private:
     int8_t mFlags;
     InputMonitor* mInputMonitor;
     WindowEventListener* mEventListener;
+    bool mVsyncEnabled;
 };
 
 } // namespace wm
