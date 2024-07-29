@@ -79,14 +79,7 @@ public:
         return mLastEventState;
     }
 
-    bool vsyncEventEnabled() {
-        return mVsyncEnabled;
-    }
-    void onFBVsyncRequest(bool enable) override;
-
-    void notifyVsyncEvent() override {
-        if (mVsyncEnabled) lv_display_send_vsync_event(mDisp, NULL);
-    }
+    void notifyVsyncEvent() override;
 
     static void init();
     static void deinit();
@@ -114,7 +107,6 @@ private:
     ::std::vector<std::shared_ptr<LVGLDrawBuffer>> mDrawBuffers;
     bool mAllAreaDirty;
     BufferItem* mPrevBuffer;
-    bool mVsyncEnabled;
 };
 
 } // namespace wm

@@ -99,15 +99,22 @@ int32_t BaseWindow::getVisibility() {
 }
 
 bool BaseWindow::scheduleVsync(VsyncRequest freq) {
-    if (!mAppVisible || mVsyncRequest == freq) {
+    if (!mAppVisible) {
+        return false;
+    }
+
+    auto newfreq = (mUIProxy.get() && mUIProxy->vsyncEventEnabled())
+            ? VsyncRequest::VSYNC_REQ_PERIODIC
+            : freq;
+    if (mVsyncRequest == newfreq) {
         return false;
     }
 
     WM_PROFILER_BEGIN();
 
-    FLOGD("%p request vsync %" PRId32 "", this, (int32_t)freq);
-    mVsyncRequest = freq;
-    mWindowManager->getService()->requestVsync(getIWindow(), freq);
+    mVsyncRequest = newfreq;
+    FLOGD("%p request vsync %" PRId32 "", this, (int32_t)mVsyncRequest);
+    mWindowManager->getService()->requestVsync(getIWindow(), mVsyncRequest);
 
     WM_PROFILER_END();
     return true;
@@ -186,6 +193,14 @@ void BaseWindow::setSurfaceControl(SurfaceControl* surfaceControl) {
 
 void BaseWindow::onFrame(int32_t seq) {
     WM_PROFILER_BEGIN();
+
+    mVsyncRequest = nextVsyncState(mVsyncRequest);
+    FLOGD("frame(%p) %" PRId32 "", this, seq);
+
+    if (mUIProxy.get()) {
+        mUIProxy->notifyVsyncEvent();
+    }
+
     if (!mFrameDone.load(std::memory_order_acquire)) {
         FLOGD("onFrame(%p) %" PRId32 ", waiting frame done!", this, seq);
         WM_PROFILER_END();
@@ -218,6 +233,7 @@ void BaseWindow::setVisible(bool visible) {
 
     if (!mAppVisible) {
         mVsyncRequest = VsyncRequest::VSYNC_REQ_NONE;
+        FLOGI("window is hidden, reset vsync to none.");
     } else {
         scheduleVsync(VsyncRequest::VSYNC_REQ_SINGLE);
     }
@@ -226,17 +242,10 @@ void BaseWindow::setVisible(bool visible) {
 }
 
 void BaseWindow::handleOnFrame(int32_t seq) {
-    if (mUIProxy.get()) {
-        mUIProxy->notifyVsyncEvent();
-    }
-
     if (!mAppVisible) {
         FLOGD("window needn't update.");
         return;
     }
-
-    mVsyncRequest = nextVsyncState(mVsyncRequest);
-    FLOGD("frame(%p) %" PRId32 "", this, seq);
 
     if (mSurfaceControl.get() == nullptr) {
         mWindowManager->relayoutWindow(shared_from_this());
@@ -266,7 +275,7 @@ void BaseWindow::handleOnFrame(int32_t seq) {
         mUIProxy->drawFrame(item);
         WM_PROFILER_END();
         if (!mUIProxy->finishDrawing()) {
-            FLOGD("no finish drawing!");
+            FLOGD("no valid drawing!");
             buffProducer->cancelBuffer(item);
             return;
         }
