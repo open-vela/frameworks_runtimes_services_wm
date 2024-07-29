@@ -106,7 +106,8 @@ bool WindowState::sendInputMessage(const InputMessage* ie) {
 
 void WindowState::setVisibility(int32_t visibility) {
     mVisibility = visibility;
-    FLOGI("%p to %" PRId32 " (0:visible, 1:hold, 2:gone)", this, visibility);
+    FLOGI("%p-%d to %" PRId32 " (0:visible, 1:hold, 2:gone)", this, mToken->getClientPid(),
+          visibility);
     if (mNeedInput) mNode->enableInput(visibility == LayoutParams::WINDOW_VISIBLE);
 }
 
@@ -122,7 +123,8 @@ void WindowState::sendAppVisibilityToClients(int32_t visibility) {
     setVisibility(visibility);
     bool visible = visibility == LayoutParams::WINDOW_VISIBLE ? true : false;
 
-    FLOGI("token(%p) update to %s", mToken.get(), visible ? "visible" : "invisible");
+    FLOGI("%p token(%p)-%d update to %s", this, mToken.get(), mToken->getClientPid(),
+          visible ? "visible" : "invisible");
 
     if (!visible) {
         scheduleVsync(VsyncRequest::VSYNC_REQ_NONE);
@@ -142,11 +144,9 @@ void WindowState::sendAppVisibilityToClients(int32_t visibility) {
 #endif
         }
     } else {
-        if (mVsyncRequest == VsyncRequest::VSYNC_REQ_NONE) {
-            scheduleVsync(VsyncRequest::VSYNC_REQ_SINGLE);
-        } else {
-            scheduleVsync(mVsyncRequest);
-        }
+        scheduleVsync(mVsyncRequest != VsyncRequest::VSYNC_REQ_NONE
+                              ? mVsyncRequest
+                              : VsyncRequest::VSYNC_REQ_SINGLE);
         mClient->dispatchAppVisibility(visible);
     }
     WM_PROFILER_END();
@@ -248,7 +248,7 @@ void WindowState::applyTransaction(LayerState layerState) {
     }
 
     if (mAnimRunning && (buffItem == nullptr)) {
-        FLOGW("%p anim running,drop the null buffer data", this);
+        FLOGW("%p anim running, drop the null buffer data", this);
         return;
     }
 
@@ -259,11 +259,16 @@ void WindowState::applyTransaction(LayerState layerState) {
 }
 
 bool WindowState::scheduleVsync(VsyncRequest vsyncReq) {
-    FLOGD("vsyceReq:%d", (int)vsyncReq);
-
     mService->getRootContainer()->enableVsync(true);
 
-    if (mVsyncRequest == vsyncReq) return false;
+    if (mVsyncRequest == vsyncReq) {
+        return false;
+    }
+
+    /* observer for animation */
+    if (vsyncReq == VsyncRequest::VSYNC_REQ_PERIODIC ||
+        mVsyncRequest == VsyncRequest::VSYNC_REQ_PERIODIC)
+        FLOGW("[%d] request vsync : %d", mToken->getClientPid(), (int)vsyncReq);
 
     mVsyncRequest = vsyncReq;
 
@@ -271,11 +276,13 @@ bool WindowState::scheduleVsync(VsyncRequest vsyncReq) {
 }
 
 VsyncRequest WindowState::onVsync() {
-    if (mVsyncRequest == VsyncRequest::VSYNC_REQ_NONE) return mVsyncRequest;
+    if (mVsyncRequest == VsyncRequest::VSYNC_REQ_NONE) {
+        return mVsyncRequest;
+    }
     WM_PROFILER_BEGIN();
 
-    FLOGD("(%p)-%d (-2:none, -1:single, 0:suppress, 1:period) send vsync to client [%d]", this,
-          (int)mVsyncRequest, mToken->getClientPid());
+    FLOGI("win:[%p-%d] %d  (-2:none, -1:single, 0:suppress, 1:period) send vsync to client", this,
+          mToken->getClientPid(), (int)mVsyncRequest);
     mVsyncRequest = nextVsyncState(mVsyncRequest);
     mClient->onFrame(++mFrameReq);
     WM_PROFILER_END();

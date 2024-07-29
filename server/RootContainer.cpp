@@ -32,10 +32,10 @@ static void vsyncEventReceived(lv_event_t* e);
 RootContainer::RootContainer(DeviceEventListener* listener, uv_loop_t* loop)
       : mListener(listener),
         mDisp(nullptr),
-#ifdef CONFIG_SYSTEM_WINDOW_USE_VSYNC_EVENT
         mVsyncEnabled(false),
-#endif
+#ifndef CONFIG_SYSTEM_WINDOW_USE_VSYNC_EVENT
         mVsyncTimer(nullptr),
+#endif
         mUvData(nullptr),
         mUvLoop(loop) {
     mReady = init();
@@ -50,8 +50,9 @@ RootContainer::~RootContainer() {
 
 #ifdef CONFIG_SYSTEM_WINDOW_USE_VSYNC_EVENT
     if (mVsyncEnabled && mDisp) lv_display_unregister_vsync_event(mDisp, vsyncEventReceived, this);
-#endif
+#else
     if (mVsyncTimer) lv_timer_del(mVsyncTimer);
+#endif
 
     lv_anim_del_all();
 
@@ -88,13 +89,6 @@ lv_obj_t* RootContainer::getTopLayer() {
 }
 
 #ifdef CONFIG_SYSTEM_WINDOW_USE_VSYNC_EVENT
-void RootContainer::onVsyncReceived() {
-    if (!mVsyncTimer->paused) {
-        lv_timer_reset(mVsyncTimer);
-        if (mVsyncTimer->timer_cb) mVsyncTimer->timer_cb(mVsyncTimer);
-    }
-}
-
 static void vsyncEventReceived(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_VSYNC) {
@@ -102,7 +96,7 @@ static void vsyncEventReceived(lv_event_t* e) {
 
         RootContainer* container = reinterpret_cast<RootContainer*>(lv_event_get_user_data(e));
         if (container && container->vsyncEnabled()) {
-            container->onVsyncReceived();
+            container->processVsyncEvent();
         }
 
         WM_PROFILER_END();
@@ -137,7 +131,6 @@ static void resetVsyncTimer(lv_event_t* e) {
         }
     }
 }
-#endif
 
 static void vsyncCallback(lv_timer_t* tmr) {
     RootContainer* container = static_cast<RootContainer*>(lv_timer_get_user_data(tmr));
@@ -145,25 +138,41 @@ static void vsyncCallback(lv_timer_t* tmr) {
         container->processVsyncEvent();
     }
 }
+#endif
 
 void RootContainer::enableVsync(bool enable) {
     WM_PROFILER_BEGIN();
 
+    if (mVsyncEnabled == enable) {
+        return;
+    }
+
+    FLOGI("%s fb vsync event", enable ? "enable" : "disable");
+    mVsyncEnabled = enable;
 #ifdef CONFIG_SYSTEM_WINDOW_USE_VSYNC_EVENT
-    if (mVsyncEnabled != enable) {
-        mVsyncEnabled = enable;
-        lv_timer_t* timer = lv_timer_create(asyncEnableVsync, 0, this);
-        lv_timer_set_repeat_count(timer, 1);
+#if 0
+    lv_timer_t* timer = lv_timer_create(asyncEnableVsync, 0, this);
+    lv_timer_set_repeat_count(timer, 1);
+#else
+    if (vsyncEnabled()) {
+        FLOGD("register vsync event");
+        lv_display_register_vsync_event(container->getRoot(), vsyncEventReceived, container);
+    } else {
+        FLOGD("unregister vsync event");
+        lv_display_unregister_vsync_event(container->getRoot(), vsyncEventReceived, container);
     }
 #endif
-
+#else
     if (mVsyncTimer) {
         if (enable && mVsyncTimer->paused) {
+            FLOGD("enable fb vsync timer");
             lv_timer_resume(mVsyncTimer);
         } else if (!enable && !mVsyncTimer->paused) {
+            FLOGD("disable fb vsync timer");
             lv_timer_pause(mVsyncTimer);
         }
     }
+#endif
     WM_PROFILER_END();
 }
 
@@ -235,8 +244,8 @@ bool RootContainer::init() {
     };
     mUvData = lv_nuttx_uv_init(&uv_info);
 
-    mVsyncTimer = lv_timer_create(vsyncCallback, LV_DEF_REFR_PERIOD, this);
 #ifndef CONFIG_SYSTEM_WINDOW_USE_VSYNC_EVENT
+    mVsyncTimer = lv_timer_create(vsyncCallback, LV_DEF_REFR_PERIOD, this);
     lv_display_add_event_cb(mDisp, resetVsyncTimer, LV_EVENT_REFR_READY, mVsyncTimer);
 #endif
 
