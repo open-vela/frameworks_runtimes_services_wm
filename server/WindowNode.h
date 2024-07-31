@@ -30,7 +30,7 @@ public:
                int32_t format);
     ~WindowNode();
 
-    bool updateBuffer(BufferItem* item, Rect* rect);
+    bool updateBuffer(BufferItem* item, Rect* rect, uint32_t seq);
 
     BufferItem* acquireBuffer();
     bool releaseBuffer();

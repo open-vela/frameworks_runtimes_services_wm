@@ -77,7 +77,7 @@ BaseWindow::BaseWindow(::os::app::Context* context, WindowManager* wm)
         mFrameDone(true),
         mSurfaceBufferReady(false) {
     if (mWindowManager == nullptr) {
-        FLOGE("no valid window manager");
+        FLOGE("%p no valid window manager", this);
         return;
     }
 
@@ -113,7 +113,7 @@ bool BaseWindow::scheduleVsync(VsyncRequest freq) {
     WM_PROFILER_BEGIN();
 
     mVsyncRequest = newfreq;
-    FLOGD("%p request vsync %" PRId32 "", this, (int32_t)mVsyncRequest);
+    FLOGD("%p request vreq=%s", this, VsyncRequestToString(mVsyncRequest));
     mWindowManager->getService()->requestVsync(getIWindow(), mVsyncRequest);
 
     WM_PROFILER_END();
@@ -132,7 +132,7 @@ std::shared_ptr<BufferProducer> BaseWindow::getBufferProducer() {
     if (mSurfaceControl.get() != nullptr && mSurfaceControl->isValid()) {
         return std::static_pointer_cast<BufferProducer>(mSurfaceControl->bufferQueue());
     }
-    FLOGI("no valid SurfaceControl when window is %svisible!", mAppVisible ? "" : "not ");
+    FLOGI("%p no valid SurfaceControl when window is %svisible!", this, mAppVisible ? "" : "not ");
     return nullptr;
 }
 
@@ -195,14 +195,14 @@ void BaseWindow::onFrame(int32_t seq) {
     WM_PROFILER_BEGIN();
 
     mVsyncRequest = nextVsyncState(mVsyncRequest);
-    FLOGD("frame(%p) %" PRId32 "", this, seq);
+    FLOGD("%p frame seq=%" PRIu32 "", this, seq);
 
     if (mUIProxy.get()) {
         mUIProxy->notifyVsyncEvent();
     }
 
     if (!mFrameDone.load(std::memory_order_acquire)) {
-        FLOGD("onFrame(%p) %" PRId32 ", waiting frame done!", this, seq);
+        FLOGD("%p frame seq=%" PRIu32 ", waiting frame done!", this, seq);
         WM_PROFILER_END();
         return;
     }
@@ -214,7 +214,7 @@ void BaseWindow::onFrame(int32_t seq) {
 }
 
 void BaseWindow::setVisible(bool visible) {
-    FLOGI("visible from %d to %d", mAppVisible, visible);
+    FLOGI("%p visible from %d to %d", this, mAppVisible, visible);
 
     if (visible == mAppVisible) {
         return;
@@ -233,7 +233,7 @@ void BaseWindow::setVisible(bool visible) {
 
     if (!mAppVisible) {
         mVsyncRequest = VsyncRequest::VSYNC_REQ_NONE;
-        FLOGI("window is hidden, reset vsync to none.");
+        FLOGI("%p window is hidden, reset vreq to none.", this);
     } else {
         scheduleVsync(VsyncRequest::VSYNC_REQ_SINGLE);
     }
@@ -243,7 +243,7 @@ void BaseWindow::setVisible(bool visible) {
 
 void BaseWindow::handleOnFrame(int32_t seq) {
     if (!mAppVisible) {
-        FLOGD("window needn't update.");
+        FLOGD("%p window needn't update.", this);
         return;
     }
 
@@ -254,20 +254,20 @@ void BaseWindow::handleOnFrame(int32_t seq) {
         }
     } else {
         if (mUIProxy.get() == nullptr) {
-            FLOGI("UIProxy is invalid!");
+            FLOGI("%p seq=%" PRIu32 " UIProxy is invalid!", this, seq);
             return;
         }
 
         std::shared_ptr<BufferProducer> buffProducer = getBufferProducer();
         if (buffProducer.get() == nullptr) {
-            FLOGI("buffProducer is invalid!");
+            FLOGI("%p seq=%" PRIu32 " buffProducer is invalid!", this, seq);
             return;
         }
         BufferItem* item = buffProducer->dequeueBuffer();
         if (!item) {
             if (mVsyncRequest != VsyncRequest::VSYNC_REQ_PERIODIC)
                 scheduleVsync(VsyncRequest::VSYNC_REQ_SINGLESUPPRESS);
-            FLOGI("onFrame, no valid buffer!\n");
+            FLOGI("%p seq=%" PRIu32 " no valid buffer!\n", this, seq);
             return;
         }
 
@@ -275,18 +275,18 @@ void BaseWindow::handleOnFrame(int32_t seq) {
         mUIProxy->drawFrame(item);
         WM_PROFILER_END();
         if (!mUIProxy->finishDrawing()) {
-            FLOGD("no valid drawing!");
+            FLOGD("%p seq=%" PRIu32 " no valid drawing!", this, seq);
             buffProducer->cancelBuffer(item);
             return;
         }
         buffProducer->queueBuffer(item);
 
         auto transaction = mWindowManager->getTransaction();
-        transaction->setBuffer(mSurfaceControl, *item);
+        transaction->setBuffer(mSurfaceControl, *item, seq);
         auto rect = mUIProxy->rectCrop();
         if (rect) transaction->setBufferCrop(mSurfaceControl, *rect);
 
-        FLOGD("frame(%p) %" PRId32 " apply transaction\n", this, seq);
+        FLOGD("%p seq=%" PRIu32 " apply frame transaction\n", this, seq);
         transaction->apply();
 
         WindowEventListener* listener = mUIProxy->getEventListener();
@@ -305,10 +305,10 @@ void BaseWindow::bufferReleased(int32_t bufKey) {
     WM_PROFILER_BEGIN();
     auto buffer = buffProducer->syncFreeState(bufKey);
     if (!buffer) {
-        FLOGD("bufferReleased, release %" PRId32 " failure!", bufKey);
+        FLOGD("%p bufferReleased, release %" PRId32 " failure!", this, bufKey);
     }
     WM_PROFILER_END();
-    FLOGD("release bufKey:%" PRId32 " done!", bufKey);
+    FLOGD("%p release bufKey:%" PRId32 " done!", this, bufKey);
 }
 
 void BaseWindow::updateOrCreateBufferQueue() {
@@ -319,7 +319,7 @@ void BaseWindow::updateOrCreateBufferQueue() {
                 std::make_shared<BufferProducer>(mSurfaceControl);
         mSurfaceControl->setBufferQueue(buffProducer);
     }
-    FLOGI("updateOrCreateBufferQueue done!");
+    FLOGI("%p updateOrCreateBufferQueue done!", this);
 }
 
 void BaseWindow::setEventListener(WindowEventListener* listener) {

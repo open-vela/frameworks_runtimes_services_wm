@@ -37,6 +37,7 @@
 #include "WindowToken.h"
 #include "wm/GestureDetectorState.h"
 #include "wm/SurfaceControl.h"
+#include "wm/VsyncRequestOps.h"
 
 using ::android::IServiceManager;
 using ::android::sp;
@@ -471,19 +472,21 @@ Status WindowManagerService::applyTransaction(const vector<LayerState>& state) {
     return Status::ok();
 }
 
-Status WindowManagerService::requestVsync(const sp<IWindow>& window, VsyncRequest freq) {
+Status WindowManagerService::requestVsync(const sp<IWindow>& window, VsyncRequest vreq) {
     WM_PROFILER_BEGIN();
-    FLOGD("%p freq:%d", window.get(), (int)freq);
+    FLOGD("%p vreq=%s", window.get(), VsyncRequestToString(vreq));
     sp<IBinder> client = IInterface::asBinder(window);
     auto it = mWindowMap.find(client);
 
     if (it != mWindowMap.end()) {
-        if (!it->second->scheduleVsync(freq)) {
-            FLOGI("%p scheduleVsync %d for %p failure!", window.get(), (int)freq, it->second);
+        if (!it->second->scheduleVsync(vreq)) {
+            FLOGD("%p duplicate vreq=%s for %p!", window.get(), VsyncRequestToString(vreq),
+                  it->second);
         }
     } else {
         WM_PROFILER_END();
-        FLOGI("%p scheduleVsync %d for %p(not added)!", window.get(), (int)freq, it->second);
+        FLOGI("%p vreq=%s for %p(not added)!", window.get(), VsyncRequestToString(vreq),
+              it->second);
         return Status::fromExceptionCode(1, "can't find winstate in map");
     }
     WM_PROFILER_END();

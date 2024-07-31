@@ -58,6 +58,7 @@ typedef enum {
 typedef struct {
     int id;
     lv_img_dsc_t img_dsc;
+    uint32_t seq;
 } lv_mainwnd_buf_dsc_t;
 
 typedef InputMessage lv_mainwnd_input_event_t;

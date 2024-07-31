@@ -46,13 +46,15 @@ public:
     SurfaceTransaction();
     ~SurfaceTransaction();
 
-    SurfaceTransaction& setBuffer(const std::shared_ptr<SurfaceControl>& sc, BufferItem& item);
+    SurfaceTransaction& setBuffer(const std::shared_ptr<SurfaceControl>& sc, BufferItem& item,
+                                  uint32_t seq);
     SurfaceTransaction& setBufferCrop(const std::shared_ptr<SurfaceControl>& sc, Rect& rect);
 
     SurfaceTransaction& setPosition(const std::shared_ptr<SurfaceControl>& sc, int32_t x,
                                     int32_t y);
 
     SurfaceTransaction& setAlpha(const std::shared_ptr<SurfaceControl>& sc, int32_t alpha);
+    SurfaceTransaction& setSequence(const std::shared_ptr<SurfaceControl>& sc, uint32_t seq);
 
     SurfaceTransaction& apply();
 

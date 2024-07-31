@@ -43,11 +43,11 @@ SurfaceControl::SurfaceControl(const sp<IBinder>& token, const sp<IBinder>& hand
         mHeight(height),
         mFormat(format),
         mBufferSize(size) {
-    FLOGI("%p, create surface for handle %p \n", this, mHandle.get());
+    FLOGI("%p create surface for handle %p \n", this, mHandle.get());
 }
 
 SurfaceControl::~SurfaceControl() {
-    FLOGI("%p, free surface for handle %p \n", this, mHandle.get());
+    FLOGI("%p free surface for handle %p \n", this, mHandle.get());
     clearBufferIds();
     mToken.clear();
     mHandle.clear();
@@ -105,7 +105,7 @@ void SurfaceControl::initBufferIds(const std::vector<BufferId>& ids) {
 
 bool SurfaceControl::isValid() {
     if (mHandle == nullptr || mToken == nullptr) {
-        FLOGD("invalid handle (%p) or client (%p)", mHandle.get(), mToken.get());
+        FLOGD("invalid handle or client");
         return false;
     }
 
@@ -131,21 +131,23 @@ static inline bool initSharedBuffer(std::string name, int* pfd, int32_t size) {
     const char* cname = name.c_str();
     int fd = shm_open(cname, flag, S_IRUSR | S_IWUSR);
     if (fd == -1) {
-        FLOGE("failed to open shared memory for %s, %s", cname, strerror(errno));
+        FLOGE("failed to open shared memory %s, %s", cname, strerror(errno));
         return false;
     }
 
     /* only for server */
     if (size > 0 && ftruncate(fd, size) == -1) {
         int result = shm_unlink(cname);
-        FLOGE("failed to resize shared memory for %s, unlink return %d", cname, result);
-        //for debug:print info when resized failed
-        system("ps; free; ls -l /var/shm");
+        FLOGE("failed to resize shared memory for %s, size=%" PRId32 ", unlink return %d", cname,
+              size, result);
         close(fd);
+
+        // for debug:print info when resized failed
+        system("ps; free; ls -l /var/shm");
         return false;
     }
 
-    FLOGI("init shared memory success for %s, size is %" PRId32 " ", cname, size);
+    FLOGI("init shared memory success for %s, size=%" PRId32 " ", cname, size);
     *pfd = fd;
     return true;
 }
@@ -153,7 +155,7 @@ static inline bool initSharedBuffer(std::string name, int* pfd, int32_t size) {
 static inline void uninitSharedBuffer(int fd, std::string name) {
     if (fd > 0) {
         int result = shm_unlink(name.c_str());
-        FLOGI("uninit shared memory %s, result: %d", name.c_str(), result);
+        FLOGI("uninit shared memory for %s, result=%d", name.c_str(), result);
     }
 }
 

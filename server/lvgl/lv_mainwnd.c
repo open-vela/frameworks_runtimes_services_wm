@@ -63,6 +63,7 @@ static inline void reset_buf_dsc(lv_obj_t* obj) {
 
     lv_mainwnd_t* mainwnd = (lv_mainwnd_t*)obj;
     mainwnd->buf_dsc.id = INVALID_BUFID;
+    mainwnd->buf_dsc.seq = 0;
 
     mainwnd->buf_dsc.img_dsc.data = NULL;
     mainwnd->buf_dsc.img_dsc.data_size = 0;
@@ -121,6 +122,7 @@ bool lv_mainwnd_update_buffer(lv_obj_t* obj, lv_mainwnd_buf_dsc_t* buf_dsc, cons
     }
 
     mainwnd->buf_dsc.id = buf_dsc->id;
+    mainwnd->buf_dsc.seq = buf_dsc->seq;
     mainwnd->buf_dsc.img_dsc.data = buf_dsc->img_dsc.data;
     mainwnd->buf_dsc.img_dsc.data_size = buf_dsc->img_dsc.data_size;
     mainwnd->buf_dsc.img_dsc.header.cf = buf_dsc->img_dsc.header.cf;
@@ -244,7 +246,8 @@ static inline void draw_buffer(lv_obj_t* obj, lv_event_t* e) {
     win_coords.y1 = coords.y1;
     win_coords.y2 = win_coords.y1 + img_h - 1;
 
-    LV_LOG_TRACE("draw (%p) with (%d) (%dx%d)", mainwnd, mainwnd->buf_dsc.id, img_w, img_h);
+    LV_LOG_INFO("draw (%p) with (%d) (%dx%d), buffer seq=%" PRIu32 "", mainwnd, mainwnd->buf_dsc.id,
+                img_w, img_h, mainwnd->buf_dsc.seq);
     img_dsc.src = &mainwnd->buf_dsc.img_dsc;
     lv_draw_image(layer, &img_dsc, &win_coords);
 }

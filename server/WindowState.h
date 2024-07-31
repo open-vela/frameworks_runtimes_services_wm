@@ -98,7 +98,7 @@ private:
     std::shared_ptr<InputDispatcher> mInputDispatcher;
     LayoutParams mAttrs;
     VsyncRequest mVsyncRequest;
-    int32_t mFrameReq;
+    uint32_t mFrameReq;
     int32_t mVisibility;
     bool mHasSurface;
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION

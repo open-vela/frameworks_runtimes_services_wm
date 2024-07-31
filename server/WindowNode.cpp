@@ -133,7 +133,7 @@ void WindowNode::resetOpaque() {
     lv_obj_set_style_opa(mWidget, 0xFF, LV_PART_MAIN);
 }
 
-bool WindowNode::updateBuffer(BufferItem* item, Rect* rect) {
+bool WindowNode::updateBuffer(BufferItem* item, Rect* rect, uint32_t seq) {
     WM_PROFILER_BEGIN();
 
     bool result = false;
@@ -152,13 +152,15 @@ bool WindowNode::updateBuffer(BufferItem* item, Rect* rect) {
     if (mBuffer) {
         initBufDsc(&dsc, mBuffer->mKey, mRect.getWidth(), mRect.getHeight(), getColorFormat(),
                    mBuffer->mSize, mBuffer->mBuffer);
+        dsc.seq = seq;
         result = lv_mainwnd_update_buffer(mWidget, &dsc, rect ? &area : nullptr);
     } else {
         result = lv_mainwnd_update_buffer(mWidget, NULL, NULL);
     }
 
-    FLOGD("(%p) %s from(0x%0" PRIx32 ") to(0x%0" PRIx32 ")\n", this, result ? "success" : "failure",
-          oldBuffer ? oldBuffer->mKey : -1, mBuffer ? mBuffer->mKey : -1);
+    FLOGD("(%p) %s from(0x%0" PRIx32 ") to(0x%0" PRIx32 ") seq=%" PRIu32 "\n", this,
+          result ? "success" : "failure", oldBuffer ? oldBuffer->mKey : -1,
+          mBuffer ? mBuffer->mKey : -1, seq);
 
     // need to reset buffer
     if (!result) {
