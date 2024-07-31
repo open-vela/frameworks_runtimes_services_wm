@@ -202,7 +202,6 @@ void WindowState::destroySurfaceControl() {
             mFrameWaiting = true;
 #endif
         }
-        scheduleVsync(VsyncRequest::VSYNC_REQ_NONE);
         uninitSurfaceBuffer(mSurfaceControl);
         mSurfaceControl.reset();
     }
@@ -307,6 +306,7 @@ void WindowState::removeImmediately() {
 
     mFlags |= WS_REMOVED;
 
+    scheduleVsync(VsyncRequest::VSYNC_REQ_NONE);
     destroySurfaceControl();
     if (mInputDispatcher.get() != nullptr) {
         mInputDispatcher->release();
