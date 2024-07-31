@@ -33,12 +33,13 @@ SurfaceTransaction::~SurfaceTransaction() {
 }
 
 SurfaceTransaction& SurfaceTransaction::setBuffer(const std::shared_ptr<SurfaceControl>& sc,
-                                                  BufferItem& item) {
+                                                  BufferItem& item, uint32_t seq) {
     LayerState* state = getLayerState(sc);
 
     if (state != nullptr) {
         state->mFlags |= LayerState::LAYER_BUFFER_CHANGED;
         state->mBufferKey = item.mKey;
+        state->mSeq = seq;
     }
     return *this;
 }
@@ -72,6 +73,16 @@ SurfaceTransaction& SurfaceTransaction::setAlpha(const std::shared_ptr<SurfaceCo
     if (state != nullptr) {
         state->mFlags |= LayerState::LAYER_ALPHA_CHANGED;
         state->mAlpha = alpha;
+    }
+
+    return *this;
+}
+
+SurfaceTransaction& SurfaceTransaction::setSequence(const std::shared_ptr<SurfaceControl>& sc,
+                                                    uint32_t seq) {
+    LayerState* state = getLayerState(sc);
+    if (state != nullptr) {
+        state->mSeq = seq;
     }
 
     return *this;
