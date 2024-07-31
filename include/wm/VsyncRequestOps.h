@@ -42,5 +42,26 @@ static inline VsyncRequest nextVsyncState(VsyncRequest req) {
     return VsyncRequest::VSYNC_REQ_NONE;
 }
 
+static inline const char* VsyncRequestToString(VsyncRequest req) {
+    switch (req) {
+        case VsyncRequest::VSYNC_REQ_NONE:
+            return "none";
+
+        case VsyncRequest::VSYNC_REQ_SINGLE:
+            return "single";
+
+        case VsyncRequest::VSYNC_REQ_SINGLESUPPRESS:
+            return "singlesuppress";
+
+        case VsyncRequest::VSYNC_REQ_PERIODIC:
+            return "periodic";
+
+        default:
+            break;
+    }
+
+    return "unknown";
+}
+
 } // namespace wm
 } // namespace os

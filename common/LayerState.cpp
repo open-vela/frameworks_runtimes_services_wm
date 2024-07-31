@@ -24,6 +24,7 @@ namespace wm {
 status_t LayerState::writeToParcel(Parcel* out) const {
     SAFE_PARCEL(out->writeStrongBinder, mToken);
     SAFE_PARCEL(out->writeInt32, mFlags);
+    SAFE_PARCEL(out->writeUint32, mSeq);
 
     if (mFlags & LAYER_POSITION_CHANGED) {
         SAFE_PARCEL(out->writeInt32, mX);
@@ -47,6 +48,7 @@ status_t LayerState::writeToParcel(Parcel* out) const {
 status_t LayerState::readFromParcel(const Parcel* in) {
     SAFE_PARCEL(in->readStrongBinder, &mToken);
     SAFE_PARCEL(in->readInt32, &mFlags);
+    SAFE_PARCEL(in->readUint32, &mSeq);
 
     if (mFlags & LAYER_POSITION_CHANGED) {
         SAFE_PARCEL(in->readInt32, &mX);
