@@ -34,7 +34,7 @@ using android::status_t;
 
 class LayerState : public Parcelable {
 public:
-    LayerState() : mFlags(0), mToken(nullptr) {}
+    LayerState() : mFlags(0), mToken(nullptr), mSeq(0) {}
     ~LayerState() {
         mToken = nullptr;
         mFlags = 0;
@@ -61,6 +61,7 @@ public:
     Rect mBufferCrop;
     int32_t mFlags;
     sp<IBinder> mToken;
+    uint32_t mSeq;
 };
 
 } // namespace wm

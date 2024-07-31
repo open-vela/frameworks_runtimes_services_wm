@@ -92,8 +92,9 @@ void UIDriverProxy::updateResolution(int32_t width, int32_t height, uint32_t for
 void UIDriverProxy::updateVisibility(bool visible) {}
 
 void UIDriverProxy::onFBVsyncRequest(bool enable) {
+    FLOGI("listen vsync event from %s to %s", mVsyncEnabled ? "enable" : "disable",
+          enable ? "enable" : "disable");
     if (mVsyncEnabled == enable) return;
-    FLOGI("app %s to listen vsync event", enable ? "start" : "stop");
 
     mVsyncEnabled = enable;
     /* update vsync reqeust to server */
