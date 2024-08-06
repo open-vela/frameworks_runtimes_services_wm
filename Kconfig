@@ -54,6 +54,10 @@ config ENABLE_TRANSITION_ANIMATION
 	default n
 	depends on LVX_USE_ANIMENGINE_ADAPTER
 
+config ENABLE_WINDOW_TRIPLE_BUFFER
+	bool "Enable window triple buffer"
+	default n
+
 config SYSTEM_WINDOW_USE_VSYNC_EVENT
 	bool "Enable window vsync event"
 	default n

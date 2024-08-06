@@ -592,8 +592,13 @@ int32_t WindowManagerService::createSurfaceControl(SurfaceControl* outSurfaceCon
                                                    WindowState* win) {
     vector<BufferId> ids;
     int32_t pid = IPCThreadState::self()->getCallingPid();
+    int32_t bufferCount = 2;
 
-    for (int32_t i = 0; i < 2; i++) {
+#ifdef CONFIG_ENABLE_WINDOW_TRIPLE_BUFFER
+    bufferCount = 3;
+#endif
+
+    for (int32_t i = 0; i < bufferCount; i++) {
         BufferId id;
         std::string bufferPath = genUniquePath(false, pid, "bq");
         int32_t bufferKey = std::rand();
