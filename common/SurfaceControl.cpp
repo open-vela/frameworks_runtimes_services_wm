@@ -182,7 +182,7 @@ void initSurfaceBuffer(const std::shared_ptr<SurfaceControl>& sc, bool isServer)
     }
 
     /* failure : free shared memory*/
-    if (isServer && !result) {
+    if (isServer && !result && ids.size() < 2) {
         for (const auto& id : ids) {
             uninitSharedBuffer(id.mFd, id.mName);
             close(id.mFd);
