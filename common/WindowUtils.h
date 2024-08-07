@@ -18,18 +18,22 @@
 
 #include <inttypes.h>
 #include <nuttx/config.h>
+#include <time.h>
 #include <utils/Log.h>
 
 #include "ParcelUtils.h"
 #include "WindowTrace.h"
 
-#define FLOGA(fmt, ...) ALOGA("%s: " fmt, __FUNCTION__, ##__VA_ARGS__)
 #define FLOGE(fmt, ...) ALOGE("%s: " fmt, __FUNCTION__, ##__VA_ARGS__)
 #define FLOGW(fmt, ...) ALOGW("%s: " fmt, __FUNCTION__, ##__VA_ARGS__)
 #define FLOGI(fmt, ...) ALOGI("%s: " fmt, __FUNCTION__, ##__VA_ARGS__)
 #define FLOGD(fmt, ...) ALOGD("%s: " fmt, __FUNCTION__, ##__VA_ARGS__)
+#define FLOGV(fmt, ...) ALOGV("%s: " fmt, __FUNCTION__, ##__VA_ARGS__)
 
 uint32_t getLvColorFormatType(uint32_t format);
+uint64_t curSysTimeMs(void);
+uint64_t curSysTimeUs(void);
+uint64_t curSysTimeNs(void);
 
 #define DATA_MIN(a, b) ((a) < (b) ? (a) : (b))
 #define DATA_MAX(a, b) ((a) > (b) ? (a) : (b))

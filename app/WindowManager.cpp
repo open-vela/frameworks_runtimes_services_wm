@@ -44,7 +44,7 @@ static void _wm_timer_cb(uv_timer_t* handle) {
         sleep_ms = 1;
     }
 
-    FLOGD("sleep_ms = %" PRIu32, sleep_ms);
+    FLOGV("sleep_ms = %" PRIu32, sleep_ms);
     uv_timer_start(handle, _wm_timer_cb, sleep_ms, 0);
 }
 
