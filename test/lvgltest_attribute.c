@@ -1,5 +1,6 @@
 
 #include <unistd.h>
+
 #include "lvgl/lvgl.h"
 
 static void lv_obj_set_scale(void *var, int32_t v) {
@@ -10,7 +11,7 @@ static void lv_obj_set_opa(void *var, int32_t v) {
     lv_obj_set_style_opa(var, v, LV_PART_MAIN);
 }
 
-int main(void) {
+int main(int argc, char **argv) {
     lv_nuttx_dsc_t info;
     lv_nuttx_result_t result;
 
