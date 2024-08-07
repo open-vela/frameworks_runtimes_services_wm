@@ -51,6 +51,12 @@ PROGNAME += IWindowManagerTest
 MAINSRC  += test/FakeFmqTest.cpp
 PROGNAME += FakeFmqTest
 
+MAINSRC  += test/FrameMetaInfoTest.cpp
+PROGNAME +=FrameMetaInfoTest
+
+MAINSRC  += test/FrameTimeInfoTest.cpp
+PROGNAME +=FrameTimeInfoTest
+
 MAINSRC  += test/lvgltest_attribute.c
 PROGNAME += lvgltest_attribute
 endif
