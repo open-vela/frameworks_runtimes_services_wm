@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "../common/FrameMetaInfo.h"
 #include "BaseWindow.h"
 #include "wm/BufferQueue.h"
 #include "wm/InputMessage.h"
@@ -83,6 +84,16 @@ public:
     }
     void onFBVsyncRequest(bool enable);
     virtual void notifyVsyncEvent() {}
+    virtual uint32_t getTimerPeriod() {
+        return 16;
+    }
+
+    void traceFrame(bool enable) {
+        mTraceFrame = enable;
+    }
+    FrameMetaInfo* frameMetaInfo() {
+        return mTraceFrame ? &mFrameMetaInfo : nullptr;
+    }
 
 private:
     std::weak_ptr<BaseWindow> mBaseWindow;
@@ -92,6 +103,9 @@ private:
     InputMonitor* mInputMonitor;
     WindowEventListener* mEventListener;
     bool mVsyncEnabled;
+
+    bool mTraceFrame;
+    FrameMetaInfo mFrameMetaInfo;
 };
 
 } // namespace wm

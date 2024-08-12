@@ -98,6 +98,9 @@ void LVGLDriverProxy::drawFrame(BufferItem* bufItem) {
 }
 
 void LVGLDriverProxy::onRenderStart() {
+    auto info = frameMetaInfo();
+    if (info) info->markRenderStart();
+
     void* buffer = onDequeueBuffer();
     if (!buffer) {
         FLOGE("no valid render buffer");
@@ -264,6 +267,18 @@ static void _disp_event_cb(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);
 
     switch (code) {
+        case LV_EVENT_REFR_START: {
+            CHECK_PROXY_OBJECT(e);
+            auto info = proxy->frameMetaInfo();
+            if (info) info->markLayoutStart();
+            break;
+        }
+        case LV_EVENT_REFR_READY: {
+            CHECK_PROXY_OBJECT(e);
+            auto info = proxy->frameMetaInfo();
+            if (info) info->markRenderEnd();
+            break;
+        }
         case LV_EVENT_RENDER_START: {
             CHECK_PROXY_OBJECT(e);
             proxy->onRenderStart();
