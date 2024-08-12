@@ -79,11 +79,12 @@ public:
 
     void notifyVsyncEvent() override;
 
-    static void init();
-    static void deinit();
-    static inline uint32_t getTimerPeriod() {
+    uint32_t getTimerPeriod() override {
         return LV_DEF_REFR_PERIOD;
     }
+
+    static void init();
+    static void deinit();
 
     static inline uint32_t timerHandler() {
         return lv_timer_handler();
