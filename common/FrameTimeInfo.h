@@ -27,7 +27,7 @@ public:
 
 private:
     void init();
-    void logPerSecond();
+    void logPerSecond(bool checksec = true);
 
     int64_t mMinFrameTime;
     int64_t mMaxFrameTime;

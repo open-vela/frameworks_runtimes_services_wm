@@ -84,10 +84,7 @@ public:
     void* getRoot();
     void* getNativeDisplay();
 
-    void setUIProxy(const std::shared_ptr<UIDriverProxy>& proxy) {
-        mUIProxy = proxy;
-    }
-
+    void setUIProxy(const std::shared_ptr<UIDriverProxy>& proxy);
     std::shared_ptr<UIDriverProxy>& getUIProxy() {
         return mUIProxy;
     }
@@ -118,6 +115,8 @@ public:
 
     DISALLOW_COPY_AND_ASSIGN(BaseWindow);
 
+    void traceFrame(bool enable);
+
 private:
     void onFrame(int32_t seq);
     void bufferReleased(int32_t bufKey);
@@ -139,6 +138,8 @@ private:
     bool mAppVisible;
     atomic_bool mFrameDone;
     bool mSurfaceBufferReady;
+    bool mTraceFrame;
+    void* mFrameTimeInfo;
 };
 
 } // namespace wm

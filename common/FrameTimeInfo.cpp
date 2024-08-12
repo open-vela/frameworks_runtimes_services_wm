@@ -27,7 +27,7 @@ FrameTimeInfo::FrameTimeInfo() {
 
 void FrameTimeInfo::time(FrameMetaInfo* info) {
     if (!info) {
-        logPerSecond();
+        logPerSecond(false);
         return;
     }
 
@@ -39,6 +39,7 @@ void FrameTimeInfo::time(FrameMetaInfo* info) {
         if (mSkipFrameSamples > 255) {
             mSkipEmptyFrameSamples = mSkipFrameSamples = 0;
         }
+        logPerSecond();
         return;
     }
 
@@ -66,22 +67,30 @@ void FrameTimeInfo::time(FrameMetaInfo* info) {
     logPerSecond();
 }
 
-void FrameTimeInfo::logPerSecond() {
+void FrameTimeInfo::logPerSecond(bool checksec) {
     if (mLastFrameFinishedTime == 0) return;
 
     auto nowTime = FrameMetaInfo::getCurSysTime();
-    auto interval = mLastFrameFinishedTime - mLastLogFrameTime;
     /* 1s */
-    if (nowTime - mLastLogFrameTime + mFrameInterval > 1000) {
-        FLOGW("FrameLog{ timeMs=%" PRId64 "(%" PRId64 "), frames=%" PRIu16 ":%" PRIu16 "(%" PRIu16
-              ":%" PRIu16 ":%" PRIu16 "), minMs=%" PRId64 ", maxMs=%" PRId64
-              "ms, avgMs=%.2f, intervalMs=%" PRId64 ", skip=(%" PRIu16 "/%" PRIu16 ") }",
-              mTotalFrameTime, interval, mValidFrameSamples,
-              mValidFrameSamples + mSkipEmptyFrameSamples,
+    bool showlog = !checksec
+            ? true
+            : ((nowTime - mLastLogFrameTime + mFrameInterval >= 1000) ? true : false);
+
+    if (showlog) {
+        auto interval = mLastFrameFinishedTime - mLastLogFrameTime;
+
+        auto fps = 1000. * mValidFrameSamples / mTotalFrameTime;
+        if (fps > 60) fps = 60;
+
+        FLOGW("FrameLog{ evalFPS=%.2f, frames=%" PRIu16 ":%" PRIu16 "(%" PRIu16 ":%" PRIu16
+              ":%" PRIu16 "), minMs=%" PRId64 ", maxMs=%" PRId64 ", avgMs=%.2f, timeMs=%" PRId64
+              "/%" PRId64 "(%" PRId64 "-%" PRId64 "), intervalMs=%" PRId64 ", skip=(%" PRIu16
+              "/%" PRIu16 ") }",
+              fps, mValidFrameSamples, mValidFrameSamples + mSkipEmptyFrameSamples,
               mValidFrameSamples - mTimeoutFrameSamples, mTimeoutFrameSamples,
               mSkipEmptyFrameSamples, mMinFrameTime, mMaxFrameTime,
-              mTotalFrameTime * 1. / mValidFrameSamples, mFrameInterval, mSkipEmptyFrameSamples,
-              mSkipFrameSamples);
+              mTotalFrameTime * 1. / mValidFrameSamples, mTotalFrameTime, interval, nowTime,
+              mLastLogFrameTime, mFrameInterval, mSkipEmptyFrameSamples, mSkipFrameSamples);
         init();
     }
 }
