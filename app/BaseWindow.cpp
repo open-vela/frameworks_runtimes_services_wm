@@ -19,6 +19,7 @@
 
 #include <mqueue.h>
 
+#include "../common/FrameTimeInfo.h"
 #include "../common/WindowUtils.h"
 #include "SurfaceTransaction.h"
 #include "UIDriverProxy.h"
@@ -75,7 +76,9 @@ BaseWindow::BaseWindow(::os::app::Context* context, WindowManager* wm)
         mVsyncRequest(VsyncRequest::VSYNC_REQ_NONE),
         mAppVisible(false),
         mFrameDone(true),
-        mSurfaceBufferReady(false) {
+        mSurfaceBufferReady(false),
+        mTraceFrame(false),
+        mFrameTimeInfo(nullptr) {
     if (mWindowManager == nullptr) {
         FLOGE("%p no valid window manager", this);
         return;
@@ -92,6 +95,7 @@ BaseWindow::BaseWindow(::os::app::Context* context, WindowManager* wm)
 
     mAttrs.mToken = context->getToken();
     mIWindow = sp<W>::make(this);
+    mFrameTimeInfo = new FrameTimeInfo();
 }
 
 int32_t BaseWindow::getVisibility() {
@@ -112,6 +116,12 @@ bool BaseWindow::scheduleVsync(VsyncRequest freq) {
 
     WM_PROFILER_BEGIN();
 
+    if (mUIProxy->frameMetaInfo() && mFrameTimeInfo &&
+        (newfreq == VsyncRequest::VSYNC_REQ_PERIODIC ||
+         mVsyncRequest == VsyncRequest::VSYNC_REQ_PERIODIC)) {
+        static_cast<FrameTimeInfo*>(mFrameTimeInfo)->time(NULL);
+    }
+
     mVsyncRequest = newfreq;
     FLOGD("%p request vreq=%s", this, VsyncRequestToString(mVsyncRequest));
     mWindowManager->getService()->requestVsync(getIWindow(), mVsyncRequest);
@@ -122,6 +132,11 @@ bool BaseWindow::scheduleVsync(VsyncRequest freq) {
 
 void* BaseWindow::getNativeDisplay() {
     return mUIProxy.get() != nullptr ? mUIProxy->getRoot() : nullptr;
+}
+
+void BaseWindow::setUIProxy(const std::shared_ptr<UIDriverProxy>& proxy) {
+    mUIProxy = proxy;
+    mUIProxy->traceFrame(mTraceFrame);
 }
 
 void* BaseWindow::getRoot() {
@@ -145,6 +160,10 @@ void BaseWindow::doDie() {
         mSurfaceControl.reset();
     }
 
+    if (mFrameTimeInfo) {
+        delete static_cast<FrameTimeInfo*>(mFrameTimeInfo);
+        mFrameTimeInfo = NULL;
+    }
     mUIProxy.reset();
     mIWindow->clear();
 }
@@ -197,20 +216,48 @@ void BaseWindow::onFrame(int32_t seq) {
     mVsyncRequest = nextVsyncState(mVsyncRequest);
     FLOGD("%p frame seq=%" PRIu32 "", this, seq);
 
-    if (mUIProxy.get()) {
-        mUIProxy->notifyVsyncEvent();
+    if (mUIProxy.get() == nullptr) {
+        FLOGE("%p frame seq=%" PRIu32 ", ui proxy exception", this, seq);
+        return;
     }
+
+    /* mark vsync */
+    auto info = mUIProxy->frameMetaInfo();
+    if (info) info->setVsync(FrameMetaInfo::getCurSysTime(), seq, mUIProxy->getTimerPeriod());
+    mUIProxy->notifyVsyncEvent();
 
     if (!mFrameDone.load(std::memory_order_acquire)) {
         FLOGD("%p frame seq=%" PRIu32 ", waiting frame done!", this, seq);
+        if (info) info->setSkipReason(FrameMetaSkipReason::NoTarget);
         WM_PROFILER_END();
         return;
     }
+
+    /* mark draw start*/
+    if (info) info->markFrameStart();
 
     mFrameDone.exchange(false, std::memory_order_release);
     WM_PROFILER_END();
     handleOnFrame(seq);
     mFrameDone.exchange(true, std::memory_order_release);
+
+    if (info) {
+        /* mark frame finished*/
+        info->markFrameFinished();
+
+        auto skipReason = info->getSkipReason();
+        if (skipReason) {
+            /* invalid sample */
+            FLOGI("SingleFrameLog{seq=%" PRIu32 ", skip=%d}", seq, (int)(*skipReason));
+        } else {
+            FLOGW("SingleFrameLog{seq=%" PRIu32 ", totalMs=%" PRId64 ", animMs=%" PRId64
+                  ", renderMs=%" PRId64 ", layoutMs=%" PRId64 ", transactMs=%" PRId64 "}",
+                  seq, info->totalDuration(), info->totalVsyncDuration(),
+                  info->totalRenderDuration(), info->totalLayoutDuration(),
+                  info->totalTransactDuration());
+        }
+        if (mFrameTimeInfo) static_cast<FrameTimeInfo*>(mFrameTimeInfo)->time(info);
+    }
 }
 
 void BaseWindow::setVisible(bool visible) {
@@ -242,25 +289,25 @@ void BaseWindow::setVisible(bool visible) {
 }
 
 void BaseWindow::handleOnFrame(int32_t seq) {
+    auto info = mUIProxy->frameMetaInfo();
+
     if (!mAppVisible) {
         FLOGD("%p window needn't update.", this);
+        if (info) info->setSkipReason(FrameMetaSkipReason::NoSurface);
         return;
     }
 
     if (mSurfaceControl.get() == nullptr) {
+        if (info) info->setSkipReason(FrameMetaSkipReason::NoSurface);
         mWindowManager->relayoutWindow(shared_from_this());
         if (mSurfaceControl.get() && mSurfaceControl->isValid()) {
             updateOrCreateBufferQueue();
         }
     } else {
-        if (mUIProxy.get() == nullptr) {
-            FLOGI("%p seq=%" PRIu32 " UIProxy is invalid!", this, seq);
-            return;
-        }
-
         std::shared_ptr<BufferProducer> buffProducer = getBufferProducer();
         if (buffProducer.get() == nullptr) {
             FLOGI("%p seq=%" PRIu32 " buffProducer is invalid!", this, seq);
+            if (info) info->setSkipReason(FrameMetaSkipReason::NoBuffer);
             return;
         }
 
@@ -274,6 +321,7 @@ void BaseWindow::handleOnFrame(int32_t seq) {
             if (mVsyncRequest != VsyncRequest::VSYNC_REQ_PERIODIC)
                 scheduleVsync(VsyncRequest::VSYNC_REQ_SINGLESUPPRESS);
             FLOGI("%p seq=%" PRIu32 " no valid buffer!\n", this, seq);
+            if (info) info->setSkipReason(FrameMetaSkipReason::NoBuffer);
             return;
         }
 
@@ -281,10 +329,12 @@ void BaseWindow::handleOnFrame(int32_t seq) {
         mUIProxy->drawFrame(item);
         WM_PROFILER_END();
         if (!mUIProxy->finishDrawing()) {
-            FLOGD("%p seq=%" PRIu32 " no valid drawing!", this, seq);
+            FLOGI("%p seq=%" PRIu32 " no valid drawing!", this, seq);
             buffProducer->cancelBuffer(item);
+            if (info) info->setSkipReason(FrameMetaSkipReason::NothingToDraw);
             return;
         }
+        if (info) info->markSyncQueued();
         buffProducer->queueBuffer(item);
 
         auto transaction = mWindowManager->getTransaction();
@@ -292,7 +342,7 @@ void BaseWindow::handleOnFrame(int32_t seq) {
         auto rect = mUIProxy->rectCrop();
         if (rect) transaction->setBufferCrop(mSurfaceControl, *rect);
 
-        FLOGD("%p seq=%" PRIu32 " apply frame transaction\n", this, seq);
+        FLOGI("%p seq=%" PRIu32 " apply frame transaction\n", this, seq);
         transaction->apply();
 
         WindowEventListener* listener = mUIProxy->getEventListener();
@@ -314,7 +364,7 @@ void BaseWindow::bufferReleased(int32_t bufKey) {
         FLOGD("%p bufferReleased, release %" PRId32 " failure!", this, bufKey);
     }
     WM_PROFILER_END();
-    FLOGD("%p release bufKey:%" PRId32 " done!", this, bufKey);
+    FLOGI("%p release bufKey:%" PRId32 " done!\n", this, bufKey);
 }
 
 void BaseWindow::updateOrCreateBufferQueue() {
@@ -355,6 +405,13 @@ void BaseWindow::setLayoutParams(LayoutParams lp) {
 
 void BaseWindow::setType(int32_t type) {
     mAttrs.mType = type;
+}
+
+void BaseWindow::traceFrame(bool enable) {
+    mTraceFrame = enable;
+    if (mUIProxy.get()) {
+        mUIProxy->traceFrame(enable);
+    }
 }
 
 } // namespace wm

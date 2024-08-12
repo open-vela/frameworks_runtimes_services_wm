@@ -146,7 +146,7 @@ std::shared_ptr<BaseWindow> WindowManager::newWindow(::os::app::Context* context
     window->setUIProxy(std::dynamic_pointer_cast<::os::wm::UIDriverProxy>(proxy));
     if (!mTimerInited) {
         uv_timer_init(context->getMainLoop()->get(), &mEventTimer);
-        uv_timer_start(&mEventTimer, _wm_timer_cb, LVGLDriverProxy::getTimerPeriod(), 0);
+        uv_timer_start(&mEventTimer, _wm_timer_cb, proxy->getTimerPeriod(), 0);
         LVGLDriverProxy::setTimerResumeHandler(_wm_timer_resume, &mEventTimer);
         FLOGD("init event timer.");
         /* for video feature */
