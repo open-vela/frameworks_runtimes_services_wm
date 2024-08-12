@@ -37,7 +37,8 @@ RootContainer::RootContainer(DeviceEventListener* listener, uv_loop_t* loop)
         mVsyncTimer(nullptr),
 #endif
         mUvData(nullptr),
-        mUvLoop(loop) {
+        mUvLoop(loop),
+        mTraceFrame(false) {
     mReady = init();
     if (mReady) {
         // set bg color to black for lvgl
@@ -117,21 +118,6 @@ static void asyncEnableVsync(lv_timer_t* tmr) {
 }
 
 #else
-static void resetVsyncTimer(lv_event_t* e) {
-    lv_event_code_t code = lv_event_get_code(e);
-
-    if (code == LV_EVENT_REFR_READY) {
-        WM_PROFILER_BEGIN();
-        lv_timer_t* timer = (lv_timer_t*)(lv_event_get_user_data(e));
-        WM_PROFILER_END();
-
-        if (!timer->paused) {
-            lv_timer_reset(timer);
-            if (timer->timer_cb) timer->timer_cb(timer);
-        }
-    }
-}
-
 static void vsyncCallback(lv_timer_t* tmr) {
     RootContainer* container = static_cast<RootContainer*>(lv_timer_get_user_data(tmr));
     if (container) {
@@ -216,6 +202,74 @@ bool RootContainer::readInput(lv_indev_t* indev, lv_indev_data_t* data) {
     return mListener->responseInput(&msg);
 }
 
+FrameMetaInfo* RootContainer::frameInfo() {
+    return mTraceFrame ? &mFrameInfo : nullptr;
+}
+
+#define CONTAINER_FROM_EVENT(e)                                             \
+    RootContainer* container = (RootContainer*)(lv_event_get_user_data(e)); \
+    if (container == nullptr) {                                             \
+        return;                                                             \
+    }
+
+static void processDispEvent(lv_event_t* e) {
+    lv_event_code_t code = lv_event_get_code(e);
+
+    switch (code) {
+        case LV_EVENT_REFR_START: {
+            CONTAINER_FROM_EVENT(e);
+            container->onFrameStart();
+            break;
+        }
+        case LV_EVENT_RENDER_START: {
+            CONTAINER_FROM_EVENT(e);
+            container->onRenderStart();
+            break;
+        }
+
+        case LV_EVENT_REFR_READY: {
+            CONTAINER_FROM_EVENT(e);
+            container->onFrameFinished();
+            break;
+        }
+        default:
+            break;
+    }
+}
+
+void RootContainer::onFrameStart() {
+    auto info = frameInfo();
+    if (info) {
+        info->setVsync(FrameMetaInfo::getCurSysTime(), 0, LV_DEF_REFR_PERIOD);
+        info->markLayoutStart();
+    }
+
+#ifndef CONFIG_SYSTEM_WINDOW_USE_VSYNC_EVENT
+    if (!mVsyncTimer->paused) {
+        lv_timer_reset(mVsyncTimer);
+        if (mVsyncTimer->timer_cb) mVsyncTimer->timer_cb(mVsyncTimer);
+    }
+#endif
+}
+
+void RootContainer::onRenderStart() {
+    if (!mTraceFrame) return;
+    mFrameInfo.markRenderStart();
+}
+
+void RootContainer::onFrameFinished() {
+    if (!mTraceFrame) return;
+
+    mFrameInfo.markRenderEnd();
+    mFrameInfo.markFrameFinished();
+    mFrameTimeInfo.time(&mFrameInfo);
+
+    FLOGI("SingleFrameLog{seq=%" PRId64 ", totalMs=%" PRId64 ", renderMs=%" PRId64
+          ", layoutMs=%" PRId64 "}",
+          mFrameInfo.getVsyncId(), mFrameInfo.totalDrawnDuration(),
+          mFrameInfo.totalRenderDuration(), mFrameInfo.totalLayoutDuration());
+}
+
 bool RootContainer::init() {
     lv_init();
     lv_image_cache_resize(0, false);
@@ -246,8 +300,8 @@ bool RootContainer::init() {
 
 #ifndef CONFIG_SYSTEM_WINDOW_USE_VSYNC_EVENT
     mVsyncTimer = lv_timer_create(vsyncCallback, LV_DEF_REFR_PERIOD, this);
-    lv_display_add_event_cb(mDisp, resetVsyncTimer, LV_EVENT_REFR_READY, mVsyncTimer);
 #endif
+    lv_display_add_event_cb(mDisp, processDispEvent, LV_EVENT_ALL, this);
 
     if (mListener) {
         LV_GLOBAL_DEFAULT()->user_data = this;
@@ -324,6 +378,16 @@ static lv_anim_t* toast_fade_out(lv_obj_t* obj, uint32_t time, uint32_t delay) {
     lv_anim_set_time(&a, time);
     lv_anim_set_delay(&a, delay);
     return lv_anim_start(&a);
+}
+
+void RootContainer::traceFrame(bool enable) {
+    if (mTraceFrame == enable) return;
+
+    /* dump last frame information and disable trace */
+    mTraceFrame = enable;
+    if (!enable) {
+        mFrameTimeInfo.time(nullptr);
+    }
 }
 
 } // namespace wm
