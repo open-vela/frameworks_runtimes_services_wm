@@ -20,6 +20,7 @@
 #include <os/wm/DisplayInfo.h>
 #include <uv.h>
 
+#include "../common/FrameTimeInfo.h"
 #include "DeviceEventListener.h"
 
 namespace os {
@@ -51,6 +52,13 @@ public:
         return mReady;
     }
 
+    FrameMetaInfo* frameInfo();
+
+    void onFrameStart();
+    void onRenderStart();
+    void onFrameFinished();
+    void traceFrame(bool enable);
+
 private:
     bool init();
     lv_nuttx_result_t mResult;
@@ -64,6 +72,9 @@ private:
     void* mUvData;
     uv_loop_t* mUvLoop;
     bool mReady;
+    bool mTraceFrame;
+    FrameMetaInfo mFrameInfo;
+    FrameTimeInfo mFrameTimeInfo;
 };
 
 } // namespace wm
