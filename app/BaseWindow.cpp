@@ -263,6 +263,12 @@ void BaseWindow::handleOnFrame(int32_t seq) {
             FLOGI("%p seq=%" PRIu32 " buffProducer is invalid!", this, seq);
             return;
         }
+
+        BufferKey key;
+        if (mSurfaceControl->getFMQ().read(&(key))) {
+            bufferReleased(key);
+        }
+
         BufferItem* item = buffProducer->dequeueBuffer();
         if (!item) {
             if (mVsyncRequest != VsyncRequest::VSYNC_REQ_PERIODIC)

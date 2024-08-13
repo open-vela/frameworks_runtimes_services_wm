@@ -168,8 +168,8 @@ void WindowState::onAnimationFinished(WindowAnimStatus status) {
 }
 #endif
 
-std::shared_ptr<SurfaceControl> WindowState::createSurfaceControl(
-        const std::vector<BufferId>& ids) {
+std::shared_ptr<SurfaceControl> WindowState::createSurfaceControl(const std::vector<BufferId>& ids,
+                                                                  const std::string& fmqName) {
     WM_PROFILER_BEGIN();
 
     destroySurfaceControl();
@@ -179,6 +179,7 @@ std::shared_ptr<SurfaceControl> WindowState::createSurfaceControl(
     mSurfaceControl =
             std::make_shared<SurfaceControl>(IInterface::asBinder(mClient), handle, mAttrs.mWidth,
                                              mAttrs.mHeight, mAttrs.mFormat, getSurfaceSize());
+    mSurfaceControl->getFMQ().setName(fmqName);
     mSurfaceControl->initBufferIds(ids);
     initSurfaceBuffer(mSurfaceControl, true);
 
@@ -339,9 +340,17 @@ bool WindowState::releaseBuffer(BufferItem* buffer) {
     if (consumer == nullptr) {
         return false;
     }
+
     if (consumer && consumer->releaseBuffer(buffer) && mClient) {
         WM_PROFILER_BEGIN();
-        mClient->bufferReleased(buffer->mKey);
+
+        if (!mSurfaceControl->getFMQ().write(&(buffer->mKey))) {
+            FLOGE("%p Failed to relase bufKey=%" PRId32 "", this, buffer->mKey);
+            /* fallback non-fmq */
+            mClient->bufferReleased(buffer->mKey);
+        } else {
+            FLOGD("%p success to relase bufKey=%" PRId32 "", this, buffer->mKey);
+        }
         WM_PROFILER_END();
         return true;
     }

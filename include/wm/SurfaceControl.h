@@ -26,6 +26,7 @@
 #include <unordered_map>
 
 #include "wm/BufferQueue.h"
+#include "wm/FakeFmq.h"
 
 namespace os {
 namespace wm {
@@ -35,6 +36,8 @@ using android::Parcel;
 using android::Parcelable;
 using android::sp;
 using android::status_t;
+
+typedef FakeFmq<BufferKey> SurfaceFreeInfoClass;
 
 class SurfaceControl : public Parcelable {
 public:
@@ -95,6 +98,13 @@ public:
 
     void copyFrom(SurfaceControl& other);
 
+    bool initFMQ(bool isServer);
+    void destroyFMQ();
+
+    SurfaceFreeInfoClass& getFMQ() {
+        return mFreeMsgSlot;
+    }
+
 private:
     DISALLOW_COPY_AND_ASSIGN(SurfaceControl);
 
@@ -111,6 +121,7 @@ private:
 
     std::vector<BufferId> mBufferIds;
     std::shared_ptr<BufferQueue> mBufferQueue;
+    SurfaceFreeInfoClass mFreeMsgSlot;
 };
 
 void initSurfaceBuffer(const std::shared_ptr<SurfaceControl>& sc, bool isServer);

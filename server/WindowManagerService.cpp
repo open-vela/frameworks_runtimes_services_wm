@@ -605,7 +605,9 @@ int32_t WindowManagerService::createSurfaceControl(SurfaceControl* outSurfaceCon
         id = {bufferPath, bufferKey, -1};
         ids.push_back(id);
     }
-    std::shared_ptr<SurfaceControl> surfaceControl = win->createSurfaceControl(ids);
+
+    std::string fmqName = genUniquePath(false, pid, "fakemq");
+    std::shared_ptr<SurfaceControl> surfaceControl = win->createSurfaceControl(ids, fmqName);
 
     if (!surfaceControl->isValid()) {
         outSurfaceControl = nullptr;
