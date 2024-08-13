@@ -71,6 +71,10 @@ status_t SurfaceControl::writeToParcel(Parcel* out) const {
 #endif
         SAFE_PARCEL(out->writeInt32, id.mKey);
     }
+
+    if (mBufferIds.size() > 0) {
+        mFreeMsgSlot.writeToParcel(out);
+    }
     return android::OK;
 }
 
@@ -96,6 +100,10 @@ status_t SurfaceControl::readFromParcel(const Parcel* in) {
         SAFE_PARCEL(in->readInt32, &buffId.mKey);
         mBufferIds.push_back(buffId);
     }
+
+    if (size > 0) {
+        mFreeMsgSlot.readFromParcel(in);
+    }
     return android::OK;
 }
 
@@ -120,6 +128,22 @@ void SurfaceControl::copyFrom(SurfaceControl& other) {
     mFormat = other.mFormat;
     mBufferSize = other.mBufferSize;
     mBufferIds = other.mBufferIds;
+    mFreeMsgSlot.copyFrom(other.mFreeMsgSlot);
+}
+
+bool SurfaceControl::initFMQ(bool isServer) {
+    if (mBufferIds.size() > 0) {
+        std::vector<BufferKey> bufKeys;
+        for (const auto& id : mBufferIds) {
+            bufKeys.push_back(id.mKey);
+        }
+        return mFreeMsgSlot.create(bufKeys, isServer);
+    }
+    return false;
+}
+
+void SurfaceControl::destroyFMQ() {
+    mFreeMsgSlot.destroy();
 }
 
 static inline bool initSharedBuffer(std::string name, int* pfd, int32_t size) {
@@ -160,7 +184,6 @@ static inline void uninitSharedBuffer(int fd, std::string name) {
 }
 
 /* Surface control only record bufferIds, don't control shared memory's lifecycle */
-
 void initSurfaceBuffer(const std::shared_ptr<SurfaceControl>& sc, bool isServer) {
     if (sc.get() == nullptr) return;
 
@@ -191,8 +214,10 @@ void initSurfaceBuffer(const std::shared_ptr<SurfaceControl>& sc, bool isServer)
     }
 
     FLOGI("%p", sc.get());
+
     /* update buffer ids*/
     sc->initBufferIds(ids);
+    sc->initFMQ(isServer);
 }
 
 void uninitSurfaceBuffer(const std::shared_ptr<SurfaceControl>& sc) {
@@ -204,6 +229,120 @@ void uninitSurfaceBuffer(const std::shared_ptr<SurfaceControl>& sc) {
         uninitSharedBuffer(it.mFd, it.mName);
     }
     sc->clearBufferIds();
+    sc->destroyFMQ();
+}
+
+/**************** fmq ********************/
+template <typename T>
+FakeFmq<T>::FakeFmq() : mName(""), mFd(0), mCaps(0), mReadPos(0), mWritePos(0), mQueue(NULL) {}
+
+template <typename T>
+FakeFmq<T>::~FakeFmq() {
+    destroy();
+}
+
+template <typename T>
+status_t FakeFmq<T>::writeToParcel(Parcel* out) const {
+#ifdef CONFIG_ENABLE_BUFFER_QUEUE_BY_NAME
+    SAFE_PARCEL(out->writeCString, mName.c_str());
+#else
+    SAFE_PARCEL(out->writeDupFileDescriptor, mFd);
+#endif
+    SAFE_PARCEL(out->writeUint32, mCaps);
+    SAFE_PARCEL(out->writeUint32, mReadPos);
+    SAFE_PARCEL(out->writeUint32, mWritePos);
+    return android::OK;
+}
+
+template <typename T>
+status_t FakeFmq<T>::readFromParcel(const Parcel* in) {
+#ifdef CONFIG_ENABLE_BUFFER_QUEUE_BY_NAME
+    mName = in->readCString();
+    mFd = -1;
+#else
+    mName = "";
+    mFd = dup(in->readFileDescriptor());
+#endif
+    SAFE_PARCEL(in->readUint32, &mCaps);
+    SAFE_PARCEL(in->readUint32, &mReadPos);
+    SAFE_PARCEL(in->readUint32, &mWritePos);
+    return android::OK;
+}
+
+template <typename T>
+void FakeFmq<T>::copyFrom(FakeFmq<T>& other) {
+    mName = other.mName;
+    mFd = 0;
+    mCaps = other.mCaps;
+    mReadPos = other.mReadPos;
+    mWritePos = other.mWritePos;
+    mQueue = NULL;
+}
+
+template <typename T>
+void FakeFmq<T>::destroy() {
+    if (!mQueue) {
+        return;
+    }
+
+    FLOGI("now unmap and close shared memory for %d", mFd);
+    uninitSharedBuffer(mFd, mName);
+    if (mFd > 0 && close(mFd) == -1) {
+        FLOGE("failed to close shared memory for %d", mFd);
+    }
+
+    mQueue = NULL;
+    mFd = 0;
+    mCaps = 0;
+    mName = "";
+    mReadPos = 0;
+    mWritePos = 0;
+}
+
+template <typename T>
+bool FakeFmq<T>::create(const std::vector<T>& qData, bool isServer) {
+    auto bufCount = qData.size();
+
+    if (bufCount <= 0 && mQueue == NULL) {
+        FLOGW("cannot init empty fmq for %s", mName.c_str());
+        return false;
+    }
+
+    /* free previous dirty queue */
+    destroy();
+
+    mCaps = qData.size() + 1;
+    auto size = mCaps * sizeof(T);
+    int fd = 0;
+    if (!initSharedBuffer(mName, &fd, isServer ? size : 0)) {
+        FLOGE("failed to init fmq for %s", mName.c_str());
+        mCaps = 0;
+        return false;
+    }
+
+    /* mmap */
+    void* buffer = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (buffer == MAP_FAILED) {
+        FLOGE("failed to map fmq for %s", mName.c_str());
+        uninitSharedBuffer(fd, mName);
+        mCaps = 0;
+        return false;
+    }
+
+    FLOGI("init fmq for %s", mName.c_str());
+
+    memset(buffer, 0, size);
+    mQueue = (T*)buffer;
+    mFd = fd;
+
+    int i = 0;
+    for (const auto& value : qData) {
+        mQueue[i++] = value;
+    }
+
+    mReadPos = 0;
+    mWritePos = mCaps - 1;
+    return true;
 }
 
 } // namespace wm
