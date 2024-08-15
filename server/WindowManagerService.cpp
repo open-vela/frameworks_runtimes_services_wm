@@ -556,13 +556,8 @@ bool WindowManagerService::responseInput(InputMessage* msg) {
     bool has_gesture = msg->pointer.gesture_state != 0;
 
     /* async: input monitor notification */
-    int ret = 0;
     for (const auto& [token, dispatcher] : mInputMonitorMap) {
-        ret = dispatcher->sendMessage(msg);
-        if (ret != 0) {
-            FLOGW("dispatch input monitor for %d failure: %d",
-                  dispatcher->getInputChannel().getEventFd(), ret);
-        }
+        dispatcher->sendMessage(msg);
     }
     return has_gesture;
 }
