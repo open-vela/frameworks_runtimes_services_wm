@@ -59,7 +59,7 @@ int InputDispatcher::sendMessage(const InputMessage* ie) {
 
     if (ret < 0) {
         mErrCount++;
-        if (mErrCount >= 30) {
+        if (mErrCount >= 100) {
             FLOGW("send message to %d, failed: %d - '%s(%d)'", fd, ret, strerror(errno), errno);
             mErrCount = 0;
         }
