@@ -91,6 +91,7 @@ private:
     uint32_t mWritePos;
     uint32_t mReserved;
     T* mQueue;
+    uint32_t mQueueSize;
 };
 
 } // namespace wm
