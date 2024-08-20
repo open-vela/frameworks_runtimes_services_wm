@@ -188,7 +188,7 @@ void WindowManager::relayoutWindow(std::shared_ptr<BaseWindow> window) {
     LayoutParams lp = window->getLayoutParams();
     FLOGI("%p, pos(%" PRId32 "x%" PRId32 "), size(%" PRId32 "x%" PRId32 ")", window.get(), lp.mX,
           lp.mY, lp.mWidth, lp.mHeight);
-    sp<IBinder> handle = new BBinder();
+    sp<IBinder> handle = sp<BBinder>::make();
     SurfaceControl* surfaceControl =
             new SurfaceControl(lp.mToken, handle, lp.mWidth, lp.mHeight, lp.mFormat);
     int32_t result = 0;
@@ -198,6 +198,10 @@ void WindowManager::relayoutWindow(std::shared_ptr<BaseWindow> window) {
     if (!status.isOk()) {
         FLOGE("relayout window failure!");
         window->setSurfaceControl(nullptr);
+
+        /* clean local resource */
+        handle.clear();
+        delete surfaceControl;
     } else {
         window->setSurfaceControl(surfaceControl);
     }
