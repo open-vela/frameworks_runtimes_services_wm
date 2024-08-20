@@ -132,7 +132,7 @@ void SurfaceControl::copyFrom(SurfaceControl& other) {
 }
 
 bool SurfaceControl::initFMQ(bool isServer) {
-    if (mBufferIds.size() > 0) {
+    if (isValid()) {
         std::vector<BufferKey> bufKeys;
         for (const auto& id : mBufferIds) {
             bufKeys.push_back(id.mKey);
@@ -231,7 +231,8 @@ void uninitSurfaceBuffer(const std::shared_ptr<SurfaceControl>& sc) {
 
 /**************** fmq ********************/
 template <typename T>
-FakeFmq<T>::FakeFmq() : mName(""), mFd(0), mCaps(0), mReadPos(0), mWritePos(0), mQueue(NULL) {}
+FakeFmq<T>::FakeFmq()
+      : mName(""), mFd(0), mCaps(0), mReadPos(0), mWritePos(0), mQueue(NULL), mQueueSize(0) {}
 
 template <typename T>
 FakeFmq<T>::~FakeFmq() {
@@ -248,6 +249,7 @@ status_t FakeFmq<T>::writeToParcel(Parcel* out) const {
     SAFE_PARCEL(out->writeUint32, mCaps);
     SAFE_PARCEL(out->writeUint32, mReadPos);
     SAFE_PARCEL(out->writeUint32, mWritePos);
+    SAFE_PARCEL(out->writeUint32, mQueueSize);
     return android::OK;
 }
 
@@ -263,6 +265,7 @@ status_t FakeFmq<T>::readFromParcel(const Parcel* in) {
     SAFE_PARCEL(in->readUint32, &mCaps);
     SAFE_PARCEL(in->readUint32, &mReadPos);
     SAFE_PARCEL(in->readUint32, &mWritePos);
+    SAFE_PARCEL(in->readUint32, &mQueueSize);
     return android::OK;
 }
 
@@ -274,6 +277,7 @@ void FakeFmq<T>::copyFrom(FakeFmq<T>& other) {
     mReadPos = other.mReadPos;
     mWritePos = other.mWritePos;
     mQueue = NULL;
+    mQueueSize = other.mQueueSize;
 }
 
 template <typename T>
@@ -282,18 +286,24 @@ void FakeFmq<T>::destroy() {
         return;
     }
 
-    FLOGI("now unmap and close shared memory for %d", mFd);
+    FLOGI("now unmap and close shared memory for %d, %s", mFd, mName.c_str());
     uninitSharedBuffer(mFd, mName);
+
+    if (munmap(mQueue, mQueueSize) == -1) {
+        FLOGE("failed to unmap shared memory fmq for %d", mFd);
+    }
+
     if (mFd > 0 && close(mFd) == -1) {
         FLOGE("failed to close shared memory for %d", mFd);
     }
 
-    mQueue = NULL;
     mFd = 0;
     mCaps = 0;
     mName = "";
     mReadPos = 0;
     mWritePos = 0;
+    mQueue = NULL;
+    mQueueSize = 0;
 }
 
 template <typename T>
@@ -308,12 +318,11 @@ bool FakeFmq<T>::create(const std::vector<T>& qData, bool isServer) {
     /* free previous dirty queue */
     destroy();
 
-    mCaps = qData.size() + 1;
-    auto size = mCaps * sizeof(T);
+    uint32_t elmCount = qData.size() + 1;
+    auto size = elmCount * sizeof(T);
     int fd = 0;
     if (!initSharedBuffer(mName, &fd, isServer ? size : 0)) {
         FLOGE("failed to init fmq for %s", mName.c_str());
-        mCaps = 0;
         return false;
     }
 
@@ -322,7 +331,6 @@ bool FakeFmq<T>::create(const std::vector<T>& qData, bool isServer) {
     if (buffer == MAP_FAILED) {
         FLOGE("failed to map fmq for %s", mName.c_str());
         uninitSharedBuffer(fd, mName);
-        mCaps = 0;
         return false;
     }
 
@@ -337,8 +345,10 @@ bool FakeFmq<T>::create(const std::vector<T>& qData, bool isServer) {
         mQueue[i++] = value;
     }
 
+    mCaps = elmCount;
     mReadPos = 0;
     mWritePos = mCaps - 1;
+    mQueueSize = size;
     return true;
 }
 
