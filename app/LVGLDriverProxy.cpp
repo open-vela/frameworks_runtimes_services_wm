@@ -375,7 +375,7 @@ static void _indev_read(lv_indev_t* drv, lv_indev_data_t* data) {
                 proxy->setLastEventState(LV_INDEV_STATE_RELEASED);
             }
 
-            data->continue_reading = false;
+            data->continue_reading = true;
         }
     }
     data->state = proxy->getLastEventState();
