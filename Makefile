@@ -48,6 +48,9 @@ PROGNAME += InputMonitorTest
 MAINSRC  += test/IWindowManagerTest.cpp
 PROGNAME += IWindowManagerTest
 
+MAINSRC  += test/FakeFmqTest.cpp
+PROGNAME += FakeFmqTest
+
 MAINSRC  += test/lvgltest_attribute.c
 PROGNAME += lvgltest_attribute
 endif
