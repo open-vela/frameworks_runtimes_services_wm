@@ -402,14 +402,14 @@ void LVGLDriverProxy::init() {
     lv_nuttx_init(NULL, NULL);
 #endif
 
-#ifdef CONFIG_LVGL_EXTENSION
-    lv_ext_init();
+#ifdef CONFIG_UIKIT
+    vg_init();
 #endif
 }
 
 void LVGLDriverProxy::deinit() {
-#ifdef CONFIG_LVGL_EXTENSION
-    lv_ext_deinit();
+#ifdef CONFIG_UIKIT
+    vg_deinit();
 #endif
     lv_deinit();
 
