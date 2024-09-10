@@ -150,7 +150,7 @@ std::shared_ptr<BaseWindow> WindowManager::newWindow(::os::app::Context* context
         LVGLDriverProxy::setTimerResumeHandler(_wm_timer_resume, &mEventTimer);
         FLOGD("init event timer.");
         /* for video feature */
-        lv_ext_uv_init(context->getMainLoop()->get());
+        vg_uv_init(context->getMainLoop()->get());
         mTimerInited = true;
     }
 
@@ -227,7 +227,7 @@ bool WindowManager::removeWindow(std::shared_ptr<BaseWindow> window) {
             uv_close((uv_handle_t*)&mEventTimer, NULL);
             mTimerInited = false;
             FLOGD("close event timer.");
-            lv_ext_uv_deinit();
+            vg_uv_deinit();
         }
     }
     WM_PROFILER_END();

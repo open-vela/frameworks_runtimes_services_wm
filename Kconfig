@@ -23,7 +23,7 @@ config SYSTEM_WINDOW_SERVICE
 	depends on LV_ENABLE_GLOBAL_CUSTOM
 	depends on LV_USE_NUTTX
 	depends on LV_USE_NUTTX_LIBUV
-	depends on LVGL_EXTENSION
+	depends on UIKIT
 	depends on KVDB
 
 if SYSTEM_WINDOW_SERVICE
