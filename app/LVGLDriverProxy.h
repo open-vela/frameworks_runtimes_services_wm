@@ -17,9 +17,7 @@
 #pragma once
 
 #include <lvgl/lvgl.h>
-#ifdef CONFIG_LVGL_EXTENSION
-#include <ext/lv_ext.h>
-#endif
+#include <uikit/uikit.h>
 
 #include <vector>
 
