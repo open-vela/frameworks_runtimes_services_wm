@@ -46,7 +46,7 @@ public:
                         auto* gd = ((GestureDetector*)data);
                         char tmpKey[30];
                         char tmpVal[10];
-                        property_monitor_read(gd->mFD, tmpKey, tmpVal);
+                        property_monitor_read(gd->mFD, tmpKey, tmpVal, sizeof(tmpVal));
                         gd->mIsScreenOn = strcmp(tmpVal, "-1") != 0;
                     },
                     this);
