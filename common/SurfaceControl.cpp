@@ -165,6 +165,7 @@ static inline bool initSharedBuffer(std::string name, int* pfd, int32_t size) {
         FLOGE("failed to resize shared memory for %s, size=%" PRId32 ", unlink return %d", cname,
               size, result);
         close(fd);
+        ASSERT(0);
         return false;
     }
 
