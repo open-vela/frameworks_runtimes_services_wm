@@ -29,6 +29,8 @@
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
 #endif
+#include <random>
+
 #include "../common/WindowUtils.h"
 #include "GestureDetector.h"
 #include "InputDispatcher.h"
@@ -180,13 +182,20 @@ static int parseAnimJsonFile(const char* filename) {
 
 /* limited by mq_open */
 #define MQ_PATH_MAXLEN 50
+static inline int32_t getRandomNumber() {
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    std::uniform_int_distribution<int32_t> dis(1LL, 999999999LL);
+    return dis(gen);
+}
+
 static inline std::string genUniquePath(bool needpath, int32_t pid, const std::string& prefix,
                                         const std::string name = "") {
     /* xms:bq-300-1234567890 or /var/run/xms:event-301-2345167890 */
 
     std::string path = (needpath ? "/var/run/xms:" : "xms:") + prefix;
     path += "-" + std::to_string(pid) + "-" +
-            (name.size() > 0 ? name : std::to_string(std::rand()));
+            (name.size() > 0 ? name : std::to_string(getRandomNumber()));
 
     FLOGI("'%s', length is %d", path.c_str(), (int)path.size());
     return path.size() <= MQ_PATH_MAXLEN ? path : path.substr(0, MQ_PATH_MAXLEN);
@@ -592,7 +601,9 @@ int32_t WindowManagerService::createSurfaceControl(SurfaceControl* outSurfaceCon
     for (int32_t i = 0; i < bufferCount; i++) {
         BufferId id;
         std::string bufferPath = genUniquePath(false, pid, "bq");
-        int32_t bufferKey = std::rand();
+        int32_t bufferKey = getRandomNumber();
+        FLOGI("create buffer %" PRId32 ", path %s, key %" PRId32 "", i, bufferPath.c_str(),
+              bufferKey);
         id = {bufferPath, bufferKey, -1};
         ids.push_back(id);
     }
