@@ -15,18 +15,18 @@
 #
 
 ifneq ($(CONFIG_SYSTEM_SERVER),)
-CONFIGURED_APPS += $(APPDIR)/frameworks/base/wm
+CONFIGURED_APPS += $(APPDIR)/frameworks/runtimes/services/wm
 
 # wm
-CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/base/wm/aidl
-CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/base/wm/include
+CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/runtimes/services/wm/aidl
+CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/runtimes/services/wm/include
 
-CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/base/wm/include
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/runtimes/services/wm/include
 
 # base
-CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/base/include
+CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/runtimes/services/include
 # am
-CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/base/am/include
+CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/runtimes/services/am/include
 # binder
 CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/android/system/libbase/include
 # lvgl
