@@ -3,23 +3,47 @@
 [English|[简体中文](./README_zh-cn.md)]
 
 ## Introduction
-The Window Management service is one of the most important services in the Vela operating system. It is responsible for input management, output management, and display management. 
+Window Manager is one of the most important services in the openvela operating system, mainly responsible for input management, output management, and display management. Its main structure is shown in Figure 1.
 
-The Window Management service is composed of two parts: the server-side and the application-side. The server-side is responsible for window management, scheduling, and composition between applications, while the application-side is responsible for window management and rendering within applications, and sends the rendered images to the server-side, while also receiving input events from the server-side. 
+**Figure 1** Window Manager Service Architecture
+![Window Manager Service Architecture](./docs/Window_Manager_Architecture.jpg)
+- **Window Manager**
 
-The Window Management service runs as a core capability in the kernel system service process, while the application-side window management runs in the application user space.
+    The window management client on the application side runs in the application's user space, responsible for window management and rendering within the application, and passes the rendered image to the server.
+    
+- **Window Manager Server**
 
-## Features
-- Window attribute and style management: including adjusting window position, size, transparency, and other properties.
-- Window lifecycle management: including window creation, display, hide and delete.
-- Event listening management.
-- Window transition animation management.
+    Server-side window management service, as a core capability of the system, runs in the kernel system service process, responsible for window management, scheduling, and composition between applications.
 
-## Usage of Native Application-side Window Management
+### Features
+- Window attribute and style management: including adjustments of window position, size, opacity, etc.
+- Window lifecycle management: including window creation, display, hiding, and deletion
+- Event listener management
+- Window transition animation management
 
-### Obtain the Window Management Service
+## Directory
+```
+├── app
+├── common
+├── config
+├── include
+├── Kconfig
+├── server
+└── test
+```
+## Constraints
 
-To obtain an instance of the Window Management Service, you can use the following code:
+- The .Kconfig file is used to configure compilation options for the window management service.
+- Language version: C++11 or above
+- Dependencies: OpenVela Core Service
+
+## Instructions
+
+The following are basic usage instructions for native application-side window management.
+
+### Get the Window Manager Service
+
+To get an instance of the window manager service, you can use the following code:
 
 ```c++
 WindowManager windowManager = (WindowManager) getService(WindowManager::name());
@@ -27,7 +51,7 @@ WindowManager windowManager = (WindowManager) getService(WindowManager::name());
 
 ### Create a Window
 
-Use WindowManager.LayoutParams to create a window, as shown in the sample code below:
+Use WindowManager.LayoutParams to create a window, as shown in the following code:
 
 ```c++
 WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams();
@@ -43,11 +67,11 @@ BaseWindow window = new BaseWindow(context, this);
 windowManager.addWindow(window, layoutParams, visibility);
 ```
 
-The above code creates an application window and adds it to the window list managed by the Window Management Service.
+The above code creates a window for the application and adds it to the window list managed by the window manager service.
 
-### Modify Window Properties
+### Modify Window Attributes
 
-To modify window properties, you can use the following code:
+To modify the attributes of a window, use the following code:
 
 ```c++
 WindowManager.LayoutParams layoutParams = getWindow().getLayoutParams();
@@ -56,11 +80,11 @@ layoutParams.y = 200;
 getWindow().setLayoutParams(layoutParams);
 ```
 
-The above code modifies the position of the current activity's window to (200, 200).
+The above code changes the position of the current activity's window to (200, 200).
 
-### Delete a Window
+### Remove a Window
 
-To delete a window, you can use the following code:
+To remove a window, use the following code:
 
 ```c++
 windowManager.removeWindow(window);
