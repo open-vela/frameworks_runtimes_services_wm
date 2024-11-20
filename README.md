@@ -3,11 +3,15 @@
 [English|[简体中文](./README_zh-cn.md)]
 
 ## Introduction
-The Window Management service is one of the most important services in the Vela operating system. It is responsible for input management, output management, and display management. 
+Window management is one of the services in the openvela system, which is mainly responsible for input management, output management and display management.
 
-The Window Management service is composed of two parts: the server-side and the application-side. The server-side is responsible for window management, scheduling, and composition between applications, while the application-side is responsible for window management and rendering within applications, and sends the rendered images to the server-side, while also receiving input events from the server-side. 
+Window management consists of two parts: the server and the application:
 
-The Window Management service runs as a core capability in the kernel system service process, while the application-side window management runs in the application user space.
+- The server is responsible for implementing window management, scheduling and synthesis between applications.
+
+- The application is responsible for window management and rendering within the application, and passes the rendered image to the server, while also receiving input events from the server.
+
+As the core capability of the system, the window management service will run in the kernel system service process, and the application-side window management will run in the application user space.
 
 ## Features
 - Window attribute and style management: including adjusting window position, size, transparency, and other properties.
