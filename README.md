@@ -5,11 +5,9 @@
 ## Introduction
 Window management is one of the services in the openvela system, which is mainly responsible for input management, output management and display management.
 
-Window management consists of two parts: the server and the application:
-
-- The server is responsible for implementing window management, scheduling and synthesis between applications.
-
-- The application is responsible for window management and rendering within the application, and passes the rendered image to the server, while also receiving input events from the server.
+Window management consists of two parts:
+- Server: responsible for implementing window management, scheduling and synthesis between applications.
+- Application: responsible for window management and rendering within the application, and passing the rendered image to the server, while also receiving input events from the server.
 
 As the core capability of the system, the window management service will run in the kernel system service process, and the application-side window management will run in the application user space.
 
