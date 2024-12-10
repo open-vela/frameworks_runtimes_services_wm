@@ -5,6 +5,7 @@
 ## Introduction
 Window management is one of the services in the openvela operating system, mainly responsible for input management, output management, and display management.
 
+
 ## Architecture
 **Figure 1** Window management service architecture
 ![Window Manager Architecture](./docs/Window_Manager_Architecture.jpg)
