@@ -300,7 +300,7 @@ Status WindowManagerService::addWindow(const sp<IWindow>& window, const LayoutPa
         } else {
             FLOGI("for non-application, create token automatically");
             sp<IBinder> token = new BBinder();
-            winToken = std::make_shared<WindowToken>(this, token, attrs.mType, displayId, pid);
+            winToken = std::make_shared<WindowToken>(this, token, attrs.mType, displayId, pid, "");
             mTokenMap.emplace(token, winToken);
         }
     }
@@ -407,7 +407,7 @@ Status WindowManagerService::isWindowToken(const sp<IBinder>& binder, bool* _aid
 }
 
 Status WindowManagerService::addWindowToken(const sp<IBinder>& token, int32_t type,
-                                            int32_t displayId) {
+                                            int32_t displayId, const std::string& packagename) {
     WM_PROFILER_BEGIN();
     int32_t pid = IPCThreadState::self()->getCallingPid();
 
@@ -416,9 +416,11 @@ Status WindowManagerService::addWindowToken(const sp<IBinder>& token, int32_t ty
         FLOGW("[%" PRId32 "] window token(%p) already exist", pid, token.get());
         return Status::fromExceptionCode(1, "window token already exist");
     } else {
-        auto winToken = std::make_shared<WindowToken>(this, token, type, displayId, pid);
+        auto winToken =
+                std::make_shared<WindowToken>(this, token, type, displayId, pid, packagename);
         mTokenMap.emplace(token, winToken);
-        FLOGI("[%" PRId32 "] add window token(%p) success", pid, token.get());
+        FLOGI("[%" PRId32 "] add window token(%p) success, package name is %s", pid, token.get(),
+              packagename.c_str());
     }
     WM_PROFILER_END();
     return Status::ok();
@@ -629,14 +631,37 @@ AnimEngineHandle WindowManagerService::getAnimEngine() {
 }
 
 std::string WindowManagerService::getAnimConfig(bool animMode, WindowState* win) {
-    return (mAnimConfigMap.size() < 2)
-            ? ((animMode) ? ((win->getToken()->getType() == LayoutParams::TYPE_SYSTEM_WINDOW)
-                                     ? defaultSystemWindowEnterConfigJson
-                                     : defaultEnterConfigJson)
-                          : ((win->getToken()->getType() == LayoutParams::TYPE_SYSTEM_WINDOW)
-                                     ? defaultSystemWindowExitConfigJson
-                                     : defaultExitConfigJson))
-            : ((animMode) ? mAnimConfigMap[1] : mAnimConfigMap[2]);
+    if (mAnimConfigMap.size() < 2) {
+        if (animMode) {
+            if (win->getToken()->getType() == LayoutParams::TYPE_SYSTEM_WINDOW) {
+                return defaultSystemWindowEnterConfigJson;
+            } else {
+                if (win->getToken()->getWindowEnterAnimType() == "slide_in_top") {
+                    FLOGI("getWindowEnterAnimType is slide_in_top");
+                    return defaultSystemWindowEnterConfigJson;
+                } else {
+                    return defaultEnterConfigJson;
+                }
+            }
+        } else {
+            if (win->getToken()->getType() == LayoutParams::TYPE_SYSTEM_WINDOW) {
+                return defaultSystemWindowExitConfigJson;
+            } else {
+                if (win->getToken()->getWindowExitAnimType() == "slide_out_top") {
+                    FLOGI("getWindowEnterAnimType is slide_out_top");
+                    return defaultSystemWindowExitConfigJson;
+                } else {
+                    return defaultExitConfigJson;
+                }
+            }
+        }
+    } else {
+        if (animMode) {
+            return mAnimConfigMap[1];
+        } else {
+            return mAnimConfigMap[2];
+        }
+    }
 }
 #endif
 

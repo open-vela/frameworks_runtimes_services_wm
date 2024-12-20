@@ -18,6 +18,8 @@
 
 #include "WindowToken.h"
 
+#include <pm/PackageManager.h>
+
 #include "../common/WindowUtils.h"
 #include "WindowState.h"
 
@@ -25,14 +27,19 @@ namespace os {
 namespace wm {
 
 WindowToken::WindowToken(WindowManagerService* service, const sp<IBinder>& token, int32_t type,
-                         int32_t displayId, int32_t clientPid)
+                         int32_t displayId, int32_t clientPid, const std::string& packageName)
       : mService(service),
         mToken(token),
         mType(type),
         mClientVisibility(LayoutParams::WINDOW_GONE),
         mClientPid(clientPid),
         mPersistOnEmpty(false),
-        mRemoved(false) {}
+        mRemoved(false) {
+    ::os::pm::PackageManager pm;
+    if (pm.getPackageInfo(packageName, &mPackageInfo) != 0) {
+        ALOGE("Unable to look up package:%s information", packageName.c_str());
+    }
+}
 
 WindowToken::~WindowToken() {
     FLOGI("");

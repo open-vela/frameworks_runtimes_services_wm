@@ -23,6 +23,8 @@
 
 #include <vector>
 
+#include "pm/PackageInfo.h"
+
 namespace os {
 namespace wm {
 
@@ -35,7 +37,7 @@ class WindowState;
 class WindowToken {
 public:
     WindowToken(WindowManagerService* service, const sp<IBinder>& token, int32_t type,
-                int32_t displayId, int32_t clientPid);
+                int32_t displayId, int32_t clientPid, const std::string& packageName);
     ~WindowToken();
 
     void addWindow(WindowState* win);
@@ -66,6 +68,14 @@ public:
         return mType;
     }
 
+    const std::string& getWindowEnterAnimType() {
+        return mPackageInfo.windowEnterAnim;
+    }
+
+    const std::string& getWindowExitAnimType() {
+        return mPackageInfo.windowExitAnim;
+    }
+
 private:
     WindowManagerService* mService;
     sp<IBinder> mToken;
@@ -75,6 +85,7 @@ private:
     int mClientPid;
     bool mPersistOnEmpty;
     bool mRemoved;
+    ::os::pm::PackageInfo mPackageInfo;
 };
 
 } // namespace wm

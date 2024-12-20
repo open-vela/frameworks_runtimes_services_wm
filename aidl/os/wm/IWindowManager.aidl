@@ -54,7 +54,7 @@ interface IWindowManager {
      * @param type Window type to be used with this token.
      * @param displayId The ID of the display where this token should be added.
      */
-    void addWindowToken(IBinder token, int type, int displayId);
+    void addWindowToken(IBinder token, int type, int displayId, @utf8InCpp String packageName);
 
     /**
      * Remove window token on a specific display.
