@@ -61,11 +61,6 @@ RootContainer::~RootContainer() {
     mUvData = nullptr;
     mUvLoop = nullptr;
 
-    if (mDisp) {
-        lv_disp_remove(mDisp);
-        mDisp = nullptr;
-    }
-
     mListener = nullptr;
 
     lv_nuttx_deinit(&mResult);
