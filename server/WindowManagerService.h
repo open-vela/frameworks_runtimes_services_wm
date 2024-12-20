@@ -61,7 +61,8 @@ public:
                     int32_t* _aidl_return);
 
     Status isWindowToken(const sp<IBinder>& binder, bool* _aidl_return);
-    Status addWindowToken(const sp<IBinder>& token, int32_t type, int32_t displayId);
+    Status addWindowToken(const sp<IBinder>& token, int32_t type, int32_t displayId,
+                          const std::string& packageName);
     Status removeWindowToken(const sp<IBinder>& token, int32_t displayId);
     Status updateWindowTokenVisibility(const sp<IBinder>& token, int32_t visibility);
 
