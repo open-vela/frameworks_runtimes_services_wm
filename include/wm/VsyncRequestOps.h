@@ -21,6 +21,19 @@
 namespace os {
 namespace wm {
 
+/**
+ * @brief Provides operations for managing Vsync requests.
+ *
+ * This header defines utility functions to handle transitioning between
+ * different Vsync request states and converting them to readable strings.
+ */
+
+/**
+ * @brief Gets the next Vsync state based on the current request.
+ *
+ * @param req The current VsyncRequest state.
+ * @return The next VsyncRequest state based on the current one.
+ */
 static inline VsyncRequest nextVsyncState(VsyncRequest req) {
     switch (req) {
         case VsyncRequest::VSYNC_REQ_NONE:
@@ -42,6 +55,12 @@ static inline VsyncRequest nextVsyncState(VsyncRequest req) {
     return VsyncRequest::VSYNC_REQ_NONE;
 }
 
+/**
+ * @brief Converts a VsyncRequest state to a corresponding string.
+ *
+ * @param req The VsyncRequest state to convert.
+ * @return A C-style string representing the VsyncRequest.
+ */
 static inline const char* VsyncRequestToString(VsyncRequest req) {
     switch (req) {
         case VsyncRequest::VSYNC_REQ_NONE:

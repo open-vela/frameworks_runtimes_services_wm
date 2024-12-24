@@ -22,14 +22,22 @@
 namespace os {
 namespace wm {
 
-// static constexpr size_t FRAME_META_INFO_SIZE = 8;
+/**
+ * @brief Constant representing an invalid Vsync ID for frame metadata.
+ */
 static constexpr int64_t FRAME_META_INVALID_VSYNC_ID = -1;
 
+/**
+ * @enum FrameMetaIndex
+ * @brief Enumeration for indices in the frame metadata.
+ *
+ * This enum defines various indices that can be used to access
+ * specific metadata information related to frame processing.
+ */
 enum class FrameMetaIndex {
     Flags = 0,
     VsyncId,
     Vsync,
-
     FrameStart,
     LayoutStart,
     RenderStart,
@@ -37,17 +45,31 @@ enum class FrameMetaIndex {
     RenderEnd,
     // End of frame meta info for UI proxy
 
-    // for XMS arch
+    // for XMS architecture
     SyncQueued,
     FrameFinished,
     NumIndexes
 };
 
+/**
+ * @enum FrameMetaInfoFlags
+ * @brief Flags representing the state of frame metadata information.
+ *
+ * These flags are used to indicate specific conditions or states
+ * related to frame metadata.
+ */
 enum FrameMetaInfoFlags {
     SurfaceDraw = 1 << 0,
     SkipFrame = 1 << 1,
 };
 
+/**
+ * @enum FrameMetaSkipReason
+ * @brief Enumeration for reasons to skip a frame.
+ *
+ * This enum defines possible reasons for skipping a frame during
+ * rendering or processing.
+ */
 enum class FrameMetaSkipReason {
     NoTarget,
     NoSurface,
@@ -55,6 +77,14 @@ enum class FrameMetaSkipReason {
     NoBuffer,
 };
 
+/**
+ * @class FrameMetaInfo
+ * @brief Class representing metadata for frame processing.
+ *
+ * This class manages various pieces of information related to
+ * frame rendering, including timestamps, flags, and reasons for
+ * skipping frames.
+ */
 class FrameMetaInfo {
 public:
     FrameMetaInfo() {
@@ -63,7 +93,13 @@ public:
         set(FrameMetaIndex::VsyncId) = FRAME_META_INVALID_VSYNC_ID;
     }
 
-    /* first usage */
+    /**
+     * @brief Sets the Vsync information for the current frame.
+     *
+     * @param vsyncTime The timestamp of the Vsync in milliseconds.
+     * @param vsyncId The ID of the Vsync.
+     * @param frameIntervalMs The interval between frames in milliseconds.
+     */
     void setVsync(int64_t vsyncTime, int64_t vsyncId, int64_t frameIntervalMs) {
         memset(mMetaData, 0, sizeof(mMetaData));
         mSkipReason = std::nullopt;
@@ -77,6 +113,11 @@ public:
         set(FrameMetaIndex::FrameInterval) = frameIntervalMs;
     }
 
+    /**
+     * @brief Retrieves the raw metadata information.
+     *
+     * @return A pointer to the array of metadata values.
+     */
     const int64_t* data() const {
         return mMetaData;
     }
@@ -84,30 +125,35 @@ public:
     inline int64_t& set(FrameMetaIndex index) {
         return mMetaData[static_cast<int>(index)];
     }
+
     inline int64_t get(FrameMetaIndex index) const {
         if (index == FrameMetaIndex::NumIndexes) return 0;
         return mMetaData[static_cast<int>(index)];
     }
+
     inline int64_t operator[](FrameMetaIndex index) const {
         return get(index);
     }
 
     inline int64_t operator[](int index) const {
-        if (index < 0 || index >= static_cast<int>(FrameMetaIndex ::NumIndexes)) return 0;
+        if (index < 0 || index >= static_cast<int>(FrameMetaIndex::NumIndexes)) return 0;
         return mMetaData[index];
     }
+
     inline int64_t getFrameInterval() const {
         return get(FrameMetaIndex::FrameInterval);
     }
+
     inline int64_t getVsyncId() const {
         return get(FrameMetaIndex::VsyncId);
     }
+
     inline int64_t duration(FrameMetaIndex start, FrameMetaIndex end) const {
         int64_t endTime = get(end);
         int64_t startTime = get(start);
         int64_t gap = endTime - startTime;
         gap = startTime > 0 ? gap : 0;
-        /* TODO: */
+
         return gap > 0 ? gap : 0;
     }
 
@@ -135,31 +181,67 @@ public:
         return duration(FrameMetaIndex::LayoutStart, FrameMetaIndex::RenderStart);
     }
 
+    /**
+     * @brief Adds a flag to the frame metadata.
+     *
+     * @param flag The flag to be added.
+     */
     void addFlag(int flag) {
         set(FrameMetaIndex::Flags) |= static_cast<uint64_t>(flag);
     }
+
+    /**
+     * @brief Marks the start of the frame.
+     */
     void markFrameStart() {
         set(FrameMetaIndex::FrameStart) = curSysTimeMs();
     }
+
+    /**
+     * @brief Marks the layout start time.
+     */
     void markLayoutStart() {
         set(FrameMetaIndex::LayoutStart) = curSysTimeMs();
     }
+
+    /**
+     * @brief Marks the rendering start time.
+     */
     void markRenderStart() {
         set(FrameMetaIndex::RenderStart) = curSysTimeMs();
     }
+
+    /**
+     * @brief Marks the rendering end time.
+     */
     void markRenderEnd() {
         set(FrameMetaIndex::RenderEnd) = curSysTimeMs();
     }
+
+    /**
+     * @brief Marks the synchronization queued time.
+     */
     void markSyncQueued() {
         set(FrameMetaIndex::SyncQueued) = curSysTimeMs();
     }
+
+    /**
+     * @brief Marks the frame as finished.
+     */
     void markFrameFinished() {
         set(FrameMetaIndex::FrameFinished) = curSysTimeMs();
     }
+
+    /**
+     * @brief Sets the reason for skipping the frame.
+     *
+     * @param reason The reason for skipping.
+     */
     void setSkipReason(FrameMetaSkipReason reason) {
         addFlag(FrameMetaInfoFlags::SkipFrame);
         mSkipReason = reason;
     }
+
     inline std::optional<FrameMetaSkipReason> getSkipReason() const {
         return mSkipReason;
     }

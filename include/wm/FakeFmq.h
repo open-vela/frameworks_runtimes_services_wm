@@ -32,12 +32,32 @@ using android::Parcelable;
 using android::sp;
 using android::status_t;
 
+/**
+ * @class FakeFmq
+ * @brief A template class for simulating FIFO message queues.
+ *
+ * This class provides a mock implementation of a First-In-First-Out
+ * (FIFO) message queue. It includes methods for reading and writing
+ * data to the queue, managing the queue's properties, and serializing
+ * data for IPC (Inter-Process Communication).
+ *
+ * @tparam T The type of data to be stored in the queue.
+ */
 template <typename T>
 class FakeFmq {
 public:
     FakeFmq();
+
     ~FakeFmq();
 
+    /**
+     * @brief Reads data from the FIFO queue.
+     *
+     * This method reads an item from the queue if available.
+     *
+     * @param data Pointer to the variable where the data will be stored.
+     * @return True if the read operation is successful, false otherwise.
+     */
     bool read(T* data) {
         if (!mQueue || mCaps <= 0 || !data) {
             return false;
@@ -55,12 +75,21 @@ public:
         return true;
     }
 
+    /**
+     * @brief Writes data to the FIFO queue.
+     *
+     * This method writes an item to the queue and marks the end of the
+     * queue with an ending flag.
+     *
+     * @param data Pointer to the data to be written to the queue.
+     * @return True if the write operation is successful, false otherwise.
+     */
     bool write(const T* data) {
         if (!mQueue || mCaps <= 0 || !data) {
             return false;
         }
 
-        /*firstly write ending flag */
+        /* firstly write ending flag */
         auto next = (mWritePos + 1) % mCaps;
         mQueue[next] = 0;
 
@@ -69,18 +98,64 @@ public:
         return true;
     }
 
+    /**
+     * @brief Creates the FIFO message queue.
+     *
+     * This method initializes the queue with the provided data and
+     * sets up whether the queue operates as a server.
+     *
+     * @param qData Vector containing initial data for the queue.
+     * @param isServer Boolean flag indicating if this queue is for a server.
+     * @return True if the creation is successful, false otherwise.
+     */
     bool create(const std::vector<T>& qData, bool isServer);
+
+    /**
+     * @brief Destroys the FIFO message queue.
+     *
+     * This method releases all resources associated with the queue.
+     */
     void destroy();
 
+    /**
+     * @brief Sets the name of the FIFO message queue.
+     *
+     * @param name The name to be assigned to the queue.
+     */
     void setName(const std::string& name) {
         mName = name;
     }
+
+    /**
+     * @brief Retrieves the name of the FIFO message queue.
+     *
+     * @return The name of the queue.
+     */
     std::string getName() {
         return mName;
     }
 
+    /**
+     * @brief Writes the current state of the queue to a Parcel.
+     *
+     * @param out Pointer to the Parcel where the data will be written.
+     * @return Status indicating the success or failure of the operation.
+     */
     status_t writeToParcel(Parcel* out) const;
+
+    /**
+     * @brief Reads the current state of the queue from a Parcel.
+     *
+     * @param in Pointer to the Parcel containing the data to be read.
+     * @return Status indicating the success or failure of the operation.
+     */
     status_t readFromParcel(const Parcel* in);
+
+    /**
+     * @brief Copies data from another FakeFmq instance.
+     *
+     * @param other The other FakeFmq instance from which to copy data.
+     */
     void copyFrom(FakeFmq<T>& other);
 
 private:

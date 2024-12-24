@@ -21,14 +21,55 @@
 namespace os {
 namespace wm {
 
+/**
+ * @brief DummyDriverProxy is a proxy class for the UI driver.
+ *
+ * This class serves as a mock implementation of the UIDriverProxy,
+ * allowing for testing and simulation of driver behavior in a safe
+ * environment without relying on actual graphics hardware.
+ */
 class DummyDriverProxy : public UIDriverProxy {
 public:
     DummyDriverProxy(std::shared_ptr<BaseWindow> win);
+
     ~DummyDriverProxy();
 
+    /**
+     * @brief Retrieves the root object.
+     *
+     * This method overrides the base class method to return the root
+     * element associated with this driver proxy.
+     *
+     * @return A pointer to the root object.
+     */
     void* getRoot() override;
+
+    /**
+     * @brief Retrieves the window object.
+     *
+     * This method overrides the base class method to return the window
+     * associated with this driver proxy.
+     *
+     * @return A pointer to the window object.
+     */
     void* getWindow() override;
+
+    /**
+     * @brief Handles input events directed to the UI.
+     *
+     * This method overrides the base class method to implement event
+     * handling logic for the dummy driver.
+     */
     void handleEvent() override;
+
+    /**
+     * @brief Draws a frame with the provided buffer item.
+     *
+     * This method overrides the base class method to simulate frame
+     * drawing using the given buffer item.
+     *
+     * @param bufItem A pointer to the BufferItem to be drawn.
+     */
     void drawFrame(BufferItem* bufItem) override;
 
 private:

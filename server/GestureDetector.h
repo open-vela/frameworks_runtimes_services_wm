@@ -31,9 +31,17 @@
 
 namespace os::wm {
 
+/**
+ * @class GestureDetector
+ * @brief Class for detecting gesture events on the application interface.
+ *
+ * This class provides functionality to recognize various gesture types
+ * such as swipes and triggers based on the input messages received.
+ */
 class GestureDetector {
 public:
     GestureDetector() = delete;
+
     explicit GestureDetector(std::shared_ptr<::os::app::UvLoop> uvLoop)
           : mIsScreenOn(property_get_int32(GESTURE_SCREEN_STATUS_KVDB_KEY, 1) > 0),
             mUvLoop(uvLoop),
@@ -63,6 +71,15 @@ public:
         }
     }
 
+    /**
+     * @brief Recognizes the gesture based on the provided input message.
+     *
+     * This method processes the input message to determine if any
+     * gestures such as swipes or screen triggers were performed.
+     *
+     * @param msg Pointer to the InputMessage containing gesture data.
+     * @return A bitmask representing the recognized gestures.
+     */
     uint8_t recognizeGesture(const InputMessage* msg) {
         uint8_t ret = 0;
         int current_x = msg->pointer.x;
@@ -130,6 +147,15 @@ public:
         return ret;
     }
 
+    /**
+     * @brief Sets the display information for the gesture detector.
+     *
+     * This method updates the dimensions of the display for accurate
+     * gesture recognition.
+     *
+     * @param info Pointer to the DisplayInfo structure containing
+     *              display dimensions.
+     */
     void setDisplayInfo(DisplayInfo* info) {
         mH = info->height;
         mW = info->width;

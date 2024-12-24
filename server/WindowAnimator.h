@@ -22,6 +22,7 @@
 #ifdef CONFIG_ANIMATION_ENGINE
 #include <animengine/anim_api.h>
 #endif
+
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -29,16 +30,52 @@
 #include "lvgl/lv_mainwnd.h"
 
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
+
+/**
+ * @namespace os::wm
+ * @brief The namespace for window management related classes and functionalities.
+ */
 namespace os {
 namespace wm {
+
+/**
+ * @brief Defines a callback function type for animation status changes.
+ *
+ * This type represents a callback function that is invoked to report the
+ * status of an animation.
+ */
 typedef std::function<void(WindowAnimStatus status)> AnimCallback;
 
+/**
+ * @class WindowAnimator
+ * @brief Class for handling window animations.
+ *
+ * The WindowAnimator class provides functionality to manage animation
+ * effects for window transitions. It interacts with the animation
+ * engine to perform smooth visual transitions and manage status
+ * updates during the animations.
+ */
 class WindowAnimator {
 public:
     WindowAnimator(AnimEngineHandle animEngine, lv_obj_t* widget);
+
     ~WindowAnimator();
 
+    /**
+     * @brief Starts the animation with the specified configuration.
+     *
+     * @param animConfig String containing the animation configuration.
+     * @param callback Callback function to be called when the animation status changes.
+     * @return An integer indicating the success or failure of the animation start request.
+     */
     int startAnimation(std::string animConfig, AnimCallback callback);
+
+    /**
+     * @brief Cancels any ongoing animation.
+     *
+     * This method stops the current animation and cleans up resources
+     * associated with it.
+     */
     void cancelAnimation();
 
     AnimCallback mAnimStatusCB;

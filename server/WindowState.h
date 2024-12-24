@@ -28,9 +28,11 @@
 #include "WindowToken.h"
 #include "os/wm/IWindowManager.h"
 #include "wm/LayoutParams.h"
+
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
 #include "WindowAnimator.h"
 #endif
+
 namespace os {
 namespace wm {
 
@@ -42,50 +44,185 @@ class WindowNode;
 class WindowToken;
 class LayoutParams;
 
+/**
+ * @class WindowState
+ * @brief Represents the state of a window in the window manager.
+ *
+ * The WindowState class encapsulates all the properties of a window,
+ * including its visibility, layout parameters, and connections to
+ * other components like input dispatchers and surface controls.
+ * It provides methods to manage the lifecycle and appearance of
+ * the window.
+ */
 class WindowState {
 public:
     WindowState();
+
     ~WindowState();
+
     WindowState(WindowManagerService* service, const sp<IWindow>& window,
-                shared_ptr<WindowToken> token, const LayoutParams& params, int32_t visibility,
+                std::shared_ptr<WindowToken> token, const LayoutParams& params, int32_t visibility,
                 bool enableInput);
 
+    /**
+     * @brief Checks if the window is currently visible.
+     *
+     * @return True if the window is visible, false otherwise.
+     */
     bool isVisible();
+
+    /**
+     * @brief Sends the visibility state of the application to the clients.
+     *
+     * @param visibility The visibility state to send to the clients.
+     */
     void sendAppVisibilityToClients(int32_t visibility);
+
+    /**
+     * @brief Sets the visibility state of the window.
+     *
+     * @param visibility The visibility state to set for the window.
+     */
     void setVisibility(int32_t visibility);
+
+    /**
+     * @brief Removes the window if possible.
+     *
+     * This method attempts to remove the window from the window manager.
+     */
     void removeIfPossible();
+
+    /**
+     * @brief Immediately removes the window from the window manager.
+     *
+     * This method forcefully removes the window, releasing any resources associated with it.
+     */
     void removeImmediately();
 
+    /**
+     * @brief Creates a new InputDispatcher for this window.
+     *
+     * @param name The name to associate with the input dispatcher.
+     * @return A shared pointer to the newly created InputDispatcher.
+     */
     std::shared_ptr<InputDispatcher> createInputDispatcher(const std::string& name);
+
+    /**
+     * @brief Creates a new SurfaceControl for this window.
+     *
+     * @param ids A vector of BufferId to associate with the surface.
+     * @param fmqName The name for the Fast Message Queue.
+     * @return A shared pointer to the newly created SurfaceControl.
+     */
     std::shared_ptr<SurfaceControl> createSurfaceControl(const std::vector<BufferId>& ids,
                                                          const std::string& fmqName);
+
+    /**
+     * @brief Retrieves the BufferConsumer associated with this window.
+     *
+     * @return A shared pointer to the BufferConsumer for this window.
+     */
     std::shared_ptr<BufferConsumer> getBufferConsumer();
+
+    /**
+     * @brief Destroys the SurfaceControl associated with this window.
+     *
+     * This method cleans up the resources associated with the surface control.
+     */
     void destroySurfaceControl();
 
+    /**
+     * @brief Applies a transaction to the window's layer.
+     *
+     * @param layerState The state of the layer to apply.
+     */
     void applyTransaction(LayerState layerState);
+
+    /**
+     * @brief Schedules a Vsync request for this window.
+     *
+     * @param vsyncReq The VsyncRequest to schedule.
+     * @return True if the request was successfully scheduled, false otherwise.
+     */
     bool scheduleVsync(VsyncRequest vsyncReq);
+
+    /**
+     * @brief Handles the Vsync event for this window.
+     *
+     * @return The current VsyncRequest state.
+     */
     VsyncRequest onVsync();
+
+    /**
+     * @brief Sends an input message to this window.
+     *
+     * @param ie Pointer to the InputMessage to send.
+     * @return True if the message was successfully sent, false otherwise.
+     */
     bool sendInputMessage(const InputMessage* ie);
 
+    /**
+     * @brief Retrieves the associated WindowToken.
+     *
+     * @return A shared pointer to the WindowToken.
+     */
     std::shared_ptr<WindowToken> getToken() {
         return mToken;
     }
 
+    /**
+     * @brief Retrieves the client associated with this window.
+     *
+     * @return A reference to the associated IWindow client.
+     */
     sp<IWindow>& getClient() {
         return mClient;
     }
 
+    /**
+     * @brief Sets whether this window has a surface.
+     *
+     * @param hasSurface True to indicate that the window has a surface, false otherwise.
+     */
     void setHasSurface(bool hasSurface) {
         mHasSurface = hasSurface;
     }
 
+    /**
+     * @brief Acquires a buffer for this window.
+     *
+     * @return Pointer to the acquired BufferItem for rendering.
+     */
     BufferItem* acquireBuffer();
+
+    /**
+     * @brief Releases a buffer previously acquired by this window.
+     *
+     * @param buffer Pointer to the BufferItem to release.
+     * @return True if the release was successful, false otherwise.
+     */
     bool releaseBuffer(BufferItem* buffer);
 
+    /**
+     * @brief Sets the layout parameters for this window.
+     *
+     * @param attrs The new LayoutParams to apply to the window.
+     */
     void setLayoutParams(LayoutParams attrs);
+
+    /**
+     * @brief Retrieves the size of the surface for this window.
+     *
+     * @return The size of the current surface in pixels.
+     */
     uint32_t getSurfaceSize();
 
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
+    /**
+     * @brief Called when the animation for this window has finished.
+     *
+     * @param status The status of the completed animation.
+     */
     void onAnimationFinished(WindowAnimStatus status);
 #endif
 
@@ -108,6 +245,7 @@ private:
     WindowAnimator* mWinAnimator;
 #endif
     WindowNode* mNode;
+
     enum {
         WS_ALLOW_REMOVING = 1 << 0,
         WS_REMOVED = 1 << 1,

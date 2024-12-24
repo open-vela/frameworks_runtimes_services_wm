@@ -24,6 +24,14 @@
 namespace os {
 namespace wm {
 
+/**
+ * @brief Dumps information about an input message.
+ *
+ * This function logs the details of the given input message, including
+ * its type, state, and additional data based on the message type.
+ *
+ * @param ie Pointer to the InputMessage object to be logged.
+ */
 static inline void dumpInputMessage(const InputMessage* ie) {
     if (!ie) return;
 

@@ -15,11 +15,26 @@
  */
 
 #pragma once
+
 #include <binder/IServiceManager.h>
 #include <os/wm/IWindowManager.h>
 #include <utils/String8.h>
 
 #include "app/UvLoop.h"
 
+/**
+ * @brief Starts the Window Manager (WM) service.
+ *
+ * This function initializes and starts the window manager service
+ * with the provided service manager and UV loop instance. It sets
+ * up the necessary components for window management and event handling.
+ *
+ * @param sm A shared pointer to the IServiceManager used for managing
+ *           system services.
+ * @param uvLooper A shared pointer to the UvLoop instance used for
+ *                 asynchronous event handling.
+ * @return A shared pointer to the IWindowManager interface for
+ *         interacting with the window manager service.
+ */
 ::android::sp<::os::wm::IWindowManager> startWMService(::android::sp<::android::IServiceManager> sm,
                                                        std::shared_ptr<::os::app::UvLoop> uvLooper);
