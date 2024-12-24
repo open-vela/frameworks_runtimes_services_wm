@@ -21,15 +21,56 @@
 namespace os {
 namespace wm {
 
+/**
+ * @class WindowEventListener
+ * @brief Interface for listening to window events.
+ *
+ * This class provides a mechanism for receiving notifications about
+ * various events related to window operations, such as size changes,
+ * touch events, and drawing events.
+ */
 class WindowEventListener {
 public:
     WindowEventListener(void* data);
-    virtual ~WindowEventListener();
-    virtual void onSizeChanged(uint32_t w, uint32_t h, uint32_t oldw, uint32_t olh);
 
+    virtual ~WindowEventListener();
+
+    /**
+     * @brief Called when the size of the window changes.
+     *
+     * @param w New width of the window.
+     * @param h New height of the window.
+     * @param oldw Previous width of the window.
+     * @param oldh Previous height of the window.
+     */
+    virtual void onSizeChanged(uint32_t w, uint32_t h, uint32_t oldw, uint32_t oldh);
+
+    /**
+     * @brief Called when a touch event occurs.
+     *
+     * @param x X coordinate of the touch event.
+     * @param y Y coordinate of the touch event.
+     */
     virtual void onTouch(int32_t x, int32_t y);
+
+    /**
+     * @brief Called when a draw event occurs.
+     *
+     * @param buffer Pointer to the drawing buffer.
+     * @param size Size of the drawing buffer.
+     */
     virtual void onDraw(void* buffer, uint32_t size);
+
+    /**
+     * @brief Called after drawing is completed.
+     */
     virtual void onPostDraw();
+
+    /**
+     * @brief Retrieves the user-defined data associated with the listener.
+     *
+     * @return Pointer to the associated data.
+     */
     void* getData() {
         return mData;
     }

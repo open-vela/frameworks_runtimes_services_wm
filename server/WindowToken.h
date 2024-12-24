@@ -25,6 +25,10 @@
 
 #include "pm/PackageInfo.h"
 
+/**
+ * @namespace os::wm
+ * @brief The namespace for window management related classes and functionalities.
+ */
 namespace os {
 namespace wm {
 
@@ -34,36 +38,103 @@ using android::sp;
 class WindowManagerService;
 class WindowState;
 
+/**
+ * @class WindowToken
+ * @brief Represents a token for a window in the window manager.
+ *
+ * This class holds information about a group of windows identified
+ * by a unique token. It manages the visibility and state of those
+ * windows within a particular display.
+ */
 class WindowToken {
 public:
     WindowToken(WindowManagerService* service, const sp<IBinder>& token, int32_t type,
                 int32_t displayId, int32_t clientPid, const std::string& packageName);
+
     ~WindowToken();
 
+    /**
+     * @brief Adds a window to this token.
+     *
+     * This method associates the specified WindowState with this token.
+     *
+     * @param win Pointer to the WindowState to add.
+     */
     void addWindow(WindowState* win);
+
+    /**
+     * @brief Removes a window from this token.
+     *
+     * This method disassociates the specified WindowState from this token.
+     *
+     * @param win Pointer to the WindowState to remove.
+     */
     void removeWindow(WindowState* win);
 
+    /**
+     * @brief Retrieves the visibility state of the associated client.
+     *
+     * @return The client's visibility state.
+     */
     int32_t getClientVisibility() {
         return mClientVisibility;
     }
+
+    /**
+     * @brief Sets the visibility state of the associated client.
+     *
+     * @param visibility The new visibility state for the client.
+     */
     void setClientVisibility(int32_t visibility);
+
+    /**
+     * @brief Retrieves the process ID of the associated client.
+     *
+     * @return The process ID of the client.
+     */
     int getClientPid() {
         return mClientPid;
     }
 
+    /**
+     * @brief Checks if this token has no associated windows.
+     *
+     * @return True if there are no associated windows, false otherwise.
+     */
     bool isEmpty() {
         return mChildren.empty();
     }
 
+    /**
+     * @brief Sets whether to persist the token when empty.
+     *
+     * @param persistOnEmpty Flag indicating whether to persist on empty.
+     */
     void setPersistOnEmpty(bool persistOnEmpty) {
         mPersistOnEmpty = persistOnEmpty;
     }
 
+    /**
+     * @brief Checks if the token should persist when empty.
+     *
+     * @return True if the token should persist on being empty, otherwise false.
+     */
     bool isPersistOnEmpty() {
         return mPersistOnEmpty;
     }
 
+    /**
+     * @brief Attempts to remove the token if possible.
+     *
+     * This method disassociates the token from its windows and cleans up.
+     */
     void removeIfPossible();
+
+    /**
+     * @brief Retrieves the type of the windows associated with this token.
+     *
+     * @return The type of the windows.
+     */
     int32_t getType() {
         return mType;
     }

@@ -19,14 +19,36 @@
 #include "WindowConfig.h"
 
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
+
+/**
+ * @namespace os::wm
+ * @brief The namespace for window management related classes and functions.
+ */
 namespace os {
 namespace wm {
 
+/**
+ * @class WindowAnimEngine
+ * @brief Class for managing window transition animations.
+ *
+ * This class encapsulates the functionality required to create and manage
+ * animations for window transitions, allowing for smooth visual effects
+ * during window state changes.
+ */
 class WindowAnimEngine {
 public:
     WindowAnimEngine();
+
     ~WindowAnimEngine();
 
+    /**
+     * @brief Retrieves the handle to the underlying animation engine.
+     *
+     * This method provides access to the AnimEngineHandle used for
+     * performing animations.
+     *
+     * @return Handle to the animation engine.
+     */
     AnimEngineHandle getEngine();
 
 private:
