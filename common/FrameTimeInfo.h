@@ -15,18 +15,37 @@
  */
 
 #pragma once
+
 #include "FrameMetaInfo.h"
 
 namespace os {
 namespace wm {
 
+/**
+ * @class FrameTimeInfo
+ * @brief Class for managing frame time information.
+ *
+ * This class collects and maintains timing information related to
+ * the rendering of frames, tracking statistics such as minimum,
+ * maximum, and total frame times as well as various sample counts.
+ */
 class FrameTimeInfo {
 public:
     FrameTimeInfo();
+
+    /**
+     * @brief Updates the frame time information based on the given metadata.
+     *
+     * This method processes the provided FrameMetaInfo and updates
+     * the internal timing statistics accordingly.
+     *
+     * @param info Pointer to the FrameMetaInfo containing frame data.
+     */
     void time(FrameMetaInfo *info);
 
 private:
     void init();
+
     void logPerSecond(bool checksec = true);
 
     int64_t mMinFrameTime;

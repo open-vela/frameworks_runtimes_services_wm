@@ -25,26 +25,59 @@
 
 namespace os {
 namespace wm {
+
 using namespace android;
 using namespace android::base;
 using namespace android::binder;
 
+/**
+ * @class WindowFrames
+ * @brief Represents the frames for a window.
+ *
+ * This class encapsulates frame information for a window, including
+ * its dimensions and related attributes. It is used by the window
+ * manager to manage window rendering and layout.
+ */
 class WindowFrames : public Parcelable {
 public:
     WindowFrames();
+
     ~WindowFrames();
 
     WindowFrames(const Rect& rect);
 
+    /**
+     * @brief Writes the WindowFrames data to a Parcel.
+     *
+     * This method overrides the writeToParcel method from the Parcelable
+     * interface.
+     *
+     * @param out Pointer to the Parcel where data will be written.
+     * @return Status indicating the success or failure of the operation.
+     */
     status_t writeToParcel(Parcel* out) const override;
+
+    /**
+     * @brief Reads the WindowFrames data from a Parcel.
+     *
+     * This method overrides the readFromParcel method from the Parcelable
+     * interface.
+     *
+     * @param in Pointer to the Parcel from which data will be read.
+     * @return Status indicating the success or failure of the operation.
+     */
     status_t readFromParcel(const Parcel* in) override;
 
+    /**
+     * @brief Retrieves the actual window bounds.
+     *
+     * @return The Rect object representing the window bounds.
+     */
     Rect getFrame() const {
         return mFrame;
     }
 
 private:
-    /** The actual window bounds. */
     Rect mFrame;
 };
 

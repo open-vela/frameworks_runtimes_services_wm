@@ -29,6 +29,15 @@ using namespace android::base;
 using namespace android::binder;
 using namespace std;
 
+/**
+ * @class LayoutParams
+ * @brief Class that contains layout parameters for a window.
+ *
+ * The LayoutParams class defines various attributes related to positioning,
+ * sizing, and visibility of a window in the GUI. It is used by the window
+ * manager to configure how windows are displayed and interact with user
+ * input.
+ */
 class LayoutParams : public Parcelable {
 public:
     static const int32_t WINDOW_VISIBLE = 0;
@@ -60,14 +69,40 @@ public:
     static const int32_t WINDOW_TRANSITION_ENABLE = 1;
 
     LayoutParams();
+
     ~LayoutParams();
 
     LayoutParams(const LayoutParams& other);
+
     LayoutParams& operator=(const LayoutParams& other);
 
+    /**
+     * @brief Writes the LayoutParams data to a Parcel.
+     *
+     * This method overrides the writeToParcel method from the Parcelable
+     * interface.
+     *
+     * @param out Pointer to the Parcel where data will be written.
+     * @return Status indicating the success or failure of the operation.
+     */
     status_t writeToParcel(Parcel* out) const override;
+
+    /**
+     * @brief Reads LayoutParams data from a Parcel.
+     *
+     * This method overrides the readFromParcel method from the Parcelable
+     * interface.
+     *
+     * @param in Pointer to the Parcel from which data will be read.
+     * @return Status indicating the success or failure of the operation.
+     */
     status_t readFromParcel(const Parcel* in) override;
 
+    /**
+     * @brief Checks if the LayoutParams requires input.
+     *
+     * @return True if input is required, false otherwise.
+     */
     bool hasInput() const {
         return (mInputFeatures & INPUT_FEATURE_NO_INPUT_CHANNEL) == 0;
     }
@@ -83,15 +118,8 @@ public:
     sp<IBinder> mToken;
 
 private:
-    /**
-     * Does not construct an input channel for this window.  The channel will therefore
-     * be incapable of receiving input.
-     */
     static const int INPUT_FEATURE_NO_INPUT_CHANNEL = 1 << 0;
 
-    /**
-     * Control a set of features of the input subsystem that are exposed to the app process.
-     */
     int8_t mInputFeatures;
 };
 
