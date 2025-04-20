@@ -221,6 +221,11 @@ void BaseWindow::onFrame(int32_t seq) {
         return;
     }
 
+    if (mVsyncRequest == VsyncRequest::VSYNC_REQ_PERIODIC && !mUIProxy->needPeriodicVsync()) {
+        FLOGI("%p frame seq=%" PRIu32 ", stop periodic vsync automatically.", this, seq);
+        scheduleVsync(VsyncRequest::VSYNC_REQ_SINGLE);
+    }
+
     /* mark vsync */
     auto info = mUIProxy->frameMetaInfo();
     if (info) info->setVsync(FrameMetaInfo::getCurSysTime(), seq, mUIProxy->getTimerPeriod());
