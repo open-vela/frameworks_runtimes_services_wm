@@ -242,6 +242,10 @@ void LVGLDriverProxy::notifyVsyncEvent() {
     }
 }
 
+bool LVGLDriverProxy::needPeriodicVsync() {
+    return vsyncEventEnabled() || !lv_anim_get_timer()->paused;
+}
+
 static void _disp_flush_cb(lv_display_t* disp, const lv_area_t* area, uint8_t* color) {
     if (!lv_display_flush_is_last(disp)) {
         lv_display_flush_ready(disp);
@@ -288,9 +292,7 @@ static void _disp_event_cb(lv_event_t* e) {
         /* for FULL & DIRECT render mode */
         case LV_EVENT_REFR_REQUEST: {
             CHECK_PROXY_OBJECT(e);
-            bool periodic =
-                    (proxy->vsyncEventEnabled() || !lv_anim_get_timer()->paused) ? true : false;
-            if (proxy->onInvalidate(periodic)) {
+            if (proxy->onInvalidate(proxy->needPeriodicVsync())) {
                 FLOGD("%p refresh request", proxy);
             }
             break;
