@@ -243,6 +243,10 @@ public:
         return 16; // Default to 60 FPS (16ms per frame)
     }
 
+    virtual bool needPeriodicVsync() {
+        return false;
+    }
+
     /**
      * @brief Traces the frame if enabled.
      *

@@ -221,6 +221,8 @@ public:
         return LV_DEF_REFR_PERIOD;
     }
 
+    bool needPeriodicVsync() override;
+
     /**
      * @brief Initializes the LVGL driver.
      */
