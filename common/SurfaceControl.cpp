@@ -232,7 +232,14 @@ void uninitSurfaceBuffer(const std::shared_ptr<SurfaceControl>& sc) {
 /**************** fmq ********************/
 template <typename T>
 FakeFmq<T>::FakeFmq()
-      : mName(""), mFd(0), mCaps(0), mReadPos(0), mWritePos(0), mQueue(NULL), mQueueSize(0) {}
+      : mName(""),
+        mFd(0),
+        mCaps(0),
+        mReadPos(0),
+        mWritePos(0),
+        mCliRespSeq(NULL),
+        mQueue(NULL),
+        mQueueSize(0) {}
 
 template <typename T>
 FakeFmq<T>::~FakeFmq() {
@@ -278,6 +285,7 @@ void FakeFmq<T>::copyFrom(FakeFmq<T>& other) {
     mWritePos = other.mWritePos;
     mQueue = NULL;
     mQueueSize = other.mQueueSize;
+    mCliRespSeq = NULL;
 }
 
 template <typename T>
@@ -304,6 +312,7 @@ void FakeFmq<T>::destroy() {
     mWritePos = 0;
     mQueue = NULL;
     mQueueSize = 0;
+    mCliRespSeq = NULL;
 }
 
 template <typename T>
@@ -319,7 +328,7 @@ bool FakeFmq<T>::create(const std::vector<T>& qData, bool isServer) {
     destroy();
 
     uint32_t elmCount = qData.size() + 1;
-    auto size = elmCount * sizeof(T);
+    auto size = elmCount * sizeof(T) + sizeof(uint32_t);
     int fd = 0;
     if (!initSharedBuffer(mName, &fd, isServer ? size : 0)) {
         FLOGE("failed to init fmq for %s", mName.c_str());
@@ -349,8 +358,8 @@ bool FakeFmq<T>::create(const std::vector<T>& qData, bool isServer) {
     mReadPos = 0;
     mWritePos = mCaps - 1;
     mQueueSize = size;
+    mCliRespSeq = (uint32_t*)((char*)buffer + mQueueSize - sizeof(uint32_t));
     return true;
 }
-
 } // namespace wm
 } // namespace os
