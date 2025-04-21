@@ -158,13 +158,38 @@ public:
      */
     void copyFrom(FakeFmq<T>& other);
 
+    /**
+     * @brief Retrieves the current client sequence number.
+     *
+     * @return The client sequence number.
+     */
+    uint32_t getClientRespSeq() {
+        return mCliRespSeq == NULL ? 0 : *mCliRespSeq;
+    }
+
+    /**
+     * @brief Update the client sequence number.
+     *
+     * @param seq The client sequence number to be update.
+     */
+    void updateClientRespSeq(uint32_t seq) {
+        if (mCliRespSeq == NULL) {
+            return;
+        }
+        *mCliRespSeq = seq;
+    }
+
+    uint32_t getQueueCaps() {
+        return mCaps;
+    }
+
 private:
     std::string mName;
     int mFd;
     uint32_t mCaps;
     uint32_t mReadPos;
     uint32_t mWritePos;
-    uint32_t mReserved;
+    uint32_t* mCliRespSeq;
     T* mQueue;
     uint32_t mQueueSize;
 };
