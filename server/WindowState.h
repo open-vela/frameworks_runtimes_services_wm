@@ -249,6 +249,9 @@ private:
     enum {
         WS_ALLOW_REMOVING = 1 << 0,
         WS_REMOVED = 1 << 1,
+
+        /* check refresh timeout, for internal use only */
+        WS_CLIENT_TIMEOUT = 1 << 15,
     };
     int32_t mFlags;
     bool mNeedInput;

@@ -180,6 +180,7 @@ std::shared_ptr<SurfaceControl> WindowState::createSurfaceControl(const std::vec
             std::make_shared<SurfaceControl>(IInterface::asBinder(mClient), handle, mAttrs.mWidth,
                                              mAttrs.mHeight, mAttrs.mFormat, getSurfaceSize());
     mSurfaceControl->getFMQ().setName(fmqName);
+    mSurfaceControl->getFMQ().updateClientRespSeq(mFrameReq);
     mSurfaceControl->initBufferIds(ids);
     initSurfaceBuffer(mSurfaceControl, true);
 
@@ -284,12 +285,41 @@ VsyncRequest WindowState::onVsync() {
     }
     WM_PROFILER_BEGIN();
 
+    /*only for periodic vsync*/
+    if (mVsyncRequest == VsyncRequest::VSYNC_REQ_PERIODIC) {
+        if (mSurfaceControl != nullptr && mSurfaceControl->isValid()) {
+            uint32_t lastResp = mSurfaceControl->getFMQ().getClientRespSeq();
+            if (mFrameReq != lastResp) {
+                FLOGD("[%d], send vsync response, frame seq=%" PRIu32 ", last resp seq=%" PRIu32 "",
+                      mToken->getClientPid(), mFrameReq, lastResp);
+
+                const uint32_t threshold = mSurfaceControl->getFMQ().getQueueCaps();
+                if ((mFrameReq - lastResp) >= threshold) {
+                    /*only warning once*/
+                    if (mFlags & WS_CLIENT_TIMEOUT) {
+                        WM_PROFILER_END();
+                        return mVsyncRequest;
+                    }
+
+                    mFlags |= WS_CLIENT_TIMEOUT;
+                    FLOGW("[%d], send vsync response, response timeout! (frame seq=%" PRIu32
+                          ", last resp seq=%" PRIu32 ", threshold=%" PRIu32 ")",
+                          mToken->getClientPid(), mFrameReq, lastResp, threshold);
+                    WM_PROFILER_END();
+                    return mVsyncRequest;
+                }
+            }
+
+            if (mFlags & WS_CLIENT_TIMEOUT) {
+                mFlags &= ~WS_CLIENT_TIMEOUT;
+                FLOGW("[%d], send vsync response, vsync restored (frame seq=%" PRIu32 ")",
+                      mToken->getClientPid(), mFrameReq);
+            }
+        }
+    }
+
     mVsyncRequest = nextVsyncState(mVsyncRequest);
     mClient->onFrame(++mFrameReq);
-
-    FLOGI("%p [%d] vreq=%s send vsync(seq=%" PRIu32 ") to client!", this, mToken->getClientPid(),
-          VsyncRequestToString(mVsyncRequest), mFrameReq);
-
     if (mFrameReq == UINT32_MAX) mFrameReq = 0;
 
     WM_PROFILER_END();

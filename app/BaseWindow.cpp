@@ -216,6 +216,11 @@ void BaseWindow::onFrame(int32_t seq) {
     mVsyncRequest = nextVsyncState(mVsyncRequest);
     FLOGD("%p frame seq=%" PRIu32 "", this, seq);
 
+    if (mSurfaceControl.get()) {
+        FLOGD("update response seq=%" PRIu32 "", seq);
+        mSurfaceControl->getFMQ().updateClientRespSeq(seq);
+    }
+
     if (mUIProxy.get() == nullptr) {
         FLOGE("%p frame seq=%" PRIu32 ", ui proxy exception", this, seq);
         return;
@@ -307,6 +312,8 @@ void BaseWindow::handleOnFrame(int32_t seq) {
         mWindowManager->relayoutWindow(shared_from_this());
         if (mSurfaceControl.get() && mSurfaceControl->isValid()) {
             updateOrCreateBufferQueue();
+            FLOGD("firstly, update response seq=%" PRIu32 "", seq);
+            mSurfaceControl->getFMQ().updateClientRespSeq(seq);
         }
     } else {
         std::shared_ptr<BufferProducer> buffProducer = getBufferProducer();
