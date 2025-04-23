@@ -17,18 +17,7 @@
 if(CONFIG_SYSTEM_WINDOW_SERVICE)
   set(CURRENT_DIR ${CMAKE_CURRENT_LIST_DIR})
   set(CUR_TARGET window_manager)
-
-  nuttx_add_prebuilt(
-    BIN_TARGETS
-    window_manager
-    APP_TARGETS
-    BufferQueueTest
-    InputChannelTest
-    InputMonitorTest
-    IWindowManagerTest
-    lvgltest_attribute)
-
-  nuttx_library_ifndef(SKIP_PREBUILT ${CUR_TARGET})
+  nuttx_add_library(${CUR_TARGET} STATIC)
   set(CUR_DEPENDS android_binder lvgl framework_utils)
   nuttx_add_dependencies(TARGET ${CUR_TARGET} DEPENDS ${CUR_DEPENDS})
 
@@ -40,9 +29,9 @@ if(CONFIG_SYSTEM_WINDOW_SERVICE)
        ${CURRENT_DIR}/server/*.cpp)
 
   # complie options
-  nuttx_compile_options(${CUR_TARGET} PRIVATE ${CFLAGS})
-  nuttx_sources(${CUR_TARGET} PRIVATE ${CRCS} ${CXXRCS})
-  nuttx_include_directories(${CUR_TARGET} PRIVATE ${INCDIR})
+  target_compile_options(${CUR_TARGET} PRIVATE ${CFLAGS})
+  target_sources(${CUR_TARGET} PRIVATE ${CRCS} ${CXXRCS})
+  target_include_directories(${CUR_TARGET} PRIVATE ${INCDIR})
 
   # export header file
   set_property(
