@@ -24,11 +24,41 @@
 #include "ParcelUtils.h"
 #include "WindowTrace.h"
 
-#define FLOGE(fmt, ...) ALOGE("%s: " fmt, __FUNCTION__, ##__VA_ARGS__)
-#define FLOGW(fmt, ...) ALOGW("%s: " fmt, __FUNCTION__, ##__VA_ARGS__)
-#define FLOGI(fmt, ...) ALOGI("%s: " fmt, __FUNCTION__, ##__VA_ARGS__)
-#define FLOGD(fmt, ...) ALOGD("%s: " fmt, __FUNCTION__, ##__VA_ARGS__)
-#define FLOGV(fmt, ...) ALOGV("%s: " fmt, __FUNCTION__, ##__VA_ARGS__)
+#ifdef CONFIG_WINDOW_SERVICE_LOG_LEVEL
+#define WM_LOG_LEVEL CONFIG_WINDOW_SERVICE_LOG_LEVEL
+#else
+#define WM_LOG_LEVEL 4 // default warning
+#endif
+
+#ifdef CONFIG_ALOG
+#define print_wm_log(level, fmt, ...)                             \
+    {                                                             \
+        if (level <= WM_LOG_LEVEL) {                              \
+            ALOG(level, "%s: " fmt, __FUNCTION__, ##__VA_ARGS__); \
+        }                                                         \
+    }
+
+#define FLOGE(fmt, ...) print_wm_log(LOG_ERROR, fmt, ##__VA_ARGS__)
+#define FLOGW(fmt, ...) print_wm_log(LOG_WARN, fmt, ##__VA_ARGS__)
+#define FLOGI(fmt, ...) print_wm_log(LOG_INFO, fmt, ##__VA_ARGS__)
+#define FLOGD(fmt, ...) print_wm_log(LOG_DEBUG, fmt, ##__VA_ARGS__)
+#define FLOGV(fmt, ...) print_wm_log(LOG_VERBOSE, fmt, ##__VA_ARGS__)
+#else
+#include <syslog.h>
+
+#define print_wm_log(level, fmt, ...)                                             \
+    {                                                                             \
+        if (level <= WM_LOG_LEVEL) {                                              \
+            syslog(level, "[" LOG_TAG "] %s: " fmt, __FUNCTION__, ##__VA_ARGS__); \
+        }                                                                         \
+    }
+
+#define FLOGE(fmt, ...) print_wm_log(LOG_ERR, fmt, ##__VA_ARGS__)
+#define FLOGW(fmt, ...) print_wm_log(LOG_WARNING, fmt, ##__VA_ARGS__)
+#define FLOGI(fmt, ...) print_wm_log(LOG_INFO, fmt, ##__VA_ARGS__)
+#define FLOGD(fmt, ...) print_wm_log(LOG_DEBUG, fmt, ##__VA_ARGS__)
+#define FLOGV(fmt, ...) print_wm_log(LOG_DEBUG, fmt, ##__VA_ARGS__)
+#endif
 
 uint32_t getLvColorFormatType(uint32_t format);
 uint64_t curSysTimeMs(void);
