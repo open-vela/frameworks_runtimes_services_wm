@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#define LOG_TAG "UIProxy"
+
 #include "UIDriverProxy.h"
 
 #include "../common/WindowUtils.h"

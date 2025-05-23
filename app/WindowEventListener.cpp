@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#define LOG_TAG "WindowEventListener"
+
 #include "wm/WindowEventListener.h"
 
 #include "../common/WindowUtils.h"
