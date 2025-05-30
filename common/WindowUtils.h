@@ -18,6 +18,7 @@
 
 #include <inttypes.h>
 #include <nuttx/config.h>
+#include <syslog.h>
 #include <time.h>
 #include <utils/Log.h>
 
@@ -31,20 +32,20 @@
 #endif
 
 #ifdef CONFIG_ALOG
-#define print_wm_log(level, fmt, ...)                             \
-    {                                                             \
-        if (level <= WM_LOG_LEVEL) {                              \
-            ALOG(level, "%s: " fmt, __FUNCTION__, ##__VA_ARGS__); \
-        }                                                         \
+#define print_wm_log(level, log_cb, fmt, ...)                \
+    {                                                        \
+        if (level <= WM_LOG_LEVEL) {                         \
+            log_cb("%s: " fmt, __FUNCTION__, ##__VA_ARGS__); \
+        }                                                    \
     }
 
-#define FLOGE(fmt, ...) print_wm_log(LOG_ERROR, fmt, ##__VA_ARGS__)
-#define FLOGW(fmt, ...) print_wm_log(LOG_WARN, fmt, ##__VA_ARGS__)
-#define FLOGI(fmt, ...) print_wm_log(LOG_INFO, fmt, ##__VA_ARGS__)
-#define FLOGD(fmt, ...) print_wm_log(LOG_DEBUG, fmt, ##__VA_ARGS__)
-#define FLOGV(fmt, ...) print_wm_log(LOG_VERBOSE, fmt, ##__VA_ARGS__)
+#define FLOGE(fmt, ...) print_wm_log(LOG_ERR, ALOGE, fmt, ##__VA_ARGS__)
+#define FLOGW(fmt, ...) print_wm_log(LOG_WARNING, ALOGW, fmt, ##__VA_ARGS__)
+#define FLOGI(fmt, ...) print_wm_log(LOG_INFO, ALOGI, fmt, ##__VA_ARGS__)
+#define FLOGD(fmt, ...) print_wm_log(LOG_DEBUG, ALOGD, fmt, ##__VA_ARGS__)
+#define FLOGV(fmt, ...) print_wm_log(LOG_DEBUG, ALOGD, fmt, ##__VA_ARGS__)
+
 #else
-#include <syslog.h>
 
 #define print_wm_log(level, fmt, ...)                                             \
     {                                                                             \

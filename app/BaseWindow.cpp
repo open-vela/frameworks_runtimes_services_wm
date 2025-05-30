@@ -258,7 +258,7 @@ void BaseWindow::onFrame(int32_t seq) {
         auto skipReason = info->getSkipReason();
         if (skipReason) {
             /* invalid sample */
-            FLOGI("SingleFrameLog{seq=%" PRIu32 ", skip=%d}", seq, (int)(*skipReason));
+            FLOGD("SingleFrameLog{seq=%" PRIu32 ", skip=%d}", seq, (int)(*skipReason));
         } else {
             FLOGW("SingleFrameLog{seq=%" PRIu32 ", totalMs=%" PRId64 ", animMs=%" PRId64
                   ", renderMs=%" PRId64 ", layoutMs=%" PRId64 ", transactMs=%" PRId64 "}",
@@ -341,7 +341,7 @@ void BaseWindow::handleOnFrame(int32_t seq) {
         mUIProxy->drawFrame(item);
         WM_PROFILER_END();
         if (!mUIProxy->finishDrawing()) {
-            FLOGI("%p seq=%" PRIu32 " no valid drawing!", this, seq);
+            FLOGD("%p seq=%" PRIu32 " no valid drawing!", this, seq);
             buffProducer->cancelBuffer(item);
             if (info) info->setSkipReason(FrameMetaSkipReason::NothingToDraw);
             return;
@@ -354,7 +354,7 @@ void BaseWindow::handleOnFrame(int32_t seq) {
         auto rect = mUIProxy->rectCrop();
         if (rect) transaction->setBufferCrop(mSurfaceControl, *rect);
 
-        FLOGI("%p seq=%" PRIu32 " apply frame transaction\n", this, seq);
+        FLOGD("%p seq=%" PRIu32 " apply frame transaction\n", this, seq);
         transaction->apply();
 
         WindowEventListener* listener = mUIProxy->getEventListener();
@@ -376,7 +376,7 @@ void BaseWindow::bufferReleased(int32_t bufKey) {
         FLOGD("%p bufferReleased, release %" PRId32 " failure!", this, bufKey);
     }
     WM_PROFILER_END();
-    FLOGI("%p release bufKey:%" PRId32 " done!\n", this, bufKey);
+    FLOGD("%p release bufKey:%" PRId32 " done!\n", this, bufKey);
 }
 
 void BaseWindow::updateOrCreateBufferQueue() {
