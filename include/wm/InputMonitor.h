@@ -73,6 +73,7 @@ public:
      * @return True if the message is successfully processed, false otherwise.
      */
     bool receiveMessage(const InputMessage* msg);
+    bool empty();
 
     /**
      * @brief Starts monitoring input events.

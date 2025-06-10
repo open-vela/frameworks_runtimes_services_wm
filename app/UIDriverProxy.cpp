@@ -89,6 +89,10 @@ bool UIDriverProxy::readEvent(InputMessage* message) {
     return false;
 }
 
+bool UIDriverProxy::checkInput() {
+    return mInputMonitor ? !mInputMonitor->empty() : false;
+}
+
 void UIDriverProxy::updateResolution(int32_t width, int32_t height, uint32_t format) {}
 
 void UIDriverProxy::updateVisibility(bool visible) {}

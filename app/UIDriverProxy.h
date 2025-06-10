@@ -152,6 +152,7 @@ public:
      *
      * @param monitor Pointer to the InputMonitor instance.
      */
+    bool checkInput();
     virtual void setInputMonitor(InputMonitor* monitor);
 
     /**
