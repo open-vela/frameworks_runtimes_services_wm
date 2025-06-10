@@ -82,6 +82,24 @@ bool InputMonitor::receiveMessage(const InputMessage* msg) {
     return false;
 }
 
+bool InputMonitor::empty() {
+    if (!isValid()) {
+        FLOGW("please set input channel firstly!");
+        return true;
+    }
+
+    int fd = mInputChannel->getEventFd();
+    struct mq_attr attr;
+    if (mq_getattr(fd, &attr) == -1) {
+        FLOGE("check message error:%s", strerror(errno));
+        return true;
+    }
+    FLOGI("mq_maxmsg:%ld , mq_msgsize:%ld, mq_flags:%ld, mq_curmsgs:%ld", attr.mq_maxmsg,
+          attr.mq_msgsize, attr.mq_flags, attr.mq_curmsgs);
+
+    return attr.mq_curmsgs > 0 ? false : true;
+}
+
 bool InputMonitor::start(uv_loop_t* loop, InputMonitorCallback callback) {
     if (callback == nullptr) {
         FLOGE("please use valid callback!");

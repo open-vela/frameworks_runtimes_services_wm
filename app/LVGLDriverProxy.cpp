@@ -419,7 +419,7 @@ static void _indev_read(lv_indev_t* drv, lv_indev_data_t* data) {
                 data->point.x = LV_CLAMP(0, message.pointer.x, hor_max);
                 data->point.y = LV_CLAMP(0, message.pointer.y, ver_max);
             }
-            data->continue_reading = true;
+            data->continue_reading = proxy->checkInput();
         }
     }
     data->state = proxy->getLastEventState();
