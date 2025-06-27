@@ -130,7 +130,8 @@ void WindowState::sendAppVisibilityToClients(int32_t visibility) {
         scheduleVsync(VsyncRequest::VSYNC_REQ_NONE);
         if (!isVisible()) {
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
-            if (mAttrs.mWindowTransitionState == LayoutParams::WINDOW_TRANSITION_ENABLE) {
+            if (mAttrs.mWindowTransitionState == LayoutParams::WINDOW_TRANSITION_ENABLE &&
+                (!mFrameWaiting)) {
                 mAnimRunning = true;
                 mWinAnimator->startAnimation(mService->getAnimConfig(false, this),
                                              [this](WindowAnimStatus status) {
@@ -238,9 +239,6 @@ void WindowState::applyTransaction(LayerState layerState) {
     if (mFrameWaiting &&
         (mAttrs.mWindowTransitionState == LayoutParams::WINDOW_TRANSITION_ENABLE)) {
         mFrameWaiting = false;
-        if (mAnimRunning) {
-            mWinAnimator->cancelAnimation();
-        }
         mAnimRunning = true;
         mNode->resetOpaque();
         mWinAnimator->startAnimation(mService->getAnimConfig(true, this),
