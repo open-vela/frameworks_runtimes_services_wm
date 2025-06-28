@@ -159,7 +159,7 @@ void WindowState::onAnimationFinished(WindowAnimStatus status) {
         mAnimRunning = false;
         FLOGI("%p [%d] token=%p, visibility=%" PRId32 "", this, mToken->getClientPid(),
               mToken.get(), mVisibility);
-        if (mVisibility != LayoutParams::WINDOW_VISIBLE) {
+        if ((mVisibility != LayoutParams::WINDOW_VISIBLE) && (!(mFlags & WS_CLIENT_EXITED))) {
             mClient->dispatchAppVisibility(false);
         }
         if (mFlags & WS_ALLOW_REMOVING) {

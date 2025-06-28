@@ -211,6 +211,15 @@ public:
     void setLayoutParams(LayoutParams attrs);
 
     /**
+     * @brief Sets the client exited flag.
+     *
+     * Marks that the client has exited to avoid sending notifications.
+     */
+    void setClientExited() {
+        mFlags |= WS_CLIENT_EXITED;
+    }
+
+    /**
      * @brief Retrieves the size of the surface for this window.
      *
      * @return The size of the current surface in pixels.
@@ -252,6 +261,7 @@ private:
 
         /* check refresh timeout, for internal use only */
         WS_CLIENT_TIMEOUT = 1 << 15,
+        WS_CLIENT_EXITED = 1 << 16,
     };
     int32_t mFlags;
     bool mNeedInput;
