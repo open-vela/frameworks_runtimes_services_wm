@@ -20,7 +20,7 @@ config SYSTEM_WINDOW_SERVICE
 	depends on SYSTEM_SERVER
 	depends on FS_SHMFS
 	depends on GRAPHICS_LVGL
-	depends on LV_ENABLE_GLOBAL_CUSTOM || BUILD_KERNEL
+	depends on LV_ENABLE_GLOBAL_CUSTOM || BUILD_KERNEL || SYSTEM_SERVER_LITE
 	depends on LV_USE_NUTTX
 	depends on LV_USE_NUTTX_LIBUV
 	depends on UIKIT
@@ -30,7 +30,7 @@ if SYSTEM_WINDOW_SERVICE
 
 config SYSTEM_WINDOW_SERVICE_STACKSIZE
 	int "WMS stack size"
-	default SYSTEM_SERVER_APP_STACKSIZE
+	default DEFAULT_TASK_STACKSIZE
 
 config SYSTEM_WINDOW_SERVICE_PRIORITY
 	int "WMS priority"
@@ -54,6 +54,7 @@ config ENABLE_TRANSITION_ANIMATION
 	default n
 	depends on LVX_USE_ANIMENGINE_ADAPTER
 
+if LV_ENABLE_GLOBAL_CUSTOM
 config ENABLE_WINDOW_TRIPLE_BUFFER
 	bool "Enable window triple buffer"
 	default n
@@ -61,6 +62,8 @@ config ENABLE_WINDOW_TRIPLE_BUFFER
 config SYSTEM_WINDOW_USE_VSYNC_EVENT
 	bool "Enable window vsync event"
 	default n
+	depends on LV_ENABLE_GLOBAL_CUSTOM
+endif
 
 config SYSTEM_WINDOW_FBDEV_DEVICEPATH
 	string "Wms framebuffer device path"

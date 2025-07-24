@@ -26,6 +26,7 @@
 #include "lv_mainwnd.h"
 
 #include "../common/WindowTrace.h"
+#include "XMSConfig.h"
 
 /*********************
  *      DEFINES
@@ -59,6 +60,8 @@ const lv_obj_class_t lv_mainwnd_class = {.constructor_cb = lv_mainwnd_constructo
  *  STATIC PROTOTYPES
  **********************/
 static inline void reset_buf_dsc(lv_obj_t* obj) {
+    if (xmsLiteMode()) return;
+
     LV_ASSERT_OBJ(obj, MY_CLASS);
 
     lv_mainwnd_t* mainwnd = (lv_mainwnd_t*)obj;
@@ -73,6 +76,8 @@ static inline void reset_buf_dsc(lv_obj_t* obj) {
 }
 
 static inline void reset_meta_info(lv_obj_t* obj) {
+    if (xmsLiteMode()) return;
+
     LV_ASSERT_OBJ(obj, MY_CLASS);
 
     lv_mainwnd_t* mainwnd = (lv_mainwnd_t*)obj;
@@ -99,6 +104,8 @@ lv_obj_t* lv_mainwnd_create(lv_obj_t* parent) {
 }
 
 bool lv_mainwnd_update_buffer(lv_obj_t* obj, lv_mainwnd_buf_dsc_t* buf_dsc, const lv_area_t* area) {
+    if (xmsLiteMode()) return false;
+
     LV_ASSERT_OBJ(obj, MY_CLASS);
     WM_PROFILER_BEGIN();
 
@@ -150,6 +157,8 @@ bool lv_mainwnd_update_buffer(lv_obj_t* obj, lv_mainwnd_buf_dsc_t* buf_dsc, cons
 }
 
 void lv_mainwnd_update_flag(lv_obj_t* obj, lv_mainwnd_flag_e flag, bool bAdd) {
+    if (xmsLiteMode()) return;
+
     LV_ASSERT_OBJ(obj, MY_CLASS);
     WM_PROFILER_BEGIN();
 
@@ -168,6 +177,8 @@ void lv_mainwnd_update_flag(lv_obj_t* obj, lv_mainwnd_flag_e flag, bool bAdd) {
  *====================*/
 
 void lv_mainwnd_set_metainfo(lv_obj_t* obj, lv_mainwnd_metainfo_t* metainfo) {
+    if (xmsLiteMode()) return;
+
     if (!metainfo) {
         reset_meta_info(obj);
         return;
@@ -185,6 +196,8 @@ void lv_mainwnd_set_metainfo(lv_obj_t* obj, lv_mainwnd_metainfo_t* metainfo) {
 
 static void lv_mainwnd_constructor(const lv_obj_class_t* class_p, lv_obj_t* obj) {
     LV_UNUSED(class_p);
+    if (xmsLiteMode()) return;
+
     LV_TRACE_OBJ_CREATE("begin");
 
     lv_mainwnd_t* mainwnd = (lv_mainwnd_t*)obj;
@@ -195,6 +208,7 @@ static void lv_mainwnd_constructor(const lv_obj_class_t* class_p, lv_obj_t* obj)
 
 static void lv_mainwnd_destructor(const lv_obj_class_t* class_p, lv_obj_t* obj) {
     LV_UNUSED(class_p);
+    if (xmsLiteMode()) return;
 
     lv_mainwnd_t* mainwnd = (lv_mainwnd_t*)obj;
 
@@ -212,6 +226,8 @@ static void lv_mainwnd_destructor(const lv_obj_class_t* class_p, lv_obj_t* obj) 
 }
 
 static inline void draw_buffer(lv_obj_t* obj, lv_event_t* e) {
+    if (xmsLiteMode()) return;
+
     lv_layer_t* layer = lv_event_get_layer(e);
     lv_mainwnd_t* mainwnd = (lv_mainwnd_t*)obj;
 
@@ -246,13 +262,15 @@ static inline void draw_buffer(lv_obj_t* obj, lv_event_t* e) {
     win_coords.y1 = coords.y1;
     win_coords.y2 = win_coords.y1 + img_h - 1;
 
-    LV_LOG_INFO("draw (%p) with (%d) (%dx%d), buffer seq=%" PRIu32 "", mainwnd, mainwnd->buf_dsc.id,
-                img_w, img_h, mainwnd->buf_dsc.seq);
+    LV_LOG_INFO("draw (%p) with (%d) (%" PRIu32 "x%" PRIu32 "), buffer seq=%" PRIu32 "", mainwnd,
+                mainwnd->buf_dsc.id, img_w, img_h, mainwnd->buf_dsc.seq);
     img_dsc.src = &mainwnd->buf_dsc.img_dsc;
     lv_draw_image(layer, &img_dsc, &win_coords);
 }
 
 static inline void dump_input_event(lv_mainwnd_input_event_t* ie) {
+    if (xmsLiteMode()) return;
+
     if (!ie) return;
 
     LV_LOG_TRACE("input event dump: type(%d), state(%d)", ie->type, ie->state);
@@ -267,6 +285,8 @@ static inline void dump_input_event(lv_mainwnd_input_event_t* ie) {
 
 static inline void send_input_event(lv_mainwnd_t* mainwnd, lv_event_code_t code,
                                     lv_indev_t* indev) {
+    if (xmsLiteMode()) return;
+
     lv_mainwnd_input_event_t ie;
     ie.type = lv_indev_get_type(indev);
     LV_LOG_TRACE("mainwnd %p, code %d", mainwnd, code);
@@ -311,6 +331,7 @@ static inline void send_input_event(lv_mainwnd_t* mainwnd, lv_event_code_t code,
 
 static void lv_mainwnd_event(const lv_obj_class_t* class_p, lv_event_t* e) {
     LV_UNUSED(class_p);
+    if (xmsLiteMode()) return;
 
     lv_res_t res;
     /*Call the ancestor's event handler*/

@@ -66,7 +66,7 @@ if(CONFIG_SYSTEM_WINDOW_SERVICE)
       NAME
       ${PROG}
       STACKSIZE
-      ${CONFIG_DEFAULT_TASK_STACKSIZE}
+      ${CONFIG_SYSTEM_WINDOW_SERVICE_STACKSIZE}
       SRCS
       ${MAIN}
       COMPILE_FLAGS
@@ -81,6 +81,8 @@ if(CONFIG_SYSTEM_WINDOW_SERVICE)
     add_wm_testcase(InputChannelTest test/InputChannelTest.cpp)
     add_wm_testcase(InputMonitorTest test/InputMonitorTest.cpp)
     add_wm_testcase(IWindowManagerTest test/IWindowManagerTest.cpp)
+    add_wm_testcase(FrameMetaInfoTest test/FrameMetaInfoTest.cpp)
+    add_wm_testcase(FrameTimeInfoTest test/FrameTimeInfoTest.cpp)
     add_wm_testcase(lvgltest_attribute test/lvgltest_attribute.c)
   endif()
 

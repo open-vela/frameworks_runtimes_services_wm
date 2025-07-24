@@ -17,7 +17,7 @@
 #pragma once
 
 #include "../common/FrameMetaInfo.h"
-#include "BaseWindow.h"
+#include "BaseWindowDefault.h"
 #include "wm/BufferQueue.h"
 #include "wm/InputMessage.h"
 #include "wm/InputMonitor.h"
@@ -39,7 +39,7 @@ class BaseWindow;
  */
 class UIDriverProxy {
 public:
-    UIDriverProxy(std::shared_ptr<BaseWindow> win);
+    UIDriverProxy(std::shared_ptr<BaseWindowDefault> win);
 
     virtual ~UIDriverProxy();
 
@@ -267,7 +267,7 @@ public:
     }
 
 private:
-    std::weak_ptr<BaseWindow> mBaseWindow;
+    std::weak_ptr<BaseWindowDefault> mBaseWindow;
     BufferItem* mBufferItem;
     Rect mRectCrop;
     int8_t mFlags;

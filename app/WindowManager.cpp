@@ -24,6 +24,7 @@
 #include <utils/RefBase.h>
 
 #include "../common/WindowUtils.h"
+#include "BaseWindowDefault.h"
 #include "DummyDriverProxy.h"
 #include "LVGLDriverProxy.h"
 #include "SurfaceTransaction.h"
@@ -107,9 +108,11 @@ void WindowManager::releaseInput(InputMonitor* monitor) {
     FLOGI("success");
 }
 
-WindowManager::WindowManager() : mService(nullptr), mTimerInited(false) {
-    mTransaction = std::make_shared<SurfaceTransaction>();
-    mTransaction->setWindowManager(this);
+WindowManager* WindowManager::create() {
+    return new WindowManagerDefault();
+}
+
+WindowManagerDefault::WindowManagerDefault() : mService(nullptr), mTimerInited(false) {
     getService();
 
     // init display size
@@ -118,32 +121,44 @@ WindowManager::WindowManager() : mService(nullptr), mTimerInited(false) {
     mService->getPhysicalDisplayInfo(1, &displayInfo, &result);
     mDispWidth = displayInfo.width;
     mDispHeight = displayInfo.height;
+
+    if (xmsLiteMode()) return;
+
+    /* only for multi-instance mode */
+    mTransaction = std::make_shared<SurfaceTransaction>();
+    mTransaction->setWindowManager(this);
     LVGLDriverProxy::init();
 }
 
-WindowManager::~WindowManager() {
-    toBackground();
+WindowManagerDefault::~WindowManagerDefault() {
     mWindows.clear();
     mService = nullptr;
+    FLOGI("done");
+    if (xmsLiteMode()) return;
+
+    /* only for multi-instance mode */
     LVGLDriverProxy::deinit();
-    FLOGD("WindowManager destructor");
 }
 
-sp<IWindowManager>& WindowManager::getService() {
+sp<IWindowManager>& WindowManagerDefault::getService() {
     std::lock_guard<std::mutex> scoped_lock(mLock);
     getWindowService(mService);
     return mService;
 }
 
-std::shared_ptr<BaseWindow> WindowManager::newWindow(::os::app::Context* context) {
-    WM_PROFILER_BEGIN();
-    std::shared_ptr<BaseWindow> window = std::make_shared<BaseWindow>(context, this);
-    FLOGI("%p", window.get());
+std::shared_ptr<BaseWindow> WindowManagerDefault::newWindow(::os::app::Context* context) {
+    std::shared_ptr<BaseWindowDefault> window = std::make_shared<BaseWindowDefault>(context, this);
     mWindows.push_back(window);
 
-    // for lvgl driver
+    FLOGI("done");
+    if (xmsLiteMode()) {
+        return window;
+    }
+
+    WM_PROFILER_BEGIN();
+    /* only for multi-instance mode */
     auto proxy = std::make_shared<::os::wm::LVGLDriverProxy>(window);
-    window->setUIProxy(std::dynamic_pointer_cast<::os::wm::UIDriverProxy>(proxy));
+    window->initUIProxy(std::dynamic_pointer_cast<::os::wm::UIDriverProxy>(proxy));
     if (!mTimerInited) {
         uv_timer_init(context->getMainLoop()->get(), &mEventTimer);
         uv_timer_start(&mEventTimer, _wm_timer_cb, proxy->getTimerPeriod(), 0);
@@ -155,73 +170,108 @@ std::shared_ptr<BaseWindow> WindowManager::newWindow(::os::app::Context* context
     }
 
     WM_PROFILER_END();
-
     return window;
 }
 
-int32_t WindowManager::attachIWindow(std::shared_ptr<BaseWindow> window) {
-    WM_PROFILER_BEGIN();
-    FLOGI("%p", window.get());
+int32_t WindowManagerDefault::attachIWindow(std::shared_ptr<BaseWindow> win) {
+    auto it = std::find(mWindows.begin(), mWindows.end(), win);
+    if (it == mWindows.end()) {
+        FLOGW("window not found in current window manager");
+        return -1;
+    }
 
+    WM_PROFILER_BEGIN();
+
+    auto window = (*it);
     sp<IWindow> w = window->getIWindow();
     LayoutParams lp = window->getLayoutParams();
     int32_t result = 0;
+    InputChannel ic;
+    InputChannel* outInputChannel = &ic;
 
-    InputChannel* outInputChannel = nullptr;
-    if (lp.hasInput()) outInputChannel = new InputChannel();
-
+    if (!xmsLiteMode() && lp.hasInput()) outInputChannel = new InputChannel();
     Status status = mService->addWindow(w, lp, LayoutParams::WINDOW_VISIBLE, 0, 1, outInputChannel,
                                         &result);
-    if (status.isOk()) {
-        window->setInputChannel(outInputChannel);
-    } else {
-        if (outInputChannel) delete outInputChannel;
-        result = -1;
-    }
-    WM_PROFILER_END();
+    if (!status.isOk()) {
+        if (!xmsLiteMode() && outInputChannel) delete outInputChannel;
 
+        FLOGE("addWindow failed");
+        WM_PROFILER_END();
+        return result;
+    }
+
+    if (xmsLiteMode()) {
+        WindowInfo info;
+        status = mService->getWindowInfo(w, &info);
+        if (status.isOk()) {
+            window->initRoot(reinterpret_cast<void*>(static_cast<uintptr_t>(info.getRoot())));
+        } else {
+            FLOGE("getWindowInfo failed");
+            result = -1;
+        }
+    } else if (lp.hasInput()) {
+        window->setInputChannel(outInputChannel);
+    }
+
+    FLOGI("done");
+    WM_PROFILER_END();
     return result;
 }
 
-void WindowManager::relayoutWindow(std::shared_ptr<BaseWindow> window) {
+void WindowManagerDefault::relayoutWindow(std::shared_ptr<BaseWindow> win) {
+    auto it = std::find(mWindows.begin(), mWindows.end(), win);
+    if (it == mWindows.end()) {
+        FLOGW("window not found in current window manager");
+        return;
+    }
+
+    auto window = (*it);
     WM_PROFILER_BEGIN();
     LayoutParams lp = window->getLayoutParams();
-    FLOGI("%p, pos(%" PRId32 "x%" PRId32 "), size(%" PRId32 "x%" PRId32 ")", window.get(), lp.mX,
-          lp.mY, lp.mWidth, lp.mHeight);
+    FLOGI("pos(%" PRId32 "x%" PRId32 "), size(%" PRId32 "x%" PRId32 ")", lp.mX, lp.mY, lp.mWidth,
+          lp.mHeight);
     sp<IBinder> handle = sp<BBinder>::make();
-    SurfaceControl* surfaceControl =
-            new SurfaceControl(lp.mToken, handle, lp.mWidth, lp.mHeight, lp.mFormat);
     int32_t result = 0;
+    SurfaceControl sc;
+    SurfaceControl* surfaceControl = &sc;
+
+    if (!xmsLiteMode())
+        surfaceControl = new SurfaceControl(lp.mToken, handle, lp.mWidth, lp.mHeight, lp.mFormat);
     Status status = mService->relayout(window->getIWindow(), lp, lp.mWidth, lp.mHeight,
                                        window->getVisibility(), surfaceControl, &result);
-
     if (!status.isOk()) {
         FLOGE("relayout window failure!");
-        window->setSurfaceControl(nullptr);
-
         /* clean local resource */
         handle.clear();
-        delete surfaceControl;
-    } else {
-        window->setSurfaceControl(surfaceControl);
+
+        if (!xmsLiteMode()) {
+            (*it)->setSurfaceControl(nullptr);
+            delete surfaceControl;
+        }
+    } else if (!xmsLiteMode()) {
+        (*it)->setSurfaceControl(surfaceControl);
     }
 
     WM_PROFILER_END();
 }
 
-bool WindowManager::removeWindow(std::shared_ptr<BaseWindow> window) {
-    WM_PROFILER_BEGIN();
-    FLOGI("%p", window.get());
+bool WindowManagerDefault::removeWindow(std::shared_ptr<BaseWindow> win) {
+    auto it = std::find(mWindows.begin(), mWindows.end(), win);
+    if (it == mWindows.end()) {
+        FLOGW("window not found in current window manager");
+        return false;
+    }
 
-    mTransaction->clean();
+    auto window = (*it);
+    WM_PROFILER_BEGIN();
+
+    if (!xmsLiteMode()) mTransaction->clean();
 
     mService->removeWindow(window->getIWindow());
-    window->doDie();
-    auto it = std::find(mWindows.begin(), mWindows.end(), window);
-    if (it != mWindows.end()) {
-        mWindows.erase(it);
-    }
-    if (mWindows.size() == 0) {
+    (*it)->doDie();
+    mWindows.erase(it);
+
+    if (!xmsLiteMode() && mWindows.size() == 0) {
         if (mTimerInited) {
             LVGLDriverProxy::setTimerResumeHandler(NULL, NULL);
             uv_close((uv_handle_t*)&mEventTimer, NULL);
@@ -231,14 +281,12 @@ bool WindowManager::removeWindow(std::shared_ptr<BaseWindow> window) {
         }
     }
     WM_PROFILER_END();
-    FLOGD("done");
+    FLOGI("done");
 
-    return 0;
+    return true;
 }
 
-void WindowManager::toBackground() {}
-
-bool WindowManager::dumpWindows() {
+bool WindowManagerDefault::dumpWindows() {
     int number = 0;
     for (const auto& ptr : mWindows) {
         LayoutParams lp = ptr->getLayoutParams();
@@ -251,6 +299,15 @@ bool WindowManager::dumpWindows() {
         FLOGI("\t\t format:%" PRId32 "", lp.mFormat);
     }
     return true;
+}
+
+void WindowManagerDefault::getDisplayInfo(uint32_t* width, uint32_t* height) const {
+    if (width) *width = mDispWidth;
+    if (height) *height = mDispHeight;
+}
+
+std::shared_ptr<SurfaceTransaction>& WindowManagerDefault::getTransaction() {
+    return mTransaction;
 }
 
 } // namespace wm

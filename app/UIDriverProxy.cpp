@@ -25,7 +25,7 @@
 namespace os {
 namespace wm {
 
-UIDriverProxy::UIDriverProxy(std::shared_ptr<BaseWindow> win)
+UIDriverProxy::UIDriverProxy(std::shared_ptr<BaseWindowDefault> win)
       : mBaseWindow(win),
         mBufferItem(nullptr),
         mFlags(0),

@@ -30,7 +30,7 @@
 
 #include "BaseWindow.h"
 #include "app/Context.h"
-#include "os/wm/BnWindowManager.h"
+#include "os/wm/IWindowManager.h"
 #include "wm/InputMonitor.h"
 
 namespace os {
@@ -49,79 +49,13 @@ class SurfaceTransaction;
  */
 class WindowManager {
 public:
-    WindowManager();
+    WindowManager() = default;
+    virtual ~WindowManager() = default;
 
-    ~WindowManager();
+    static WindowManager* create();
 
     static inline const char* name() {
         return "window";
-    }
-
-    /**
-     * @brief Destroy the window manager
-     */
-    void destroy();
-
-    /**
-     * @brief Create a new window
-     * @param context The application context
-     * @return A shared pointer to the newly created window
-     */
-    std::shared_ptr<BaseWindow> newWindow(::os::app::Context* context);
-
-    /**
-     * @brief Attach a window
-     * @param window The smart pointer to the window to attach
-     * @return The ID of the attached window
-     */
-    int32_t attachIWindow(std::shared_ptr<BaseWindow> window);
-
-    /**
-     * @brief Relayout a window
-     * @param window The smart pointer to the window to relayout
-     */
-    void relayoutWindow(std::shared_ptr<BaseWindow> window);
-
-    /**
-     * @brief Remove a window
-     * @param window The smart pointer to the window to remove
-     * @return True if the window was successfully removed, false otherwise
-     */
-    bool removeWindow(std::shared_ptr<BaseWindow> window);
-
-    /**
-     * @brief Print information about all windows
-     * @return True if successful, false otherwise
-     */
-    bool dumpWindows();
-
-    /**
-     * @brief Get the window manager service
-     * @return A reference to the window manager service's smart pointer
-     */
-    sp<IWindowManager>& getService();
-
-    /**
-     * @brief Get the current transaction
-     * @return A reference to the smart pointer of the current transaction
-     */
-    std::shared_ptr<SurfaceTransaction>& getTransaction() {
-        return mTransaction;
-    }
-
-    /**
-     * @brief Send the window to the background
-     */
-    void toBackground();
-
-    /**
-     * @brief Get display information
-     * @param width Pointer to the display width
-     * @param height Pointer to the display height
-     */
-    void getDisplayInfo(uint32_t* width, uint32_t* height) const {
-        if (width) *width = mDispWidth;
-        if (height) *height = mDispHeight;
     }
 
     /**
@@ -138,14 +72,51 @@ public:
      */
     static void releaseInput(InputMonitor* monitor);
 
-private:
-    std::mutex mLock;
-    vector<std::shared_ptr<BaseWindow>> mWindows;
-    sp<IWindowManager> mService;
-    std::shared_ptr<SurfaceTransaction> mTransaction;
-    uv_timer_t mEventTimer;
-    bool mTimerInited;
-    uint32_t mDispWidth, mDispHeight;
+    /**
+     * @brief Create a new window
+     * @param context The application context
+     * @return A shared pointer to the newly created window
+     */
+    virtual std::shared_ptr<BaseWindow> newWindow(::os::app::Context* context) = 0;
+
+    /**
+     * @brief Attach a window
+     * @param window The smart pointer to the window to attach
+     * @return The ID of the attached window
+     */
+    virtual int32_t attachIWindow(std::shared_ptr<BaseWindow> window) = 0;
+
+    /**
+     * @brief Relayout a window
+     * @param window The smart pointer to the window to relayout
+     */
+    virtual void relayoutWindow(std::shared_ptr<BaseWindow> window) = 0;
+
+    /**
+     * @brief Remove a window
+     * @param window The smart pointer to the window to remove
+     * @return True if the window was successfully removed, false otherwise
+     */
+    virtual bool removeWindow(std::shared_ptr<BaseWindow> window) = 0;
+
+    /**
+     * @brief Print information about all windows
+     * @return True if successful, false otherwise
+     */
+    virtual bool dumpWindows() = 0;
+
+    /**
+     * @brief Get display information
+     * @param width Pointer to the display width
+     * @param height Pointer to the display height
+     */
+    virtual void getDisplayInfo(uint32_t* width, uint32_t* height) const = 0;
+
+    /**
+     * @brief Get the window manager service
+     * @return A reference to the window manager service's smart pointer
+     */
+    virtual sp<IWindowManager>& getService() = 0;
 };
 
 } // namespace wm

@@ -80,9 +80,11 @@ typedef struct _lv_mainwnd_metainfo_t {
 
 typedef struct {
     lv_obj_t obj;
+    int flags;
+
+    /* for multi-instance mode */
     lv_mainwnd_metainfo_t meta_info;
     lv_mainwnd_buf_dsc_t buf_dsc;
-    int flags;
 } lv_mainwnd_t;
 
 extern const lv_obj_class_t lv_mainwnd_class;

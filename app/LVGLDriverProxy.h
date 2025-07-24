@@ -72,7 +72,7 @@ private:
  */
 class LVGLDriverProxy : public UIDriverProxy {
 public:
-    LVGLDriverProxy(std::shared_ptr<BaseWindow> win);
+    LVGLDriverProxy(std::shared_ptr<BaseWindowDefault> win);
 
     ~LVGLDriverProxy();
 

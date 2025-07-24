@@ -61,6 +61,8 @@ sp<IWindowManager> startWMService(sp<IServiceManager> sm,
 namespace os {
 namespace wm {
 
+static int32_t createSurfaceControl(SurfaceControl* outSurfaceControl, WindowState* win);
+
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
 static std::map<int, std::string> mAnimConfigMap;
 static const std::string animConfigPath = "/etc/xms/window_anim_config.json";
@@ -183,8 +185,7 @@ static int parseAnimJsonFile(const char* filename) {
 /* limited by mq_open */
 #define MQ_PATH_MAXLEN 50
 static inline int32_t getRandomNumber() {
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
+    static std::mt19937 gen(time(0));
     std::uniform_int_distribution<int32_t> dis(1LL, 999999999LL);
     return dis(gen);
 }
@@ -216,7 +217,7 @@ WindowManagerService::WindowManagerService(std::shared_ptr<::os::app::UvLoop> uv
         mWinAnimEngine(nullptr),
 #endif
         mGestureDetector(mUvLooper) {
-    FLOGI("WMS init");
+    FLOGW("run mode: %s", xmsLiteMode() ? "lite" : "multi-instance");
     mContainer = new RootContainer(this, mUvLooper->get());
     DisplayInfo disp_info;
     mContainer->getDisplayInfo(&disp_info);
@@ -305,13 +306,13 @@ Status WindowManagerService::addWindow(const sp<IWindow>& window, const LayoutPa
         }
     }
 
-    WindowState* win = new WindowState(this, window, winToken, attrs, visibility,
-                                       outInputChannel != nullptr ? true : false);
+    WindowState* win = new WindowState(this, window, winToken, attrs, visibility, attrs.hasInput());
+
     client->linkToDeath(mWindowDeathRecipient);
     mWindowMap.emplace(client, win);
     winToken->addWindow(win);
 
-    if (outInputChannel != nullptr && attrs.hasInput()) {
+    if (!xmsLiteMode() && outInputChannel != nullptr && attrs.hasInput()) {
         std::string name = genUniquePath(true, pid, "event");
         std::shared_ptr<InputDispatcher> inputDispatcher = win->createInputDispatcher(name);
         outInputChannel->copyFrom(inputDispatcher->getInputChannel());
@@ -321,6 +322,22 @@ Status WindowManagerService::addWindow(const sp<IWindow>& window, const LayoutPa
     WM_PROFILER_END();
 
     return Status::ok();
+}
+
+Status WindowManagerService::getWindowInfo(const sp<IWindow>& window, WindowInfo* outWindowInfo) {
+    if (!xmsLiteMode()) return Status::fromExceptionCode(1, "only support lite mode");
+
+    sp<IBinder> client = IInterface::asBinder(window);
+    auto it = mWindowMap.find(client);
+    if (it != mWindowMap.end()) {
+        WindowState* win = it->second;
+        if (outWindowInfo != nullptr) {
+            outWindowInfo->setRoot(
+                    static_cast<int64_t>(reinterpret_cast<uintptr_t>(win->getClientScreen())));
+        }
+        return Status::ok();
+    }
+    return Status::fromExceptionCode(1, "window not exist");
 }
 
 Status WindowManagerService::removeWindow(const sp<IWindow>& window) {
@@ -347,8 +364,8 @@ Status WindowManagerService::relayout(const sp<IWindow>& window, const LayoutPar
     WM_PROFILER_BEGIN();
 
     int32_t pid = IPCThreadState::self()->getCallingPid();
-    FLOGI("[%" PRId32 "] window(%p) size(%" PRId32 "x%" PRId32 ")", pid, window.get(),
-          requestedWidth, requestedHeight);
+    FLOGI("[%" PRId32 "] window(%p) size(%" PRId32 "x%" PRId32 ") visibility(%" PRId32 ")", pid,
+          window.get(), requestedWidth, requestedHeight, visibility);
 
     *_aidl_return = 0;
     sp<IBinder> client = IInterface::asBinder(window);
@@ -364,7 +381,8 @@ Status WindowManagerService::relayout(const sp<IWindow>& window, const LayoutPar
     }
 
     bool visible = visibility == LayoutParams::WINDOW_VISIBLE ? true : false;
-    win->destroySurfaceControl();
+
+    if (!xmsLiteMode()) win->destroySurfaceControl();
 
     if (visible) {
         if (attrs.mWidth != requestedWidth || attrs.mHeight != requestedHeight) {
@@ -375,10 +393,13 @@ Status WindowManagerService::relayout(const sp<IWindow>& window, const LayoutPar
         } else {
             win->setLayoutParams(attrs);
         }
-        *_aidl_return = createSurfaceControl(outSurfaceControl, win);
-        if (*_aidl_return != 0) {
-            FLOGE("failure, cann't create valid surface!");
-            outSurfaceControl = nullptr;
+
+        if (!xmsLiteMode()) {
+            *_aidl_return = createSurfaceControl(outSurfaceControl, win);
+            if (*_aidl_return != 0) {
+                FLOGE("failure, cann't create valid surface!");
+                outSurfaceControl = nullptr;
+            }
         }
     } else {
         outSurfaceControl = nullptr;
@@ -455,50 +476,17 @@ Status WindowManagerService::updateWindowTokenVisibility(const sp<IBinder>& toke
                                                          int32_t visibility) {
     WM_PROFILER_BEGIN();
     int32_t pid = IPCThreadState::self()->getCallingPid();
-    FLOGI("[%" PRId32 "] update token(%p)'s visibility to %" PRId32 "", pid, token.get(),
-          visibility);
 
     auto it = mTokenMap.find(token);
     if (it != mTokenMap.end()) {
+        FLOGI("update [%d] token(%p)'s visibility to %" PRId32 "", it->second->getClientPid(),
+              token.get(), visibility);
         it->second->setClientVisibility(visibility);
     } else {
         FLOGI("[%" PRId32 "] can't find token %p in map", pid, token.get());
         return Status::fromExceptionCode(1, "can't find token in map");
     }
     WM_PROFILER_END();
-    return Status::ok();
-}
-
-Status WindowManagerService::applyTransaction(const vector<LayerState>& state) {
-    WM_PROFILER_BEGIN();
-    for (const auto& layerState : state) {
-        if (mWindowMap.find(layerState.mToken) != mWindowMap.end()) {
-            mWindowMap[layerState.mToken]->applyTransaction(layerState);
-        }
-    }
-    WM_PROFILER_END();
-    return Status::ok();
-}
-
-Status WindowManagerService::requestVsync(const sp<IWindow>& window, VsyncRequest vreq) {
-    WM_PROFILER_BEGIN();
-    FLOGD("%p vreq=%s", window.get(), VsyncRequestToString(vreq));
-    sp<IBinder> client = IInterface::asBinder(window);
-    auto it = mWindowMap.find(client);
-
-    if (it != mWindowMap.end()) {
-        if (!it->second->scheduleVsync(vreq)) {
-            FLOGD("%p duplicate vreq=%s for %p!", window.get(), VsyncRequestToString(vreq),
-                  it->second);
-        }
-    } else {
-        WM_PROFILER_END();
-        FLOGI("%p vreq=%s for %p(not added)!", window.get(), VsyncRequestToString(vreq),
-              it->second);
-        return Status::fromExceptionCode(1, "can't find winstate in map");
-    }
-    WM_PROFILER_END();
-
     return Status::ok();
 }
 
@@ -570,62 +558,6 @@ bool WindowManagerService::responseInput(InputMessage* msg) {
     return has_gesture;
 }
 
-bool WindowManagerService::responseVsync() {
-    WM_PROFILER_BEGIN();
-
-    VsyncRequest nextVsync = VsyncRequest::VSYNC_REQ_NONE;
-    for (const auto& [key, state] : mWindowMap) {
-        if (state->isVisible()) {
-            VsyncRequest result = state->onVsync();
-            if (result > nextVsync) {
-                nextVsync = result;
-            }
-        }
-    }
-
-    if (nextVsync == VsyncRequest::VSYNC_REQ_NONE) {
-        mContainer->enableVsync(false);
-    }
-
-    WM_PROFILER_END();
-    return true;
-}
-
-int32_t WindowManagerService::createSurfaceControl(SurfaceControl* outSurfaceControl,
-                                                   WindowState* win) {
-    vector<BufferId> ids;
-    int32_t pid = IPCThreadState::self()->getCallingPid();
-    int32_t bufferCount = 2;
-
-#ifdef CONFIG_ENABLE_WINDOW_TRIPLE_BUFFER
-    bufferCount = 3;
-#endif
-
-    for (int32_t i = 0; i < bufferCount; i++) {
-        BufferId id;
-        std::string bufferPath = genUniquePath(false, pid, "bq");
-        int32_t bufferKey = getRandomNumber();
-        FLOGI("create buffer %" PRId32 ", path %s, key %" PRId32 "", i, bufferPath.c_str(),
-              bufferKey);
-        id = {bufferPath, bufferKey, -1};
-        ids.push_back(id);
-    }
-
-    std::string fmqName = genUniquePath(false, pid, "fakemq");
-    std::shared_ptr<SurfaceControl> surfaceControl = win->createSurfaceControl(ids, fmqName);
-
-    if (!surfaceControl->isValid()) {
-        outSurfaceControl = nullptr;
-        return -1;
-    }
-
-    if (surfaceControl != nullptr) {
-        outSurfaceControl->copyFrom(*surfaceControl);
-    }
-
-    return 0;
-}
-
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
 AnimEngineHandle WindowManagerService::getAnimEngine() {
     return mWinAnimEngine->getEngine();
@@ -665,6 +597,112 @@ std::string WindowManagerService::getAnimConfig(bool animMode, WindowState* win)
     }
 }
 #endif
+
+/**
+ * @brief Creates a SurfaceControl for a window.
+ *
+ * This method allocates and initializes a SurfaceControl for managing
+ * the window's rendering surface.
+ *
+ * @param outSurfaceControl Pointer to return the created SurfaceControl.
+ * @param win Pointer to the WindowState associated with the surface.
+ * @return An integer status code indicating the success or failure of the creation.
+ */
+static int32_t createSurfaceControl(SurfaceControl* outSurfaceControl, WindowState* win) {
+    if (xmsLiteMode()) return -1;
+
+    vector<BufferId> ids;
+    int32_t pid = IPCThreadState::self()->getCallingPid();
+    int32_t bufferCount = 2;
+
+#ifdef CONFIG_ENABLE_WINDOW_TRIPLE_BUFFER
+    bufferCount = 3;
+#endif
+
+    for (int32_t i = 0; i < bufferCount; i++) {
+        BufferId id;
+        std::string bufferPath = genUniquePath(false, pid, "bq");
+        int32_t bufferKey = getRandomNumber();
+        FLOGI("create buffer %" PRId32 ", path %s, key %" PRId32 "", i, bufferPath.c_str(),
+              bufferKey);
+        id = {bufferPath, bufferKey, -1};
+        ids.push_back(id);
+    }
+
+    std::string fmqName = genUniquePath(false, pid, "fakemq");
+    std::shared_ptr<SurfaceControl> surfaceControl = win->createSurfaceControl(ids, fmqName);
+
+    if (!surfaceControl->isValid()) {
+        outSurfaceControl = nullptr;
+        return -1;
+    }
+
+    if (surfaceControl != nullptr) {
+        outSurfaceControl->copyFrom(*surfaceControl);
+    }
+
+    return 0;
+}
+
+Status WindowManagerService::applyTransaction(const vector<LayerState>& state) {
+    if (xmsLiteMode()) return Status::fromExceptionCode(1, "not support transaction in lite mode");
+
+    WM_PROFILER_BEGIN();
+    for (const auto& layerState : state) {
+        if (mWindowMap.find(layerState.mToken) != mWindowMap.end()) {
+            mWindowMap[layerState.mToken]->applyTransaction(layerState);
+        }
+    }
+    WM_PROFILER_END();
+    return Status::ok();
+}
+
+Status WindowManagerService::requestVsync(const sp<IWindow>& window, VsyncRequest vreq) {
+    if (xmsLiteMode()) return Status::fromExceptionCode(1, "not support requestVsync in lite mode");
+
+    WM_PROFILER_BEGIN();
+    FLOGD("%p vreq=%s", window.get(), VsyncRequestToString(vreq));
+    sp<IBinder> client = IInterface::asBinder(window);
+    auto it = mWindowMap.find(client);
+
+    if (it != mWindowMap.end()) {
+        if (!it->second->scheduleVsync(vreq)) {
+            FLOGD("%p duplicate vreq=%s for %p!", window.get(), VsyncRequestToString(vreq),
+                  it->second);
+        }
+    } else {
+        WM_PROFILER_END();
+        FLOGI("%p vreq=%s for %p(not added)!", window.get(), VsyncRequestToString(vreq),
+              it->second);
+        return Status::fromExceptionCode(1, "can't find winstate in map");
+    }
+    WM_PROFILER_END();
+
+    return Status::ok();
+}
+
+bool WindowManagerService::responseVsync() {
+    if (xmsLiteMode()) return false;
+
+    WM_PROFILER_BEGIN();
+
+    VsyncRequest nextVsync = VsyncRequest::VSYNC_REQ_NONE;
+    for (const auto& [key, state] : mWindowMap) {
+        if (state->isVisible()) {
+            VsyncRequest result = state->onVsync();
+            if (result > nextVsync) {
+                nextVsync = result;
+            }
+        }
+    }
+
+    if (nextVsync == VsyncRequest::VSYNC_REQ_NONE) {
+        mContainer->enableVsync(false);
+    }
+
+    WM_PROFILER_END();
+    return true;
+}
 
 } // namespace wm
 } // namespace os

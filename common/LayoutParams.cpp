@@ -38,6 +38,14 @@ LayoutParams::LayoutParams() {
 
 LayoutParams::~LayoutParams() {}
 
+void LayoutParams::enableInput(bool enable) {
+    if (enable) {
+        mInputFeatures &= ~INPUT_FEATURE_NO_INPUT_CHANNEL;
+        return;
+    }
+    mInputFeatures |= INPUT_FEATURE_NO_INPUT_CHANNEL;
+}
+
 LayoutParams::LayoutParams(const LayoutParams& other)
       : mWidth(other.mWidth),
         mHeight(other.mHeight),

@@ -23,6 +23,7 @@ import os.wm.LayerState;
 import os.wm.LayoutParams;
 import os.wm.SurfaceControl;
 import os.wm.VsyncRequest;
+import os.wm.WindowInfo;
 
 interface IWindowManager {
     int getPhysicalDisplayInfo(int displayId, out DisplayInfo info);
@@ -78,4 +79,6 @@ interface IWindowManager {
 
     InputChannel monitorInput(IBinder token, @utf8InCpp String name, int displayId);
     void releaseInput(IBinder token);
+
+    void getWindowInfo(IWindow window, out WindowInfo outWindowInfo);
 }

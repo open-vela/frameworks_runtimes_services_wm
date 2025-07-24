@@ -17,6 +17,7 @@
 #include <gtest/gtest.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <utils/Log.h>
 
 #include <vector>
 
@@ -28,73 +29,75 @@ namespace wm {
 
 class BufferQueueTest : public ::testing::Test {
 protected:
+#ifndef CONFIG_SYSTEM_SERVER_LITE
     void SetUp() override {
-        int fd1 = shm_open("testBuffer1", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
-        ftruncate(fd1, 20);
-
-        int fd2 = shm_open("testBuffer2", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
-        ftruncate(fd2, 20);
-
-        BufferId id1;
-        id1.mName = "testBuffer1";
+        BufferId id1, id2;
+        id1.mName = "buffer1";
         id1.mKey = 1;
-        id1.mFd = fd1;
-
-        BufferId id2;
-        id2.mName = "testBuffer2";
+        id1.mFd = -1;
+        id2.mName = "buffer2";
         id2.mKey = 2;
-        id2.mFd = fd2;
+        id2.mFd = -1;
+        mVectorIds.push_back(id1);
+        mVectorIds.push_back(id2);
 
-        mIdsConsumer.push_back(id1);
-        mIdsConsumer.push_back(id2);
+        sp<IBinder> token = sp<android::BBinder>::make();
+        sp<IBinder> handle = sp<android::BBinder>::make();
+        int format = 0x10; // ARGB_8888
+        int width = 200, height = 200;
+        int size = width * height * 4;
 
-        mIdsProducer.push_back(id1);
-        mIdsProducer.push_back(id2);
+        /* for server */
+        mSCConsumer = std::make_shared<SurfaceControl>(token, handle, width, height, format, size);
+        mSCConsumer->initBufferIds(mVectorIds);
+        initSurfaceBuffer(mSCConsumer, true);
+        mBuffConsumer = std::make_shared<BufferConsumer>(mSCConsumer);
+        mSCConsumer->setBufferQueue(mBuffConsumer);
 
-        mSCConsumer = std::make_shared<SurfaceControl>();
-        mSCConsumer->initBufferIds(mIdsConsumer);
+        /* for app */
+        mSCProducer = std::make_shared<SurfaceControl>(token, handle, width, height, format, size);
+        mSCProducer->initBufferIds(mVectorIds);
+        initSurfaceBuffer(mSCProducer, false);
+        mBuffProducer = std::make_shared<BufferProducer>(mSCProducer);
+        mSCProducer->setBufferQueue(mBuffProducer);
+    }
+#endif
 
-        mSCProducer = std::make_shared<SurfaceControl>();
-        mSCProducer->initBufferIds(mIdsProducer);
-    } // namespace wm
     void TearDown() override {}
 
-    std::vector<BufferId> mIdsConsumer;
-    std::vector<BufferId> mIdsProducer;
+    std::vector<BufferId> mVectorIds;
+
     std::shared_ptr<SurfaceControl> mSCConsumer;
+    std::shared_ptr<BufferConsumer> mBuffConsumer;
+
     std::shared_ptr<SurfaceControl> mSCProducer;
+    std::shared_ptr<BufferProducer> mBuffProducer;
+
+    std::string mTestData = "Hello, world!";
 }; // namespace os
 
-TEST_F(BufferQueueTest, CreateBufferQueue) {
-    std::shared_ptr<BufferConsumer> buffConsumer = std::make_shared<BufferConsumer>(mSCConsumer);
-    EXPECT_NE(buffConsumer.get(), nullptr);
-}
+#ifndef CONFIG_SYSTEM_SERVER_LITE
+TEST_F(BufferQueueTest, ProducerConsumerTest) {
+    EXPECT_NE(mBuffConsumer.get(), nullptr);
+    EXPECT_NE(mBuffProducer.get(), nullptr);
 
-TEST_F(BufferQueueTest, DequeueQueueBuffer) {
-    std::shared_ptr<BufferProducer> buffProducer = std::make_shared<BufferProducer>(mSCConsumer);
-    BufferItem* buffer = buffProducer->dequeueBuffer();
+    BufferItem* buffer = mBuffProducer->dequeueBuffer();
     EXPECT_NE(buffer, nullptr);
-    EXPECT_EQ(buffProducer->queueBuffer(buffer), true);
-}
 
-TEST_F(BufferQueueTest, AcquiredReleaseBuffer) {
-    std::shared_ptr<BufferConsumer> buffConsumer = std::make_shared<BufferConsumer>(mSCConsumer);
-    std::shared_ptr<BufferProducer> buffProducer = std::make_shared<BufferProducer>(mSCConsumer);
-    std::string data = "Hello, world!";
-    BufferItem* buffer = buffProducer->dequeueBuffer();
-    memcpy(buffer->mBuffer, data.c_str(), strlen(data.c_str()) + 1);
+    memcpy(buffer->mBuffer, mTestData.c_str(), strlen(mTestData.c_str()) + 1);
+    mBuffProducer->queueBuffer(buffer);
 
-    buffProducer->queueBuffer(buffer);
-    EXPECT_NE(buffConsumer->syncQueuedState(buffer->mKey), nullptr);
-    BufferItem* buffer2 = buffConsumer->acquireBuffer();
+    EXPECT_NE(mBuffConsumer->syncQueuedState(buffer->mKey), nullptr);
+    BufferItem* buffer2 = mBuffConsumer->acquireBuffer();
     EXPECT_NE(buffer2, nullptr);
 
     char* result = static_cast<char*>(buffer2->mBuffer);
-    EXPECT_STREQ(result, data.c_str());
+    EXPECT_STREQ(result, mTestData.c_str());
 
-    EXPECT_NE(buffProducer->syncFreeState(buffer2->mKey), nullptr);
-    EXPECT_EQ(buffConsumer->releaseBuffer(buffer2), true);
+    EXPECT_NE(mBuffProducer->syncFreeState(buffer2->mKey), nullptr);
+    EXPECT_EQ(mBuffConsumer->releaseBuffer(buffer2), true);
 }
+#endif
 
 extern "C" int main(int argc, char** argv) {
     testing::InitGoogleTest(&argc, argv);

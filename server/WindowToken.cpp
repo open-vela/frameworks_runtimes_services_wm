@@ -42,7 +42,7 @@ WindowToken::WindowToken(WindowManagerService* service, const sp<IBinder>& token
 }
 
 WindowToken::~WindowToken() {
-    FLOGI("");
+    FLOGI("done");
     mChildren.clear();
     mClientPid = -1;
 }

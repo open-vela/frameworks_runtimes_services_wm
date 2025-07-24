@@ -26,7 +26,8 @@
 namespace os {
 namespace wm {
 
-InputChannel::InputChannel() : mEventFd(-1), mEventName("") {}
+static constexpr int CHANNEL_DEFAULT_VALUE = 0;
+InputChannel::InputChannel() : mEventFd(CHANNEL_DEFAULT_VALUE), mEventName("") {}
 
 InputChannel::~InputChannel() {}
 
@@ -56,6 +57,7 @@ bool InputChannel::create(const std::string& name) {
 
     if (((mqd_t)-1) == (mEventFd = mq_open(cname, oflag, 0777, &mqstat))) {
         FLOGW("Failed with '%s', error: %d", cname, errno);
+        mEventFd = CHANNEL_DEFAULT_VALUE;
         return false;
     }
     mEventName = name;
@@ -68,9 +70,13 @@ void InputChannel::release() {
         mq_close(mEventFd);
         mq_unlink(mEventName.c_str());
         FLOGI("mq unlink:%s", mEventName.c_str());
-        mEventFd = -1;
+        mEventFd = CHANNEL_DEFAULT_VALUE;
         mEventName = "";
     }
+}
+
+bool InputChannel::isValid() {
+    return mEventFd != CHANNEL_DEFAULT_VALUE ? true : false;
 }
 
 } // namespace wm

@@ -27,8 +27,6 @@
 #include <functional>
 #include <iostream>
 
-#include "lvgl/lv_mainwnd.h"
-
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
 
 /**
@@ -57,7 +55,7 @@ typedef std::function<void(WindowAnimStatus status)> AnimCallback;
  */
 class WindowAnimator {
 public:
-    WindowAnimator(AnimEngineHandle animEngine, lv_obj_t* widget);
+    WindowAnimator(AnimEngineHandle animEngine, void* widget);
 
     ~WindowAnimator();
 
@@ -84,7 +82,7 @@ public:
 private:
     AnimEngineHandle mAnimEngine;
     int64_t mAnimId;
-    lv_obj_t* mWidget;
+    void* mWidget;
 };
 
 } // namespace wm

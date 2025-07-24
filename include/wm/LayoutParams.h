@@ -41,9 +41,9 @@ using namespace std;
 class LayoutParams : public Parcelable {
 public:
     static const int32_t WINDOW_VISIBLE = 0;
-    static const int32_t WINDOW_INVISIBLE = 1;
     static const int32_t WINDOW_HOLD = 1;
     static const int32_t WINDOW_GONE = 2;
+    static const int32_t WINDOW_INVISIBLE = 2;
 
     // for type
     static const int32_t TYPE_APPLICATION = 1;
@@ -106,6 +106,8 @@ public:
     bool hasInput() const {
         return (mInputFeatures & INPUT_FEATURE_NO_INPUT_CHANNEL) == 0;
     }
+
+    void enableInput(bool enable);
 
     int32_t mWidth;
     int32_t mHeight;

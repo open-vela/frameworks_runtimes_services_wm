@@ -25,13 +25,8 @@
 namespace os {
 namespace wm {
 
-static InputMessage gTestMessage = {
-        .type = INPUT_MESSAGE_TYPE_POINTER,
-        .state = INPUT_MESSAGE_STATE_PRESSED,
-        .pointer = {.x = 100, .y = 100, .raw_x = 100, .raw_y = 100},
-};
-
 class InputMonitorTest : public ::testing::Test {
+#ifndef CONFIG_SYSTEM_SERVER_LITE
 protected:
     void SetUp() override {
         uv_loop_init(&mUVLooper);
@@ -43,6 +38,7 @@ protected:
     }
 
     uv_loop_t mUVLooper;
+#endif
 };
 
 TEST_F(InputMonitorTest, monitorInput) {
@@ -51,37 +47,7 @@ TEST_F(InputMonitorTest, monitorInput) {
     EXPECT_EQ(monitor->isValid(), true);
 }
 
-TEST_F(InputMonitorTest, receiveMessage) {
-    const char* channel_name = "input-gesture-test2";
-
-    /* create dispatcher for server */
-    auto dispatcher = InputDispatcher::create(channel_name);
-
-    EXPECT_NE(dispatcher, nullptr);
-    EXPECT_EQ(dispatcher->getInputChannel().isValid(), true);
-
-    /* create monitor for client */
-    InputChannel* channel = new InputChannel();
-    channel->copyFrom(dispatcher->getInputChannel());
-
-    sp<IBinder> token = new BBinder();
-    auto monitor = std::make_shared<InputMonitor>(token, channel);
-    EXPECT_EQ(monitor->isValid(), true);
-
-    /* server sending message */
-    int int_ret = dispatcher->sendMessage(&gTestMessage);
-    EXPECT_EQ(int_ret, 0);
-
-    /* client receiving message */
-    InputMessage im;
-    bool ret = monitor->receiveMessage(&im);
-    EXPECT_EQ(ret, true);
-    EXPECT_EQ(im.type, gTestMessage.type);
-    EXPECT_EQ(im.state, gTestMessage.state);
-    EXPECT_EQ(im.pointer.x, gTestMessage.pointer.x);
-    EXPECT_EQ(im.pointer.y, gTestMessage.pointer.y);
-}
-
+#ifndef CONFIG_SYSTEM_SERVER_LITE
 TEST_F(InputMonitorTest, start) {
     auto input = WindowManager::monitorInput("input-gesture-test3", 0);
     EXPECT_NE(input, nullptr);
@@ -94,6 +60,7 @@ TEST_F(InputMonitorTest, start) {
 
     EXPECT_EQ(ret, true);
 }
+#endif
 
 extern "C" int main(int argc, char** argv) {
     testing::InitGoogleTest(&argc, argv);

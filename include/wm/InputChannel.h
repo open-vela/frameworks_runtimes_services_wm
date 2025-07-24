@@ -97,9 +97,7 @@ public:
      *
      * @return True if the input channel is valid, false otherwise.
      */
-    bool isValid() {
-        return mEventFd != -1 ? true : false;
-    }
+    bool isValid();
 
     /**
      * @brief Creates the input channel.

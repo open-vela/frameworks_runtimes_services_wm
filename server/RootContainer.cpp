@@ -19,26 +19,33 @@
 #include "RootContainer.h"
 
 #include <lvgl/lvgl.h>
+#include <uikit/uikit.h>
 
 #include "../common/WindowUtils.h"
-#include "WindowManagerService.h"
+#include "DeviceEventListener.h"
 
 namespace os {
 namespace wm {
-#ifdef CONFIG_SYSTEM_WINDOW_USE_VSYNC_EVENT
+static RootContainer* gRootContainer = nullptr;
+
 static void vsyncEventReceived(lv_event_t* e);
+static inline bool vsyncEventMode() {
+#ifdef CONFIG_SYSTEM_WINDOW_USE_VSYNC_EVENT
+    return true;
+#else
+    return false;
 #endif
+}
 
 RootContainer::RootContainer(DeviceEventListener* listener, uv_loop_t* loop)
       : mListener(listener),
         mDisp(nullptr),
-        mVsyncEnabled(false),
-#ifndef CONFIG_SYSTEM_WINDOW_USE_VSYNC_EVENT
-        mVsyncTimer(nullptr),
-#endif
         mUvData(nullptr),
         mUvLoop(loop),
+        mVsyncEnabled(false),
+        mVsyncTimer(nullptr),
         mTraceFrame(false) {
+    gRootContainer = nullptr;
     mReady = init();
     if (mReady) {
         // set bg color to black for lvgl
@@ -47,13 +54,17 @@ RootContainer::RootContainer(DeviceEventListener* listener, uv_loop_t* loop)
 }
 
 RootContainer::~RootContainer() {
-    LV_GLOBAL_DEFAULT()->user_data = nullptr;
-
-#ifdef CONFIG_SYSTEM_WINDOW_USE_VSYNC_EVENT
-    if (mVsyncEnabled && mDisp) lv_display_unregister_vsync_event(mDisp, vsyncEventReceived, this);
-#else
-    if (mVsyncTimer) lv_timer_del(mVsyncTimer);
-#endif
+    gRootContainer = nullptr;
+    if (xmsLiteMode()) {
+        vg_deinit();
+    } else {
+        /* for multi-instance mode */
+        if (vsyncEventMode()) {
+            if (mVsyncEnabled && mDisp)
+                lv_display_unregister_vsync_event(mDisp, vsyncEventReceived, this);
+        } else if (mVsyncTimer)
+            lv_timer_del(mVsyncTimer);
+    }
 
     lv_anim_del_all();
 
@@ -89,7 +100,6 @@ lv_obj_t* RootContainer::getTopLayer() {
     return lv_disp_get_layer_top(mDisp);
 }
 
-#ifdef CONFIG_SYSTEM_WINDOW_USE_VSYNC_EVENT
 static void vsyncEventReceived(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_VSYNC) {
@@ -104,52 +114,34 @@ static void vsyncEventReceived(lv_event_t* e) {
     }
 }
 
-static void asyncEnableVsync(lv_timer_t* tmr) {
-    RootContainer* container = static_cast<RootContainer*>(lv_timer_get_user_data(tmr));
-    if (!container) return;
-
-    if (container->vsyncEnabled()) {
-        FLOGD("register");
-        lv_display_register_vsync_event(container->getRoot(), vsyncEventReceived, container);
-    } else {
-        FLOGD("unregister");
-        lv_display_unregister_vsync_event(container->getRoot(), vsyncEventReceived, container);
-    }
-}
-
-#else
-static void vsyncCallback(lv_timer_t* tmr) {
+static void vsyncTimerCallback(lv_timer_t* tmr) {
     RootContainer* container = static_cast<RootContainer*>(lv_timer_get_user_data(tmr));
     if (container) {
         container->processVsyncEvent();
     }
 }
-#endif
 
 void RootContainer::enableVsync(bool enable) {
+    if (xmsLiteMode()) return;
+
     WM_PROFILER_BEGIN();
 
     if (mVsyncEnabled == enable) {
+        WM_PROFILER_END();
         return;
     }
 
     FLOGD("%s fb vsync event", enable ? "enable" : "disable");
     mVsyncEnabled = enable;
-#ifdef CONFIG_SYSTEM_WINDOW_USE_VSYNC_EVENT
-#if 0
-    lv_timer_t* timer = lv_timer_create(asyncEnableVsync, 0, this);
-    lv_timer_set_repeat_count(timer, 1);
-#else
-    if (vsyncEnabled()) {
-        FLOGD("register vsync event");
-        lv_display_register_vsync_event(container->getRoot(), vsyncEventReceived, container);
-    } else {
-        FLOGD("unregister vsync event");
-        lv_display_unregister_vsync_event(container->getRoot(), vsyncEventReceived, container);
-    }
-#endif
-#else
-    if (mVsyncTimer) {
+
+    if (vsyncEventMode()) {
+        FLOGD("%s vsync event", mVsyncEnabled ? "register" : "unregister");
+        if (mVsyncEnabled) {
+            lv_display_register_vsync_event(getRoot(), vsyncEventReceived, this);
+        } else {
+            lv_display_unregister_vsync_event(getRoot(), vsyncEventReceived, this);
+        }
+    } else if (mVsyncTimer) {
         if (enable && mVsyncTimer->paused) {
             FLOGD("enable fb vsync timer");
             lv_timer_resume(mVsyncTimer);
@@ -158,7 +150,7 @@ void RootContainer::enableVsync(bool enable) {
             lv_timer_pause(mVsyncTimer);
         }
     }
-#endif
+
     WM_PROFILER_END();
 }
 
@@ -173,8 +165,7 @@ void RootContainer::processVsyncEvent() {
 static bool monitor_indev_read(lv_indev_t* indev, lv_indev_data_t* data) {
     if (!data) return false;
 
-    RootContainer* container = reinterpret_cast<RootContainer*>(LV_GLOBAL_DEFAULT()->user_data);
-    if (container) return container->readInput(indev, data);
+    if (gRootContainer) return gRootContainer->readInput(indev, data);
     return false;
 }
 
@@ -244,12 +235,13 @@ void RootContainer::onFrameStart() {
         info->markLayoutStart();
     }
 
-#ifndef CONFIG_SYSTEM_WINDOW_USE_VSYNC_EVENT
-    if (!mVsyncTimer->paused) {
+    if (xmsLiteMode()) return;
+
+    /* multi-instance mode && vsync timer mode */
+    if (!vsyncEventMode() && !mVsyncTimer->paused) {
         lv_timer_reset(mVsyncTimer);
         if (mVsyncTimer->timer_cb) mVsyncTimer->timer_cb(mVsyncTimer);
     }
-#endif
 }
 
 void RootContainer::onRenderStart() {
@@ -272,7 +264,7 @@ void RootContainer::onFrameFinished() {
 
 bool RootContainer::init() {
     lv_init();
-    lv_image_cache_resize(0, false);
+    if (!xmsLiteMode()) lv_image_cache_resize(0, false);
 
 #if LV_USE_NUTTX
     lv_nuttx_dsc_t info;
@@ -298,18 +290,23 @@ bool RootContainer::init() {
     };
     mUvData = lv_nuttx_uv_init(&uv_info);
 
-#ifndef CONFIG_SYSTEM_WINDOW_USE_VSYNC_EVENT
-    mVsyncTimer = lv_timer_create(vsyncCallback, LV_DEF_REFR_PERIOD, this);
-#endif
+    if (!xmsLiteMode() && !vsyncEventMode()) {
+        mVsyncTimer = lv_timer_create(vsyncTimerCallback, LV_DEF_REFR_PERIOD, this);
+    }
+
     lv_display_add_event_cb(mDisp, processDispEvent, LV_EVENT_ALL, this);
 
     if (mListener) {
-        LV_GLOBAL_DEFAULT()->user_data = this;
+        gRootContainer = this;
         lv_indev_set_read_preprocess_cb(mResult.indev, monitor_indev_read);
         if (mResult.utouch_indev) {
             lv_indev_set_read_preprocess_cb(mResult.utouch_indev, monitor_indev_read);
         }
     }
+#endif
+
+#ifdef CONFIG_UIKIT
+    if (xmsLiteMode()) vg_init();
 #endif
 
     return mDisp ? true : false;

@@ -28,18 +28,19 @@ namespace wm {
 #ifdef CONFIG_ANIMATION_ENGINE
 static inline void on_anim_status_cb(anim_layer_t* layer, const anim_status_type_t status) {
     if (status == ANIM_ST_END) {
-        FLOGW("status  : layer obj:%p, user data:%p, layer type: %d, property type: %d, status: "
-              "%d  \n",
+        FLOGI("layer obj:%p, user data:%p, layer type: %d, property type: %d, status: %d  \n",
               layer->layer_object, layer->user_data, layer->layer_type, layer->property_type,
               (int)status);
         WindowAnimator* winAnim = reinterpret_cast<WindowAnimator*>(layer->user_data);
+        if (!winAnim) return;
+
         winAnim->mAnimStatus = WINDOW_ANIM_STATUS_FINISHED;
         winAnim->mAnimStatusCB(winAnim->mAnimStatus);
     }
 }
 #endif
 
-WindowAnimator::WindowAnimator(AnimEngineHandle animEngine, lv_obj_t* widget)
+WindowAnimator::WindowAnimator(AnimEngineHandle animEngine, void* widget)
       : mAnimEngine(animEngine), mWidget(widget) {
     mAnimStatus = WINDOW_ANIM_STATUS_FINISHED;
 }
@@ -49,13 +50,12 @@ WindowAnimator::~WindowAnimator() {
 #ifdef CONFIG_ANIMATION_ENGINE
         anim_listener(mAnimEngine, mAnimId, nullptr, nullptr, (void*)this);
 #endif
-        FLOGI("%p", this);
+        FLOGI("done");
         cancelAnimation();
     }
 }
 
 int WindowAnimator::startAnimation(std::string animConfig, AnimCallback callback) {
-    FLOGI("%p", this);
     mAnimStatus = WINDOW_ANIM_STATUS_STARTING;
     int ret = -1;
 #ifdef CONFIG_ANIMATION_ENGINE
@@ -64,14 +64,15 @@ int WindowAnimator::startAnimation(std::string animConfig, AnimCallback callback
     ret = anim_start(mAnimEngine, mAnimId, mWidget, anim_layer_type_t::ANIM_LT_NORMAL);
     anim_listener(mAnimEngine, mAnimId, on_anim_status_cb, nullptr, (void*)this);
 #endif
+    FLOGI("done for %p", mWidget);
     return ret;
 }
 
 void WindowAnimator::cancelAnimation() {
-    FLOGI("%p", this);
 #ifdef CONFIG_ANIMATION_ENGINE
     anim_remove(mAnimEngine, mAnimId);
 #endif
+    FLOGI("done for %p", mWidget);
 }
 
 } // namespace wm

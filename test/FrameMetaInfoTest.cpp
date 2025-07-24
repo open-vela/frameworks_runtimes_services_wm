@@ -58,7 +58,7 @@ TEST_F(FrameMetaInfoTest, TestRenderDuration) {
     int64_t sleep_ms = 5;
     frameMetaInfo.setVsync(vsyncTime, 201, 33);
 
-    sleep(sleep_ms);
+    usleep(sleep_ms * 1000);
     frameMetaInfo.markRenderEnd();
 
     int64_t duration = frameMetaInfo.totalRenderDuration();

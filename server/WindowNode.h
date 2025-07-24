@@ -44,37 +44,7 @@ public:
 
     ~WindowNode();
 
-    /**
-     * @brief Updates the buffer for the WindowNode.
-     *
-     * This method updates the rendering buffer and the rectangle associated with
-     * the node.
-     *
-     * @param item Pointer to the BufferItem that needs to be updated.
-     * @param rect Pointer to the Rect defining the new position and size.
-     * @param seq The sequence number for this operation.
-     * @return True if the buffer update is successful, otherwise false.
-     */
-    bool updateBuffer(BufferItem* item, Rect* rect, uint32_t seq);
-
-    /**
-     * @brief Acquires a buffer from the buffer queue.
-     *
-     * This method retrieves a buffer that can be used for rendering
-     * by this window node.
-     *
-     * @return Pointer to the acquired BufferItem.
-     */
-    BufferItem* acquireBuffer();
-
-    /**
-     * @brief Releases a buffer back to the queue.
-     *
-     * This method marks the given buffer as available for reuse.
-     *
-     * @return True if the buffer is released successfully, otherwise false.
-     */
-    bool releaseBuffer();
+    DISALLOW_COPY_AND_ASSIGN(WindowNode);
 
     /**
      * @brief Retrieves the rectangle defining this window node.
@@ -113,13 +83,6 @@ public:
     }
 
     /**
-     * @brief Enables or disables input handling for this window node.
-     *
-     * @param enable Flag indicating whether to enable input handling.
-     */
-    void enableInput(bool enable);
-
-    /**
      * @brief Updates the rectangle for this window node.
      *
      * @param newRect The new Rect to set for this window node.
@@ -148,7 +111,67 @@ public:
      */
     uint32_t getSurfaceSize();
 
-    DISALLOW_COPY_AND_ASSIGN(WindowNode);
+    /**
+     * @brief Updates the buffer for the WindowNode for multi-instance mode.
+     *
+     * This method updates the rendering buffer and the rectangle associated with
+     * the node.
+     *
+     * @param item Pointer to the BufferItem that needs to be updated.
+     * @param rect Pointer to the Rect defining the new position and size.
+     * @param seq The sequence number for this operation.
+     * @return True if the buffer update is successful, otherwise false.
+     */
+    bool updateBuffer(BufferItem* item, Rect* rect, uint32_t seq);
+
+    /**
+     * @brief Acquires a buffer from the buffer queue for multi-instance mode.
+     *
+     * This method retrieves a buffer that can be used for rendering
+     * by this window node.
+     *
+     * @return Pointer to the acquired BufferItem.
+     */
+    BufferItem* acquireBuffer();
+
+    /**
+     * @brief Releases a buffer back to the queue for multi-instance mode.
+     *
+     * This method marks the given buffer as available for reuse.
+     *
+     * @return True if the buffer is released successfully, otherwise false.
+     */
+    bool releaseBuffer();
+
+    /**
+     * @brief Sets the visibility of this window node for lite mode.
+     *
+     * @param visibility The new visibility value to set.
+     * */
+    void setVisibility(int32_t visibility);
+
+    /**
+     * @brief Checks if the window is currently GONE.
+     *
+     * @return True if the window is GONE, false otherwise.
+     */
+    bool windowIsGone();
+    /**
+     * @brief Retrieves the client screen associated with this window node for lite mode.
+     *
+     * @return Pointer to the client screen LVGL object.
+     * */
+    lv_obj_t* getClientScreen() {
+        return mClientScreen;
+    }
+
+    /**
+     * @brief Sends an input message to this window.
+     *
+     * @param ie Pointer to the InputMessage to send.
+     * @return True if the message was successfully sent, false otherwise.
+     */
+    bool sendInputMessage(const InputMessage* ie);
 
 private:
     WindowState* mState;
@@ -156,6 +179,9 @@ private:
     lv_obj_t* mWidget;
     Rect mRect;
     lv_color_format_t mColorFormat;
+    lv_obj_t* mClientScreen;
+    int32_t mVisibility;
+    InputMessage mLastInputMsg;
 };
 
 } // namespace wm

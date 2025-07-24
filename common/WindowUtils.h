@@ -24,6 +24,7 @@
 
 #include "ParcelUtils.h"
 #include "WindowTrace.h"
+#include "XMSConfig.h"
 
 #ifdef CONFIG_WINDOW_SERVICE_LOG_LEVEL
 #define WM_LOG_LEVEL CONFIG_WINDOW_SERVICE_LOG_LEVEL

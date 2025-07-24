@@ -37,7 +37,7 @@ class DemoApplication : public ::os::app::Application {
 class IWindowManagerTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        mWindowManager = new WindowManager();
+        mWindowManager = WindowManager::create();
         mToken = new BBinder();
         mApplication = new DemoApplication();
 
@@ -47,6 +47,7 @@ protected:
 
         mLayoutParam = LayoutParams();
         mLayoutParam.mToken = mToken;
+        mLayoutParam.enableInput(false);
 
         mWindow = mWindowManager->newWindow(mContext);
         mWindow->setLayoutParams(mLayoutParam);
@@ -67,73 +68,80 @@ protected:
 };
 
 TEST_F(IWindowManagerTest, GetPhysicalDisplayInfo) {
-    Status status = Status::ok();
-    int32_t result = 0;
-    DisplayInfo dispalyInfo;
-    status = mWindowManager->getService()->getPhysicalDisplayInfo(1, &dispalyInfo, &result);
-    EXPECT_TRUE(status.isOk());
-}
-TEST_F(IWindowManagerTest, AddWindow) {
-    Status status = Status::ok();
-    int32_t result = 0;
-    sp<IWindow> w = mWindow->getIWindow();
-    LayoutParams lp = mWindow->getLayoutParams();
-    InputChannel* outInputChannel = nullptr;
-    outInputChannel = new InputChannel();
-
-    status = mWindowManager->getService()->addWindowToken(mToken, 1, 1);
-    status = mWindowManager->getService()->addWindow(w, lp, 1, 0, 1, outInputChannel, &result);
-    EXPECT_TRUE(status.isOk());
-}
-TEST_F(IWindowManagerTest, RemoveWindow) {
-    Status status = Status::ok();
-    int32_t result = 0;
-    sp<IWindow> w = mWindow->getIWindow();
-    LayoutParams lp = mWindow->getLayoutParams();
-    InputChannel* outInputChannel = nullptr;
-    outInputChannel = new InputChannel();
-
-    status = mWindowManager->getService()->addWindowToken(mToken, 1, 1);
-    EXPECT_TRUE(status.isOk());
-    status = mWindowManager->getService()->addWindow(w, lp, 1, 0, 1, outInputChannel, &result);
-    EXPECT_TRUE(status.isOk());
-    status = mWindowManager->getService()->removeWindow(mWindow->getIWindow());
-    EXPECT_TRUE(status.isOk());
-}
-TEST_F(IWindowManagerTest, Relayout) {
-    // TODO
-}
-TEST_F(IWindowManagerTest, IsWindowToken) {
-    // TODO
-}
-TEST_F(IWindowManagerTest, AddWindowToken) {
-    Status status = Status::ok();
-    status = mWindowManager->getService()->addWindowToken(mToken, 1, 1);
-    EXPECT_TRUE(status.isOk());
+    uint32_t width = 0, height = 0;
+    mWindowManager->getDisplayInfo(&width, &height);
 }
 
-TEST_F(IWindowManagerTest, RemoveWindowToken) {
+TEST_F(IWindowManagerTest, AddRemoveWindowToken) {
     Status status = Status::ok();
-    status = mWindowManager->getService()->addWindowToken(mToken, 1, 1);
+    status = mWindowManager->getService()->addWindowToken(mToken, LayoutParams::TYPE_APPLICATION, 1,
+                                                          "com.vela.test.windowtoken");
     EXPECT_TRUE(status.isOk());
+
     status = mWindowManager->getService()->removeWindowToken(mToken, 1);
     EXPECT_TRUE(status.isOk());
 }
-TEST_F(IWindowManagerTest, UpdateWindowTokenVisibility) {
+
+TEST_F(IWindowManagerTest, AddRemoveWindow) {
     Status status = Status::ok();
-    status = mWindowManager->getService()->addWindowToken(mToken, 1, 1);
+    status = mWindowManager->getService()->addWindowToken(mToken, LayoutParams::TYPE_APPLICATION, 1,
+                                                          "com.vela.test.window");
     EXPECT_TRUE(status.isOk());
-    status = mWindowManager->getService()->updateWindowTokenVisibility(mToken, 1);
-    EXPECT_TRUE(status.isOk());
-    status = mWindowManager->getService()->updateWindowTokenVisibility(mToken, 0);
+
+    int32_t result = mWindowManager->attachIWindow(mWindow);
+    EXPECT_EQ(result, 0);
+
+    bool isRemoved = mWindowManager->removeWindow(mWindow);
+    EXPECT_TRUE(isRemoved);
+
+    status = mWindowManager->getService()->removeWindowToken(mToken, 1);
     EXPECT_TRUE(status.isOk());
 }
 
-TEST_F(IWindowManagerTest, ApplyTransaction) {
-    // TODO
+TEST_F(IWindowManagerTest, Relayout) {
+    Status status = Status::ok();
+    status = mWindowManager->getService()->addWindowToken(mToken, LayoutParams::TYPE_APPLICATION, 1,
+                                                          "com.vela.test.relayout");
+    EXPECT_TRUE(status.isOk());
+
+    int32_t result = mWindowManager->attachIWindow(mWindow);
+    EXPECT_EQ(result, 0);
+
+    status =
+            mWindowManager->getService()->updateWindowTokenVisibility(mToken,
+                                                                      LayoutParams::WINDOW_VISIBLE);
+    EXPECT_TRUE(status.isOk());
+
+    mWindowManager->relayoutWindow(mWindow);
+
+    status = mWindowManager->getService()->updateWindowTokenVisibility(mToken,
+                                                                       LayoutParams::WINDOW_GONE);
+    EXPECT_TRUE(status.isOk());
+
+    bool isRemoved = mWindowManager->removeWindow(mWindow);
+    EXPECT_TRUE(isRemoved);
+
+    status = mWindowManager->getService()->removeWindowToken(mToken, 1);
+    EXPECT_TRUE(status.isOk());
 }
-TEST_F(IWindowManagerTest, RequestVsync) {
-    // TODO
+
+TEST_F(IWindowManagerTest, UpdateWindowTokenVisibility) {
+    Status status = Status::ok();
+    status = mWindowManager->getService()->addWindowToken(mToken, LayoutParams::TYPE_APPLICATION, 1,
+                                                          "com.vela.test.updatewindowtoken");
+    EXPECT_TRUE(status.isOk());
+
+    status = mWindowManager->getService()->updateWindowTokenVisibility(mToken,
+                                                                       LayoutParams::WINDOW_HOLD);
+    EXPECT_TRUE(status.isOk());
+
+    status =
+            mWindowManager->getService()->updateWindowTokenVisibility(mToken,
+                                                                      LayoutParams::WINDOW_VISIBLE);
+    EXPECT_TRUE(status.isOk());
+
+    status = mWindowManager->getService()->removeWindowToken(mToken, 1);
+    EXPECT_TRUE(status.isOk());
 }
 
 extern "C" int main(int argc, char** argv) {

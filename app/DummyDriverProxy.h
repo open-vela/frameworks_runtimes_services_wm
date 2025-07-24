@@ -30,7 +30,7 @@ namespace wm {
  */
 class DummyDriverProxy : public UIDriverProxy {
 public:
-    DummyDriverProxy(std::shared_ptr<BaseWindow> win);
+    DummyDriverProxy(std::shared_ptr<BaseWindowDefault> win);
 
     ~DummyDriverProxy();
 

@@ -30,6 +30,7 @@ CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/runtimes/services/am/include
 # binder
 CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/android/system/libbase/include
 # lvgl
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/runtimes/services/include
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/apps/graphics/lvgl
 CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/apps/graphics/lvgl
 

@@ -188,6 +188,15 @@ public:
     Status requestVsync(const sp<IWindow>& window, VsyncRequest freq);
 
     /**
+     * @brief Responds to Vsync events.
+     *
+     * This method handles the logic for Vsync notifications.
+     *
+     * @return True if the event was handled successfully, false otherwise.
+     */
+    bool responseVsync() override;
+
+    /**
      * @brief Monitors input events for a specific token.
      *
      * This method establishes an InputChannel for the given token.
@@ -210,13 +219,13 @@ public:
     Status releaseInput(const sp<IBinder>& token);
 
     /**
-     * @brief Responds to Vsync events.
+     * @brief Retrieves information about a window.
      *
-     * This method handles the logic for Vsync notifications.
-     *
-     * @return True if the event was handled successfully, false otherwise.
+     * @param window The window for which to retrieve information.
+     * @param outWindowInfo Pointer for returning the WindowInfo.
+     * @return Status indicating the success or failure of the operation.
      */
-    bool responseVsync() override;
+    Status getWindowInfo(const sp<IWindow>& window, WindowInfo* outWindowInfo);
 
     /**
      * @brief Responds to input messages.
@@ -294,18 +303,6 @@ private:
     private:
         WindowManagerService* mService;
     };
-
-    /**
-     * @brief Creates a SurfaceControl for a window.
-     *
-     * This method allocates and initializes a SurfaceControl for managing
-     * the window's rendering surface.
-     *
-     * @param outSurfaceControl Pointer to return the created SurfaceControl.
-     * @param win Pointer to the WindowState associated with the surface.
-     * @return An integer status code indicating the success or failure of the creation.
-     */
-    int32_t createSurfaceControl(SurfaceControl* outSurfaceControl, WindowState* win);
 
     WindowTokenMap mTokenMap;
     WindowStateMap mWindowMap;

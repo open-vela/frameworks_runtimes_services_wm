@@ -53,14 +53,14 @@ WindowState::WindowState(WindowManagerService* service, const sp<IWindow>& windo
       : mClient(window),
         mToken(token),
         mService(service),
-        mInputDispatcher(nullptr),
-        mVsyncRequest(VsyncRequest::VSYNC_REQ_NONE),
         mFrameReq(0),
-        mHasSurface(false),
         mFlags(0),
-        mNeedInput(enableInput) {
+        mNeedInput(enableInput),
+        mSurfaceControl(nullptr),
+        mInputDispatcher(nullptr),
+        mHasSurface(false),
+        mVsyncRequest(VsyncRequest::VSYNC_REQ_NONE) {
     mAttrs = params;
-    mVisibility = visibility;
 
     Rect rect(params.mX, params.mY, params.mX + params.mWidth, params.mY + params.mHeight);
     mNode = new WindowNode(this, getLayerByType(mService, mToken->getType()), rect, enableInput,
@@ -74,60 +74,17 @@ WindowState::WindowState(WindowManagerService* service, const sp<IWindow>& windo
 }
 
 WindowState::~WindowState() {
-    FLOGI("%p", this);
     mClient = nullptr;
     if (mNode) delete mNode;
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
     if (mWinAnimator) delete mWinAnimator;
 #endif
     mToken = nullptr;
-}
-
-std::shared_ptr<BufferConsumer> WindowState::getBufferConsumer() {
-    if (mSurfaceControl != nullptr && mSurfaceControl->isValid()) {
-        return std::static_pointer_cast<BufferConsumer>(mSurfaceControl->bufferQueue());
-    }
-    return nullptr;
-}
-
-std::shared_ptr<InputDispatcher> WindowState::createInputDispatcher(const std::string& name) {
-    if (mInputDispatcher != nullptr) {
-        FLOGE("%p input dispatcher has existed, needn't create again.", this);
-        return nullptr;
-    }
-    mInputDispatcher = InputDispatcher::create(name);
-    return mInputDispatcher;
-}
-
-bool WindowState::sendInputMessage(const InputMessage* ie) {
-    mLastInputMsg = *ie;
-    if (mInputDispatcher != nullptr) return mInputDispatcher->sendMessage(ie) == 0;
-    return false;
+    FLOGI("done");
 }
 
 void WindowState::setVisibility(int32_t visibility) {
-    bool newInputState = visibility == LayoutParams::WINDOW_VISIBLE;
-    bool oldInputState = mVisibility == LayoutParams::WINDOW_VISIBLE;
-
-    mVisibility = visibility;
-    FLOGI("%p [%d] visibility=%" PRId32 " (0:visible, 1:hold, 2:gone)", this,
-          mToken->getClientPid(), visibility);
-
-    if (mNeedInput) {
-        mNode->enableInput(newInputState);
-
-        /* check last message state */
-        if (!newInputState && oldInputState &&
-            mLastInputMsg.state != INPUT_MESSAGE_STATE_RELEASED) {
-            InputMessage ie = mLastInputMsg;
-            ie.state = INPUT_MESSAGE_STATE_RELEASED;
-            bool ret = sendInputMessage(&ie);
-
-            (void)ret; // maybe unused
-            FLOGI("%p add mismatch message automatically for app: %s", this,
-                  ret ? "success" : "failure");
-        }
-    }
+    mNode->setVisibility(visibility);
 }
 
 void WindowState::sendAppVisibilityToClients(int32_t visibility) {
@@ -142,11 +99,11 @@ void WindowState::sendAppVisibilityToClients(int32_t visibility) {
     setVisibility(visibility);
     bool visible = visibility == LayoutParams::WINDOW_VISIBLE ? true : false;
 
-    FLOGI("%p [%d] token=%p update visibility to %s", this, mToken->getClientPid(), mToken.get(),
+    FLOGI("[%d] update token=%p visibility to %s", mToken->getClientPid(), mToken.get(),
           visible ? "visible" : "invisible");
 
     if (!visible) {
-        scheduleVsync(VsyncRequest::VSYNC_REQ_NONE);
+        if (!xmsLiteMode()) scheduleVsync(VsyncRequest::VSYNC_REQ_NONE);
         if (!isVisible()) {
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
             if (mAttrs.mWindowTransitionState == LayoutParams::WINDOW_TRANSITION_ENABLE &&
@@ -164,9 +121,10 @@ void WindowState::sendAppVisibilityToClients(int32_t visibility) {
 #endif
         }
     } else {
-        scheduleVsync(mVsyncRequest != VsyncRequest::VSYNC_REQ_NONE
-                              ? mVsyncRequest
-                              : VsyncRequest::VSYNC_REQ_SINGLE);
+        if (!xmsLiteMode())
+            scheduleVsync(mVsyncRequest != VsyncRequest::VSYNC_REQ_NONE
+                                  ? mVsyncRequest
+                                  : VsyncRequest::VSYNC_REQ_SINGLE);
         mClient->dispatchAppVisibility(visible);
     }
     WM_PROFILER_END();
@@ -176,9 +134,8 @@ void WindowState::sendAppVisibilityToClients(int32_t visibility) {
 void WindowState::onAnimationFinished(WindowAnimStatus status) {
     if (status == WINDOW_ANIM_STATUS_FINISHED) {
         mAnimRunning = false;
-        FLOGI("%p [%d] token=%p, visibility=%" PRId32 "", this, mToken->getClientPid(),
-              mToken.get(), mVisibility);
-        if ((mVisibility != LayoutParams::WINDOW_VISIBLE) && (!(mFlags & WS_CLIENT_EXITED))) {
+        FLOGI("[%d] token=%p", mToken->getClientPid(), mToken.get());
+        if (!isVisible() && !(mFlags & WS_CLIENT_EXITED)) {
             mClient->dispatchAppVisibility(false);
         }
         if (mFlags & WS_ALLOW_REMOVING) {
@@ -188,8 +145,91 @@ void WindowState::onAnimationFinished(WindowAnimStatus status) {
 }
 #endif
 
+void WindowState::removeIfPossible() {
+    mFlags |= WS_ALLOW_REMOVING;
+#ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
+    if (!mAnimRunning)
+#endif
+    {
+        removeImmediately();
+    }
+}
+
+void WindowState::removeImmediately() {
+    FLOGI("[%d]", mToken->getClientPid());
+
+    if (mFlags & WS_REMOVED) return;
+
+    mFlags |= WS_REMOVED;
+
+    if (xmsLiteMode()) {
+        mService->postWindowRemoveCleanup(this);
+        return;
+    }
+
+    scheduleVsync(VsyncRequest::VSYNC_REQ_NONE);
+    destroySurfaceControl();
+    if (mInputDispatcher.get() != nullptr) {
+        mInputDispatcher->release();
+    }
+
+    mService->postWindowRemoveCleanup(this);
+}
+
+void WindowState::setLayoutParams(LayoutParams attrs) {
+    if (!xmsLiteMode() && mSurfaceControl != nullptr && mSurfaceControl->isValid()) {
+        FLOGW("shouldn't update layout configuration when surface is valid!");
+        return;
+    }
+
+    mAttrs = attrs;
+    Rect rect(attrs.mX, attrs.mY, attrs.mX + attrs.mWidth, attrs.mY + attrs.mHeight);
+    mNode->setRect(rect);
+}
+
+uint32_t WindowState::getSurfaceSize() {
+    return mNode->getSurfaceSize();
+}
+
+bool WindowState::isVisible() {
+    return !mNode->windowIsGone();
+}
+
+void* WindowState::getClientScreen() {
+    return mNode->getClientScreen();
+}
+
+/*========== only for multi-instance mode ==========*/
+std::shared_ptr<BufferConsumer> WindowState::getBufferConsumer() {
+    if (xmsLiteMode()) return nullptr;
+
+    if (mSurfaceControl != nullptr && mSurfaceControl->isValid()) {
+        return std::static_pointer_cast<BufferConsumer>(mSurfaceControl->bufferQueue());
+    }
+    return nullptr;
+}
+
+std::shared_ptr<InputDispatcher> WindowState::createInputDispatcher(const std::string& name) {
+    if (xmsLiteMode()) return nullptr;
+
+    if (mInputDispatcher != nullptr) {
+        FLOGE("input dispatcher has existed, needn't create again.");
+        return nullptr;
+    }
+    mInputDispatcher = InputDispatcher::create(name);
+    return mInputDispatcher;
+}
+
+bool WindowState::sendInputMessage(const InputMessage* ie) {
+    if (xmsLiteMode()) return false;
+    if (mInputDispatcher != nullptr) return mInputDispatcher->sendMessage(ie);
+    return false;
+}
+
 std::shared_ptr<SurfaceControl> WindowState::createSurfaceControl(const std::vector<BufferId>& ids,
                                                                   const std::string& fmqName) {
+    if (xmsLiteMode()) return nullptr;
+
     WM_PROFILER_BEGIN();
 
     destroySurfaceControl();
@@ -216,7 +256,8 @@ std::shared_ptr<SurfaceControl> WindowState::createSurfaceControl(const std::vec
 }
 
 void WindowState::destroySurfaceControl() {
-    FLOGI("%p", this);
+    if (xmsLiteMode()) return;
+
     if (mHasSurface) {
         setHasSurface(false);
         if (mNode != nullptr) {
@@ -229,10 +270,13 @@ void WindowState::destroySurfaceControl() {
         uninitSurfaceBuffer(mSurfaceControl);
         mSurfaceControl.reset();
     }
+    FLOGI("done");
 }
 
 void WindowState::applyTransaction(LayerState layerState) {
-    FLOGD("%p [%d] seq=%" PRIu32 "", this, mToken->getClientPid(), layerState.mSeq);
+    if (xmsLiteMode()) return;
+
+    FLOGD("[%d] seq=%" PRIu32 "", mToken->getClientPid(), layerState.mSeq);
     WM_PROFILER_BEGIN();
 
     BufferItem* buffItem = nullptr;
@@ -268,8 +312,7 @@ void WindowState::applyTransaction(LayerState layerState) {
     }
 
     if (mAnimRunning && (buffItem == nullptr)) {
-        FLOGW("%p [%d] animation is running, drop the null buffer data", this,
-              mToken->getClientPid());
+        FLOGW("[%d] animation is running, drop the null buffer data", mToken->getClientPid());
         return;
     }
 
@@ -280,6 +323,8 @@ void WindowState::applyTransaction(LayerState layerState) {
 }
 
 bool WindowState::scheduleVsync(VsyncRequest vsyncReq) {
+    if (xmsLiteMode()) return false;
+
     mService->getRootContainer()->enableVsync(true);
 
     if (mVsyncRequest == vsyncReq) {
@@ -289,8 +334,7 @@ bool WindowState::scheduleVsync(VsyncRequest vsyncReq) {
     /* observer for animation */
     if (vsyncReq == VsyncRequest::VSYNC_REQ_PERIODIC ||
         mVsyncRequest == VsyncRequest::VSYNC_REQ_PERIODIC)
-        FLOGW("%p [%d] request vreq=%s", this, mToken->getClientPid(),
-              VsyncRequestToString(vsyncReq));
+        FLOGW("[%d] request vreq=%s", mToken->getClientPid(), VsyncRequestToString(vsyncReq));
 
     mVsyncRequest = vsyncReq;
 
@@ -298,6 +342,8 @@ bool WindowState::scheduleVsync(VsyncRequest vsyncReq) {
 }
 
 VsyncRequest WindowState::onVsync() {
+    if (xmsLiteMode()) return mVsyncRequest;
+
     if (mVsyncRequest == VsyncRequest::VSYNC_REQ_NONE) {
         return mVsyncRequest;
     }
@@ -345,44 +391,22 @@ VsyncRequest WindowState::onVsync() {
     return mVsyncRequest;
 }
 
-void WindowState::removeIfPossible() {
-    mFlags |= WS_ALLOW_REMOVING;
-#ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
-    if (!mAnimRunning)
-#endif
-    {
-        removeImmediately();
-    }
-}
-
-void WindowState::removeImmediately() {
-    FLOGI("%p", this);
-
-    if (mFlags & WS_REMOVED) return;
-
-    mFlags |= WS_REMOVED;
-
-    scheduleVsync(VsyncRequest::VSYNC_REQ_NONE);
-    destroySurfaceControl();
-    if (mInputDispatcher.get() != nullptr) {
-        mInputDispatcher->release();
-    }
-
-    mService->postWindowRemoveCleanup(this);
-}
-
 BufferItem* WindowState::acquireBuffer() {
-    FLOGD("%p", this);
+    if (xmsLiteMode()) return nullptr;
 
+    FLOGD("acquire");
     std::shared_ptr<BufferConsumer> consumer = getBufferConsumer();
     if (consumer == nullptr) {
         return nullptr;
     }
+
     return consumer->acquireBuffer();
 }
 
 bool WindowState::releaseBuffer(BufferItem* buffer) {
-    FLOGD("%p", this);
+    if (xmsLiteMode()) return false;
+
+    FLOGD("release");
 
     std::shared_ptr<BufferConsumer> consumer = getBufferConsumer();
     if (consumer == nullptr) {
@@ -393,35 +417,16 @@ bool WindowState::releaseBuffer(BufferItem* buffer) {
         WM_PROFILER_BEGIN();
 
         if (!mSurfaceControl->getFMQ().write(&(buffer->mKey))) {
-            FLOGE("%p Failed to relase bufKey=%" PRId32 "", this, buffer->mKey);
+            FLOGE("Failed to relase bufKey=%" PRId32 "", buffer->mKey);
             /* fallback non-fmq */
             mClient->bufferReleased(buffer->mKey);
         } else {
-            FLOGD("%p success to relase bufKey=%" PRId32 "", this, buffer->mKey);
+            FLOGD("success to relase bufKey=%" PRId32 "", buffer->mKey);
         }
         WM_PROFILER_END();
         return true;
     }
     return false;
-}
-
-void WindowState::setLayoutParams(LayoutParams attrs) {
-    if (mSurfaceControl != nullptr && mSurfaceControl->isValid()) {
-        FLOGW("%p shouldn't update layout configuration when surface is valid!", this);
-        return;
-    }
-
-    mAttrs = attrs;
-    Rect rect(attrs.mX, attrs.mY, attrs.mX + attrs.mWidth, attrs.mY + attrs.mHeight);
-    mNode->setRect(rect);
-}
-
-uint32_t WindowState::getSurfaceSize() {
-    return mNode->getSurfaceSize();
-}
-
-bool WindowState::isVisible() {
-    return mVisibility != LayoutParams::WINDOW_GONE ? true : false;
 }
 
 } // namespace wm

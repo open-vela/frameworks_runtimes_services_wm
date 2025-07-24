@@ -23,7 +23,7 @@
 namespace os {
 namespace wm {
 
-DummyDriverProxy::DummyDriverProxy(std::shared_ptr<BaseWindow> win)
+DummyDriverProxy::DummyDriverProxy(std::shared_ptr<BaseWindowDefault> win)
       : UIDriverProxy(win), mActive(false) {}
 
 DummyDriverProxy::~DummyDriverProxy() {}

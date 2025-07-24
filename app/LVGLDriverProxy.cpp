@@ -39,7 +39,7 @@ LVGLDrawBuffer::~LVGLDrawBuffer() {
     FLOGD("");
 }
 
-LVGLDriverProxy::LVGLDriverProxy(std::shared_ptr<BaseWindow> win)
+LVGLDriverProxy::LVGLDriverProxy(std::shared_ptr<BaseWindowDefault> win)
       : UIDriverProxy(win),
         mIndev(NULL),
         mRenderMode(CONFIG_APP_WINDOW_RENDER_MODE),
@@ -188,7 +188,7 @@ void* LVGLDriverProxy::onDequeueBuffer() {
     if (item->mUserData == nullptr) {
         void* buffer = UIDriverProxy::onDequeueBuffer();
         if (buffer) {
-            FLOGI("%p init draw buffer", this);
+            FLOGI("init draw buffer");
             lv_color_format_t cf = lv_display_get_color_format(mDisp);
             auto drawBuffer =
                     std::make_shared<LVGLDrawBuffer>(buffer, mDispW, mDispH, cf, item->mSize);
@@ -209,8 +209,8 @@ void LVGLDriverProxy::resetBuffer() {
 
 void LVGLDriverProxy::updateResolution(int32_t width, int32_t height, uint32_t format) {
     lv_color_format_t color_format = getLvColorFormatType(format);
-    FLOGI("%p update resolution (%" PRId32 "x%" PRId32 ") format %" PRId32 "->%d", this, width,
-          height, format, color_format);
+    FLOGI("update resolution (%" PRId32 "x%" PRId32 ") format %" PRId32 "->%d", width, height,
+          format, color_format);
 
     lv_display_set_resolution(mDisp, width, height);
     lv_display_set_color_format(mDisp, color_format);
@@ -290,7 +290,7 @@ static void _disp_event_cb(lv_event_t* e) {
         case LV_EVENT_REFR_REQUEST: {
             CHECK_PROXY_OBJECT(e);
             if (proxy->onInvalidate(proxy->needPeriodicVsync())) {
-                FLOGD("%p refresh request", proxy);
+                FLOGD("refresh request");
             }
             break;
         }

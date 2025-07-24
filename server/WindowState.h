@@ -57,7 +57,6 @@ class LayoutParams;
 class WindowState {
 public:
     WindowState();
-
     ~WindowState();
 
     WindowState(WindowManagerService* service, const sp<IWindow>& window,
@@ -98,6 +97,66 @@ public:
      * This method forcefully removes the window, releasing any resources associated with it.
      */
     void removeImmediately();
+
+    /**
+     * @brief Retrieves the associated WindowToken.
+     *
+     * @return A shared pointer to the WindowToken.
+     */
+    std::shared_ptr<WindowToken> getToken() {
+        return mToken;
+    }
+
+    /**
+     * @brief Retrieves the client associated with this window.
+     *
+     * @return A reference to the associated IWindow client.
+     */
+    sp<IWindow>& getClient() {
+        return mClient;
+    }
+
+    /**
+     * @brief Sets the layout parameters for this window.
+     *
+     * @param attrs The new LayoutParams to apply to the window.
+     */
+    void setLayoutParams(LayoutParams attrs);
+
+    /**
+     * @brief Sets the client exited flag.
+     *
+     * Marks that the client has exited to avoid sending notifications.
+     */
+    void setClientExited() {
+        mFlags |= WS_CLIENT_EXITED;
+    }
+
+    /**
+     * @brief Retrieves the size of the surface for this window.
+     *
+     * @return The size of the current surface in pixels.
+     */
+    uint32_t getSurfaceSize();
+
+#ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
+    /**
+     * @brief Called when the animation for this window has finished.
+     *
+     * @param status The status of the completed animation.
+     */
+    void onAnimationFinished(WindowAnimStatus status);
+#endif
+
+    DISALLOW_COPY_AND_ASSIGN(WindowState);
+
+    /**
+     * @brief Sends an input message to this window.
+     *
+     * @param ie Pointer to the InputMessage to send.
+     * @return True if the message was successfully sent, false otherwise.
+     */
+    bool sendInputMessage(const InputMessage* ie);
 
     /**
      * @brief Creates a new InputDispatcher for this window.
@@ -154,32 +213,6 @@ public:
     VsyncRequest onVsync();
 
     /**
-     * @brief Sends an input message to this window.
-     *
-     * @param ie Pointer to the InputMessage to send.
-     * @return True if the message was successfully sent, false otherwise.
-     */
-    bool sendInputMessage(const InputMessage* ie);
-
-    /**
-     * @brief Retrieves the associated WindowToken.
-     *
-     * @return A shared pointer to the WindowToken.
-     */
-    std::shared_ptr<WindowToken> getToken() {
-        return mToken;
-    }
-
-    /**
-     * @brief Retrieves the client associated with this window.
-     *
-     * @return A reference to the associated IWindow client.
-     */
-    sp<IWindow>& getClient() {
-        return mClient;
-    }
-
-    /**
      * @brief Sets whether this window has a surface.
      *
      * @param hasSurface True to indicate that the window has a surface, false otherwise.
@@ -204,50 +237,21 @@ public:
     bool releaseBuffer(BufferItem* buffer);
 
     /**
-     * @brief Sets the layout parameters for this window.
+     * @brief Retrieves the screen associated with this window.
      *
-     * @param attrs The new LayoutParams to apply to the window.
+     * @return A pointer to the screen associated with this window.
      */
-    void setLayoutParams(LayoutParams attrs);
-
-    /**
-     * @brief Sets the client exited flag.
-     *
-     * Marks that the client has exited to avoid sending notifications.
-     */
-    void setClientExited() {
-        mFlags |= WS_CLIENT_EXITED;
+    void* getClientScreen();
+    bool needInput() {
+        return mNeedInput;
     }
-
-    /**
-     * @brief Retrieves the size of the surface for this window.
-     *
-     * @return The size of the current surface in pixels.
-     */
-    uint32_t getSurfaceSize();
-
-#ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
-    /**
-     * @brief Called when the animation for this window has finished.
-     *
-     * @param status The status of the completed animation.
-     */
-    void onAnimationFinished(WindowAnimStatus status);
-#endif
-
-    DISALLOW_COPY_AND_ASSIGN(WindowState);
 
 private:
     sp<IWindow> mClient;
     std::shared_ptr<WindowToken> mToken;
     WindowManagerService* mService;
-    std::shared_ptr<SurfaceControl> mSurfaceControl;
-    std::shared_ptr<InputDispatcher> mInputDispatcher;
     LayoutParams mAttrs;
-    VsyncRequest mVsyncRequest;
     uint32_t mFrameReq;
-    int32_t mVisibility;
-    bool mHasSurface;
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
     bool mFrameWaiting;
     bool mAnimRunning;
@@ -265,7 +269,12 @@ private:
     };
     int32_t mFlags;
     bool mNeedInput;
-    InputMessage mLastInputMsg;
+
+    /* for multi-instance mode */
+    std::shared_ptr<SurfaceControl> mSurfaceControl;
+    std::shared_ptr<InputDispatcher> mInputDispatcher;
+    bool mHasSurface;
+    VsyncRequest mVsyncRequest;
 };
 
 } // namespace wm

@@ -17,7 +17,6 @@
 #pragma once
 
 #include <android-base/macros.h>
-#include <binder/Status.h>
 #include <utils/RefBase.h>
 
 #include <atomic>
@@ -25,39 +24,16 @@
 #include "WindowManager.h"
 #include "app/Context.h"
 #include "app/UvLoop.h"
-#include "os/wm/BnWindow.h"
-#include "os/wm/VsyncRequest.h"
-#include "wm/InputMessage.h"
 #include "wm/InputMonitor.h"
 #include "wm/LayoutParams.h"
 #include "wm/WindowEventListener.h"
-#include "wm/WindowFrames.h"
 
 namespace os {
 namespace wm {
 
-/**
- * @brief MockUI event types for the DummyDriver.
- */
-enum { MOCKUI_EVENT_DRAW = 1, MOCKUI_EVENT_CLICK = 2, MOCKUI_EVENT_POSTDRAW = 3 };
-
-/**
- * @brief Callback type for MockUI events.
- *
- * @param data A pointer to the event data.
- * @param size Size of the event data.
- * @param event The event type.
- */
-using MOCKUI_EVENT_CALLBACK = std::function<void(void*, uint32_t, uint32_t)>;
-
-class BufferProducer;
-class UIDriverProxy;
 class WindowManager;
-class InputChannel;
-class SurfaceControl;
 
 using android::sp;
-using android::binder::Status;
 
 /**
  * @class BaseWindow
@@ -68,237 +44,100 @@ using android::binder::Status;
  */
 class BaseWindow : public std::enable_shared_from_this<BaseWindow> {
 public:
-    /**
-     * @brief Inner class representing a Binder interface for BaseWindow.
-     */
-    class W : public BnWindow {
-    public:
-        W(BaseWindow* win) : mBaseWindow(win) {}
-        ~W() {}
+    BaseWindow(){};
+    virtual ~BaseWindow() = default;
 
-        /**
-         * @brief Notifies that the window has moved to a new position.
-         *
-         * @param newX New X coordinate of the window.
-         * @param newY New Y coordinate of the window.
-         * @return Status of the operation.
-         */
-        Status moved(int32_t newX, int32_t newY) override;
-
-        /**
-         * @brief Notifies that the window has been resized.
-         *
-         * @param frames New layout frames of the window.
-         * @param displayId ID of the display.
-         * @return Status of the operation.
-         */
-        Status resized(const WindowFrames& frames, int32_t displayId) override;
-
-        /**
-         * @brief Notifies the visibility state of the application.
-         *
-         * @param visible True if the application is visible, false otherwise.
-         * @return Status of the operation.
-         */
-        Status dispatchAppVisibility(bool visible) override;
-
-        /**
-         * @brief Notifies that a new frame has been rendered.
-         *
-         * @param seq Sequence number of the frame.
-         * @return Status of the operation.
-         */
-        Status onFrame(int32_t seq) override;
-
-        /**
-         * @brief Notifies that a buffer has been released.
-         *
-         * @param bufKey Key of the released buffer.
-         * @return Status of the operation.
-         */
-        Status bufferReleased(int32_t bufKey) override;
-
-        /**
-         * @brief Clears the internal state.
-         */
-        void clear();
-
-    private:
-        BaseWindow* mBaseWindow;
-    };
-
-    BaseWindow(::os::app::Context* context, WindowManager* wm);
-
-    ~BaseWindow();
+    DISALLOW_COPY_AND_ASSIGN(BaseWindow);
 
     /**
-     * @brief Schedules a Vsync event.
+     * @brief Creates the stage for the window.
      *
-     * @param freq The Vsync request frequency.
-     * @return True if the scheduling is successful, false otherwise.
+     * @return True if the stage was created successfully, false otherwise.
      */
-    bool scheduleVsync(VsyncRequest freq);
+    virtual bool onCreateStage() = 0;
 
     /**
-     * @brief Retrieves the IWindow interface pointer.
+     * @brief Destroys the stage for the window.
      *
-     * @return Shared pointer to the IWindow interface.
+     * @return True if the stage was destroyed successfully, false otherwise.
      */
-    sp<IWindow> getIWindow() {
-        return mIWindow;
-    }
+    virtual bool onDestroyStage() = 0;
 
     /**
      * @brief Retrieves the root object.
      *
      * @return Pointer to the root object.
      */
-    void* getRoot();
-
-    /**
-     * @brief Retrieves the native display object.
-     *
-     * @return Pointer to the native display object.
-     */
-    void* getNativeDisplay();
-
-    /**
-     * @brief Sets the UI proxy.
-     *
-     * @param proxy Shared pointer to the UIDriverProxy.
-     */
-    void setUIProxy(const std::shared_ptr<UIDriverProxy>& proxy);
-
-    /**
-     * @brief Retrieves the UI proxy.
-     *
-     * @return Reference to the shared pointer of UIDriverProxy.
-     */
-    std::shared_ptr<UIDriverProxy>& getUIProxy() {
-        return mUIProxy;
-    }
+    virtual void* getRoot() = 0;
 
     /**
      * @brief Sets the type of the window.
      *
      * @param type The type of the window.
      */
-    void setType(int32_t type);
+    virtual void setType(int32_t type) = 0;
 
     /**
      * @brief Sets the visibility state of the window.
      *
      * @param visible True to make the window visible, false to hide it.
      */
-    void setVisible(bool visible);
+    virtual void setVisible(bool visible) = 0;
 
     /**
      * @brief Sets the layout parameters for the window.
      *
      * @param lp The layout parameters for the window.
      */
-    void setLayoutParams(LayoutParams lp);
+    virtual void setLayoutParams(LayoutParams lp) = 0;
 
     /**
      * @brief Retrieves the layout parameters of the window.
      *
      * @return The layout parameters.
      */
-    LayoutParams getLayoutParams() {
-        return mAttrs;
-    }
+    virtual LayoutParams getLayoutParams() = 0;
 
     /**
      * @brief Retrieves the associated WindowManager.
      *
      * @return Pointer to the WindowManager.
      */
-    const WindowManager* getWindowManager() {
-        return mWindowManager;
-    }
+    virtual const WindowManager* getWindowManager() = 0;
 
     /**
      * @brief Retrieves the visibility state of the window.
      *
      * @return The visibility state.
      */
-    int32_t getVisibility();
-
-    /**
-     * @brief Sets the input channel for the window.
-     *
-     * @param inputChannel Pointer to the InputChannel.
-     */
-    void setInputChannel(InputChannel* inputChannel);
-
-    /**
-     * @brief Sets the surface control for the window.
-     *
-     * @param surfaceControl Pointer to the SurfaceControl.
-     */
-    void setSurfaceControl(SurfaceControl* surfaceControl);
-
-    /**
-     * @brief Reads an input event.
-     *
-     * @param message Pointer to the InputMessage to be read.
-     * @return True if the event is successfully read, false otherwise.
-     */
-    bool readEvent(InputMessage* message);
+    virtual int32_t getVisibility() = 0;
 
     /**
      * @brief Retrieves the application context.
-     *
      * @return Pointer to the application context.
      */
-    ::os::app::Context* getContext() {
-        return mContext;
-    }
+    virtual ::os::app::Context* getContext() = 0;
 
     /**
-     * @brief Handles the destruction of the window.
+     * @brief Retrieves the native display object.
+     *
+     * @return Pointer to the native display object.
      */
-    void doDie();
+    virtual void* getNativeDisplay() = 0;
 
     /**
      * @brief Sets an event listener for window events.
      *
      * @param listener Pointer to the WindowEventListener.
      */
-    void setEventListener(WindowEventListener* listener);
-
-    DISALLOW_COPY_AND_ASSIGN(BaseWindow);
+    virtual void setEventListener(WindowEventListener* listener) = 0;
 
     /**
      * @brief Traces the frame if enabled.
      *
      * @param enable True to enable frame tracing, false to disable.
      */
-    void traceFrame(bool enable);
-
-private:
-    void onFrame(int32_t seq);
-    void bufferReleased(int32_t bufKey);
-
-    std::shared_ptr<BufferProducer> getBufferProducer();
-    void updateOrCreateBufferQueue();
-    void handleOnFrame(int32_t seq);
-    void clearSurfaceBuffer();
-
-    ::os::app::Context* mContext;
-    WindowManager* mWindowManager;
-
-    LayoutParams mAttrs;
-    sp<W> mIWindow;
-    std::shared_ptr<SurfaceControl> mSurfaceControl;
-    std::shared_ptr<InputMonitor> mInputMonitor;
-    std::shared_ptr<UIDriverProxy> mUIProxy;
-    VsyncRequest mVsyncRequest;
-    bool mAppVisible;
-    atomic_bool mFrameDone;
-    bool mSurfaceBufferReady;
-    bool mTraceFrame;
-    void* mFrameTimeInfo;
+    virtual void traceFrame(bool enable) = 0;
 };
 
 } // namespace wm

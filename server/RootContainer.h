@@ -77,21 +77,6 @@ public:
     bool getDisplayInfo(DisplayInfo* info);
 
     /**
-     * @brief Enables or disables Vsync for the root container.
-     *
-     * @param enable True to enable Vsync, false to disable it.
-     */
-    void enableVsync(bool enable);
-
-    /**
-     * @brief Processes Vsync events.
-     *
-     * This method handles the processing of incoming Vsync events
-     * for the root container, updating the UI as necessary.
-     */
-    void processVsyncEvent();
-
-    /**
      * @brief Displays a toast message on the screen.
      *
      * @param text The message text to display.
@@ -107,15 +92,6 @@ public:
      * @return True if the input is read successfully, false otherwise.
      */
     bool readInput(lv_indev_t* drv, lv_indev_data_t* data);
-
-    /**
-     * @brief Checks if Vsync is currently enabled.
-     *
-     * @return True if Vsync is enabled, false otherwise.
-     */
-    bool vsyncEnabled() {
-        return mVsyncEnabled;
-    }
 
     /**
      * @brief Checks if the root container is ready for use.
@@ -155,19 +131,43 @@ public:
      */
     void traceFrame(bool enable);
 
+    /**
+     * @brief Enables or disables Vsync for the root container for multi-instance mode.
+     *
+     * @param enable True to enable Vsync, false to disable it.
+     */
+    void enableVsync(bool enable);
+
+    /**
+     * @brief Processes Vsync events for multi-instance mode.
+     *
+     * This method handles the processing of incoming Vsync events
+     * for the root container, updating the UI as necessary.
+     */
+    void processVsyncEvent();
+
+    /**
+     * @brief Checks if Vsync is currently enabled for multi-instance mode.
+     *
+     * @return True if Vsync is enabled, false otherwise.
+     */
+    bool vsyncEnabled() {
+        return mVsyncEnabled;
+    }
+
 private:
     bool init();
 
     lv_nuttx_result_t mResult;
     DeviceEventListener* mListener;
     lv_disp_t* mDisp;
-    bool mVsyncEnabled;
-#ifndef CONFIG_SYSTEM_WINDOW_USE_VSYNC_EVENT
-    lv_timer_t* mVsyncTimer;
-#endif
     void* mUvData;
     uv_loop_t* mUvLoop;
     bool mReady;
+
+    bool mVsyncEnabled;
+    lv_timer_t* mVsyncTimer;
+
     bool mTraceFrame;
     FrameMetaInfo mFrameInfo;
     FrameTimeInfo mFrameTimeInfo;
