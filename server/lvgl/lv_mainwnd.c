@@ -278,7 +278,7 @@ static inline void send_input_event(lv_mainwnd_t* mainwnd, lv_event_code_t code,
         mainwnd->meta_info.send_input_event(&(mainwnd->meta_info), &ie);
     } else {
         if (code == LV_EVENT_PRESSED || code == LV_EVENT_RELEASED || code == LV_EVENT_PRESSING ||
-            code == LV_EVENT_LEAVE) {
+            code == LV_EVENT_LEAVE || code == LV_EVENT_LONG_PRESSED) {
             lv_point_t point;
             lv_indev_get_point(indev, &point);
 
@@ -297,7 +297,8 @@ static inline void send_input_event(lv_mainwnd_t* mainwnd, lv_event_code_t code,
         }
         ie.pointer.gesture_state = 0;
 
-        if (code == LV_EVENT_PRESSED || code == LV_EVENT_PRESSING) {
+        if (code == LV_EVENT_PRESSED || code == LV_EVENT_PRESSING ||
+            code == LV_EVENT_LONG_PRESSED) {
             ie.state = LV_INDEV_STATE_PRESSED;
         } else {
             ie.state = LV_INDEV_STATE_RELEASED;
