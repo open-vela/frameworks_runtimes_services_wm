@@ -181,9 +181,10 @@ std::shared_ptr<SurfaceControl> WindowState::createSurfaceControl(const std::vec
             std::make_shared<SurfaceControl>(IInterface::asBinder(mClient), handle, mAttrs.mWidth,
                                              mAttrs.mHeight, mAttrs.mFormat, getSurfaceSize());
     mSurfaceControl->getFMQ().setName(fmqName);
-    mSurfaceControl->getFMQ().updateClientRespSeq(mFrameReq);
     mSurfaceControl->initBufferIds(ids);
     initSurfaceBuffer(mSurfaceControl, true);
+    /* should update after init fmq */
+    mSurfaceControl->getFMQ().updateClientRespSeq(mFrameReq);
 
     std::shared_ptr<BufferConsumer> buffConsumer =
             std::make_shared<BufferConsumer>(mSurfaceControl);
