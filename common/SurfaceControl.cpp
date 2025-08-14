@@ -345,13 +345,14 @@ bool FakeFmq<T>::create(const std::vector<T>& qData, bool isServer) {
 
     FLOGI("init fmq for %s", mName.c_str());
 
-    memset(buffer, 0, size);
     mQueue = (T*)buffer;
     mFd = fd;
-
-    int i = 0;
-    for (const auto& value : qData) {
-        mQueue[i++] = value;
+    if (isServer) {
+        int i = 0;
+        memset(buffer, 0, size);
+        for (const auto& value : qData) {
+            mQueue[i++] = value;
+        }
     }
 
     mCaps = elmCount;
