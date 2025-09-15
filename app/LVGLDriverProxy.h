@@ -124,6 +124,14 @@ public:
     void handleEvent() override;
 
     /**
+     * @brief Reads an input event from the message queue for the LVGL driver.
+     *
+     * @param message Pointer to the InputMessage to be read.
+     * @return True if the event is successfully read, false otherwise.
+     */
+    bool readEvent(InputMessage* message);
+
+    /**
      * @brief Sets the input monitor for the LVGL driver.
      *
      * @param monitor Pointer to the InputMonitor instance.
@@ -187,22 +195,11 @@ public:
     }
 
     /**
-     * @brief Sets the state of the last input event.
-     *
-     * @param state The state of the last input event.
-     */
-    void setLastEventState(lv_indev_state_t state) {
-        mLastEventState = state;
-    }
-
-    /**
      * @brief Retrieves the state of the last input event.
      *
      * @return The state of the last input event.
      */
-    lv_indev_state_t getLastEventState() {
-        return mLastEventState;
-    }
+    lv_indev_state_t getLastEventState();
 
     /**
      * @brief Notifies the driver of a Vsync event.
@@ -257,13 +254,14 @@ private:
 
     int32_t mDispW;
     int32_t mDispH;
-    lv_indev_state_t mLastEventState;
     lv_indev_t* mIndev;
     int mRenderMode;
     lv_draw_buf_t* mDummyBuffer;
     ::std::vector<std::shared_ptr<LVGLDrawBuffer>> mDrawBuffers;
     bool mAllAreaDirty;
     BufferItem* mPrevBuffer;
+    InputMessage mLastMessage;
+    bool mVisible;
 };
 
 } // namespace wm
