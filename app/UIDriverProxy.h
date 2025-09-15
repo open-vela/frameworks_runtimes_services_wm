@@ -145,7 +145,7 @@ public:
      * @param message Pointer to the InputMessage to be read.
      * @return True if the event is successfully read, false otherwise.
      */
-    bool readEvent(InputMessage* message);
+    virtual bool readEvent(InputMessage* message);
 
     /**
      * @brief Sets the input monitor for the UI driver.
