@@ -244,7 +244,7 @@ void LVGLDriverProxy::updateVisibility(bool visible) {
 bool LVGLDriverProxy::readEvent(InputMessage* message) {
     if (mVisible) {
         bool result = UIDriverProxy::readEvent(message);
-        mLastMessage = *message;
+        if (result) mLastMessage = *message;
         return result;
     }
 
