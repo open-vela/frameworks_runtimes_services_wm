@@ -45,7 +45,7 @@ LVGLDriverProxy::LVGLDriverProxy(std::shared_ptr<BaseWindow> win)
         mRenderMode(CONFIG_APP_WINDOW_RENDER_MODE),
         mAllAreaDirty(true),
         mPrevBuffer(NULL),
-        mVisible(false) {
+        mLastEventState(LV_INDEV_STATE_RELEASED) {
     uint32_t width = 0, height = 0;
     win->getWindowManager()->getDisplayInfo(&width, &height);
 
@@ -60,8 +60,6 @@ LVGLDriverProxy::LVGLDriverProxy(std::shared_ptr<BaseWindow> win)
 
     if (mRenderMode == LV_DISPLAY_RENDER_MODE_DIRECT)
         FLOGW("app window is using partial render mode");
-
-    memset(&mLastMessage, 0, sizeof(mLastMessage));
 }
 
 LVGLDriverProxy::~LVGLDriverProxy() {
@@ -219,13 +217,6 @@ void LVGLDriverProxy::updateResolution(int32_t width, int32_t height, uint32_t f
 }
 
 void LVGLDriverProxy::updateVisibility(bool visible) {
-    mVisible = visible;
-
-    /* whether last input event is released or not */
-    if (!mVisible && mLastMessage.state != INPUT_MESSAGE_STATE_RELEASED) {
-        handleEvent();
-    }
-
     if (visible) {
         if (!lv_display_is_invalidation_enabled(mDisp)) lv_display_enable_invalidation(mDisp, true);
 
@@ -239,31 +230,6 @@ void LVGLDriverProxy::updateVisibility(bool visible) {
     } else if (lv_display_is_invalidation_enabled(mDisp)) {
         lv_display_enable_invalidation(mDisp, false);
     }
-}
-
-bool LVGLDriverProxy::readEvent(InputMessage* message) {
-    if (mVisible) {
-        bool result = UIDriverProxy::readEvent(message);
-        if (result) mLastMessage = *message;
-        return result;
-    }
-
-    /* only for mismatch events */
-    if (mLastMessage.state == INPUT_MESSAGE_STATE_RELEASED) {
-        return false;
-    }
-
-    /* match last released event */
-    mLastMessage.state = INPUT_MESSAGE_STATE_RELEASED;
-    if (message) *message = mLastMessage;
-
-    FLOGI("add last released event manually");
-    return true;
-}
-
-lv_indev_state_t LVGLDriverProxy::getLastEventState() {
-    return mLastMessage.state == INPUT_MESSAGE_STATE_RELEASED ? LV_INDEV_STATE_RELEASED
-                                                              : LV_INDEV_STATE_PRESSED;
 }
 
 void LVGLDriverProxy::notifyVsyncEvent() {
@@ -418,7 +384,11 @@ static void _indev_read(lv_indev_t* drv, lv_indev_data_t* data) {
 
                 data->point.x = LV_CLAMP(0, message.pointer.x, hor_max);
                 data->point.y = LV_CLAMP(0, message.pointer.y, ver_max);
+                proxy->setLastEventState(LV_INDEV_STATE_PRESSED);
+            } else if (message.state == INPUT_MESSAGE_STATE_RELEASED) {
+                proxy->setLastEventState(LV_INDEV_STATE_RELEASED);
             }
+
             data->continue_reading = proxy->checkInput();
         }
     }

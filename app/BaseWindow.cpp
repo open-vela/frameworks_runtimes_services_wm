@@ -332,7 +332,7 @@ void BaseWindow::handleOnFrame(int32_t seq) {
         if (!item) {
             if (mVsyncRequest != VsyncRequest::VSYNC_REQ_PERIODIC)
                 scheduleVsync(VsyncRequest::VSYNC_REQ_SINGLESUPPRESS);
-            FLOGI("%p seq=%" PRIu32 " no valid buffer!\n", this, seq);
+            FLOGD("%p seq=%" PRIu32 " no valid buffer!\n", this, seq);
             if (info) info->setSkipReason(FrameMetaSkipReason::NoBuffer);
             return;
         }

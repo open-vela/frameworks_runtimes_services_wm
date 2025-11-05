@@ -133,7 +133,7 @@ void RootContainer::enableVsync(bool enable) {
         return;
     }
 
-    FLOGI("%s fb vsync event", enable ? "enable" : "disable");
+    FLOGD("%s fb vsync event", enable ? "enable" : "disable");
     mVsyncEnabled = enable;
 #ifdef CONFIG_SYSTEM_WINDOW_USE_VSYNC_EVENT
 #if 0
