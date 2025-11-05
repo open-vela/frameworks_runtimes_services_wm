@@ -265,6 +265,7 @@ private:
     };
     int32_t mFlags;
     bool mNeedInput;
+    InputMessage mLastInputMsg;
 };
 
 } // namespace wm

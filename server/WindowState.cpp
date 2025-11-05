@@ -100,15 +100,34 @@ std::shared_ptr<InputDispatcher> WindowState::createInputDispatcher(const std::s
 }
 
 bool WindowState::sendInputMessage(const InputMessage* ie) {
-    if (mInputDispatcher != nullptr) return mInputDispatcher->sendMessage(ie);
+    mLastInputMsg = *ie;
+    if (mInputDispatcher != nullptr) return mInputDispatcher->sendMessage(ie) == 0;
     return false;
 }
 
 void WindowState::setVisibility(int32_t visibility) {
+    bool newInputState = visibility == LayoutParams::WINDOW_VISIBLE;
+    bool oldInputState = mVisibility == LayoutParams::WINDOW_VISIBLE;
+
     mVisibility = visibility;
     FLOGI("%p [%d] visibility=%" PRId32 " (0:visible, 1:hold, 2:gone)", this,
           mToken->getClientPid(), visibility);
-    if (mNeedInput) mNode->enableInput(visibility == LayoutParams::WINDOW_VISIBLE);
+
+    if (mNeedInput) {
+        mNode->enableInput(newInputState);
+
+        /* check last message state */
+        if (!newInputState && oldInputState &&
+            mLastInputMsg.state != INPUT_MESSAGE_STATE_RELEASED) {
+            InputMessage ie = mLastInputMsg;
+            ie.state = INPUT_MESSAGE_STATE_RELEASED;
+            bool ret = sendInputMessage(&ie);
+
+            (void)ret; // maybe unused
+            FLOGI("%p add mismatch message automatically for app: %s", this,
+                  ret ? "success" : "failure");
+        }
+    }
 }
 
 void WindowState::sendAppVisibilityToClients(int32_t visibility) {
