@@ -94,7 +94,7 @@ bool InputMonitor::empty() {
         FLOGE("check message error:%s", strerror(errno));
         return true;
     }
-    FLOGI("mq_maxmsg:%ld , mq_msgsize:%ld, mq_flags:%ld, mq_curmsgs:%ld", attr.mq_maxmsg,
+    FLOGD("mq_maxmsg:%ld , mq_msgsize:%ld, mq_flags:%ld, mq_curmsgs:%ld", attr.mq_maxmsg,
           attr.mq_msgsize, attr.mq_flags, attr.mq_curmsgs);
 
     return attr.mq_curmsgs > 0 ? false : true;
