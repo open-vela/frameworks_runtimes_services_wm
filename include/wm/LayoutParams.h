@@ -45,6 +45,19 @@ public:
     static const int32_t WINDOW_GONE = 2;
     static const int32_t WINDOW_INVISIBLE = 2;
 
+    static inline const char* visibilityToName(int32_t visibility) {
+        switch (visibility) {
+            case WINDOW_VISIBLE:
+                return "VISIBLE";
+            case WINDOW_HOLD:
+                return "HOLD";
+            case WINDOW_GONE:
+                return "GONE";
+            default:
+                return "UNKNOWN";
+        }
+    }
+
     // for type
     static const int32_t TYPE_APPLICATION = 1;
     static const int32_t TYPE_SYSTEM_WINDOW = 1000;

@@ -144,18 +144,26 @@ public:
     bool releaseBuffer();
 
     /**
-     * @brief Sets the visibility of this window node for lite mode.
+     * @brief Sets the visibility of this window node from client requesting.
      *
      * @param visibility The new visibility value to set.
      * */
     void setVisibility(int32_t visibility);
 
     /**
-     * @brief Checks if the window is currently GONE.
+     * @brief Synchronizes the client visibility state with the window node.
      *
-     * @return True if the window is GONE, false otherwise.
+     * @param visibility The visibility state to synchronize, typically one of:
+     *                   - LayoutParams::WINDOW_VISIBLE
+     *                   - LayoutParams::WINDOW_INVISIBLE
+     *                   - LayoutParams::WINDOW_GONE
      */
-    bool windowIsGone();
+    void syncClientVisibility(int32_t visibility);
+
+    int32_t getVisibility() {
+        return mVisibility;
+    }
+
     /**
      * @brief Retrieves the client screen associated with this window node for lite mode.
      *

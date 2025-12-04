@@ -85,10 +85,75 @@ WindowState::~WindowState() {
 
 void WindowState::setVisibility(int32_t visibility) {
     mNode->setVisibility(visibility);
+#ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
+    if (xmsLiteMode() && visibility == LayoutParams::WINDOW_VISIBLE) windowTransition(true);
+#endif
 }
 
+#ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
+bool WindowState::windowTransition(bool in) {
+    /* Check if window transition is enabled for this window */
+    if (mAttrs.mWindowTransitionState != LayoutParams::WINDOW_TRANSITION_ENABLE) {
+        FLOGD("[%d] Window transition not enabled", mToken->getClientPid());
+        return false;
+    }
+
+    /* Validate animation state before proceeding */
+    if (mAnimRunning) {
+        FLOGW("[%d] Animation already running, cannot start new transition",
+              mToken->getClientPid());
+        return false;
+    }
+
+    if (in) {
+        /* Handle in-transition (window appearing) */
+        if (!mFrameWaiting) {
+            return false;
+        }
+
+        mFrameWaiting = false;
+        mNode->resetOpaque();
+        FLOGD("[%d] Starting in-transition, reset window opacity", mToken->getClientPid());
+    } else {
+        /* Handle out-transition (window disappearing) */
+        if (mFrameWaiting) {
+            return false;
+        }
+        FLOGD("[%d] Starting out-transition", mToken->getClientPid());
+    }
+
+    /* Get animation configuration and start animation */
+    std::string animConfig = mService->getAnimConfig(in, this);
+    if (animConfig.empty()) {
+        FLOGE("[%d] Failed to get animation configuration", mToken->getClientPid());
+        return false;
+    }
+
+    mAnimRunning = true;
+    FLOGI("[%d] Starting %s transition animation", mToken->getClientPid(), in ? "in" : "out");
+
+    int result = mWinAnimator->startAnimation(animConfig, [this](WindowAnimStatus status) {
+        this->onAnimationFinished(status);
+    });
+
+    if (result != 0) {
+        FLOGE("[%d] Failed to start animation, error code: %d", mToken->getClientPid(), result);
+        mAnimRunning = false;
+        return false;
+    }
+
+    return true;
+}
+#endif
+
 void WindowState::sendAppVisibilityToClients(int32_t visibility) {
-    if (!isVisible() && visibility == LayoutParams::WINDOW_GONE) return;
+    int32_t oldVisibility = mNode->getVisibility();
+    if (oldVisibility == visibility) {
+        FLOGI("[%d] token=%p, no changed visibility %s", mToken->getClientPid(), mToken.get(),
+              LayoutParams::visibilityToName(visibility));
+        return;
+    }
+
     WM_PROFILER_BEGIN();
 
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
@@ -96,24 +161,27 @@ void WindowState::sendAppVisibilityToClients(int32_t visibility) {
         mWinAnimator->cancelAnimation();
     }
 #endif
-    setVisibility(visibility);
+    mNode->syncClientVisibility(visibility);
     bool visible = visibility == LayoutParams::WINDOW_VISIBLE ? true : false;
 
     FLOGI("[%d] update token=%p visibility to %s", mToken->getClientPid(), mToken.get(),
-          visible ? "visible" : "invisible");
+          LayoutParams::visibilityToName(visibility));
 
     if (!visible) {
-        if (!xmsLiteMode()) scheduleVsync(VsyncRequest::VSYNC_REQ_NONE);
+        if (xmsLiteMode()) {
+            /* to HOLD */
+            if (visibility == LayoutParams::WINDOW_HOLD) {
+                WM_PROFILER_END();
+                return;
+            }
+        } else {
+            scheduleVsync(VsyncRequest::VSYNC_REQ_NONE);
+        }
+
+        /* VISIBLE to HOLD/GONE, HOLD to GONE */
         if (!isVisible()) {
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
-            if (mAttrs.mWindowTransitionState == LayoutParams::WINDOW_TRANSITION_ENABLE &&
-                (!mFrameWaiting)) {
-                mAnimRunning = true;
-                mWinAnimator->startAnimation(mService->getAnimConfig(false, this),
-                                             [this](WindowAnimStatus status) {
-                                                 this->onAnimationFinished(status);
-                                             });
-            } else {
+            if (!windowTransition(false)) {
                 mClient->dispatchAppVisibility(visible);
             }
 #else
@@ -121,12 +189,16 @@ void WindowState::sendAppVisibilityToClients(int32_t visibility) {
 #endif
         }
     } else {
-        if (!xmsLiteMode())
+        /* to VISIBLE */
+        if (!xmsLiteMode()) {
             scheduleVsync(mVsyncRequest != VsyncRequest::VSYNC_REQ_NONE
                                   ? mVsyncRequest
                                   : VsyncRequest::VSYNC_REQ_SINGLE);
+        }
+
         mClient->dispatchAppVisibility(visible);
     }
+
     WM_PROFILER_END();
 }
 
@@ -135,9 +207,11 @@ void WindowState::onAnimationFinished(WindowAnimStatus status) {
     if (status == WINDOW_ANIM_STATUS_FINISHED) {
         mAnimRunning = false;
         FLOGI("[%d] token=%p", mToken->getClientPid(), mToken.get());
+
         if (!isVisible() && !(mFlags & WS_CLIENT_EXITED)) {
             mClient->dispatchAppVisibility(false);
         }
+
         if (mFlags & WS_ALLOW_REMOVING) {
             removeIfPossible();
         }
@@ -164,6 +238,9 @@ void WindowState::removeImmediately() {
 
     if (xmsLiteMode()) {
         mService->postWindowRemoveCleanup(this);
+#ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
+        mFrameWaiting = true;
+#endif
         return;
     }
 
@@ -192,7 +269,7 @@ uint32_t WindowState::getSurfaceSize() {
 }
 
 bool WindowState::isVisible() {
-    return !mNode->windowIsGone();
+    return mNode->getVisibility() != LayoutParams::WINDOW_GONE;
 }
 
 void* WindowState::getClientScreen() {
@@ -256,7 +333,12 @@ std::shared_ptr<SurfaceControl> WindowState::createSurfaceControl(const std::vec
 }
 
 void WindowState::destroySurfaceControl() {
-    if (xmsLiteMode()) return;
+    if (xmsLiteMode()) {
+#ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
+        mFrameWaiting = true;
+#endif
+        return;
+    }
 
     if (mHasSurface) {
         setHasSurface(false);
@@ -302,20 +384,13 @@ void WindowState::applyTransaction(LayerState layerState) {
 #ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
     if (mFrameWaiting &&
         (mAttrs.mWindowTransitionState == LayoutParams::WINDOW_TRANSITION_ENABLE)) {
-        mFrameWaiting = false;
-        mAnimRunning = true;
-        mNode->resetOpaque();
-        mWinAnimator->startAnimation(mService->getAnimConfig(true, this),
-                                     [this](WindowAnimStatus status) {
-                                         this->onAnimationFinished(status);
-                                     });
+        windowTransition(true);
     }
 
     if (mAnimRunning && (buffItem == nullptr)) {
         FLOGW("[%d] animation is running, drop the null buffer data", mToken->getClientPid());
         return;
     }
-
 #endif
 
     mNode->updateBuffer(buffItem, rect, layerState.mSeq);

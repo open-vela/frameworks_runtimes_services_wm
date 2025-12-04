@@ -70,6 +70,7 @@ WindowNode::WindowNode(WindowState* state, void* parent, const Rect& rect, bool 
     }
     mWidget = lv_mainwnd_create((lv_obj_t*)parent);
     lv_obj_add_flag(mWidget, LV_OBJ_FLAG_HIDDEN);
+
     if (xmsLiteMode()) {
         mClientScreen = lv_obj_create(mWidget);
     }
@@ -142,37 +143,26 @@ uint32_t WindowNode::getSurfaceSize() {
     return mRect.getWidth() * mRect.getHeight() * (bpp >> 3);
 }
 
-bool WindowNode::windowIsGone() {
-    return mVisibility == LayoutParams::WINDOW_GONE;
-}
-
-void WindowNode::setVisibility(int32_t visibility) {
+void WindowNode::syncClientVisibility(int32_t visibility) {
     if (mVisibility == visibility) return;
 
     bool newVisible = visibility == LayoutParams::WINDOW_VISIBLE;
     bool oldVisible = mVisibility == LayoutParams::WINDOW_VISIBLE;
 
     mVisibility = visibility;
-    FLOGI("[%d] visibility=%" PRId32 " (0:visible, 1:hold, 2:gone)",
-          mState->getToken()->getClientPid(), visibility);
 
-    if (mWidget == nullptr) {
-        return;
-    }
+    FLOGI("[%d] visibility %s -> %s", mState->getToken()->getClientPid(),
+          LayoutParams::visibilityToName(mVisibility), LayoutParams::visibilityToName(visibility));
 
-    /* if window is visible, move it to forground */
-    if (newVisible) {
-        lv_obj_t* parent = lv_obj_get_parent(mWidget);
-        if (!parent) {
-            lv_obj_move_to_index(mWidget, lv_obj_get_child_count(parent) - 1);
-        }
-    }
+    if (!mWidget) return;
 
     /* if window need input, update window meta info*/
     if (mState && mState->needInput()) {
         setWidgetMetaInfo(mWidget, this, newVisible);
 
-        /* check last message state */
+        if (xmsLiteMode()) return;
+
+        /* check last message state only for multi-instance mode */
         if (!newVisible && oldVisible && mLastInputMsg.state != INPUT_MESSAGE_STATE_RELEASED) {
             InputMessage ie = mLastInputMsg;
             ie.state = INPUT_MESSAGE_STATE_RELEASED;
@@ -183,22 +173,36 @@ void WindowNode::setVisibility(int32_t visibility) {
                   ret ? "success" : "failure");
         }
     }
+}
+
+void WindowNode::setVisibility(int32_t visibility) {
+    syncClientVisibility(visibility);
 
     if (!xmsLiteMode()) {
         return;
     }
+    FLOGI("update visibility to %s", LayoutParams::visibilityToName(visibility));
 
-    switch (visibility) {
+    if (!mWidget) return;
+
+    switch (mVisibility) {
         case LayoutParams::WINDOW_VISIBLE:
+            if (lv_obj_has_flag(mWidget, LV_OBJ_FLAG_HIDDEN)) {
+                FLOGD("from HIDE to SHOW");
+                lv_obj_clear_flag(mWidget, LV_OBJ_FLAG_HIDDEN);
+            }
+            lv_obj_move_to_index(mWidget, -1);
+            break;
+
         case LayoutParams::WINDOW_HOLD:
             if (lv_obj_has_flag(mWidget, LV_OBJ_FLAG_HIDDEN)) {
-                FLOGI("from hide to show");
+                FLOGD("from HOLD to SHOW");
                 lv_obj_clear_flag(mWidget, LV_OBJ_FLAG_HIDDEN);
             }
             break;
 
         case LayoutParams::WINDOW_GONE:
-            FLOGI("change to hide");
+            FLOGD("switch to HIDE");
             lv_obj_add_flag(mWidget, LV_OBJ_FLAG_HIDDEN);
             break;
 

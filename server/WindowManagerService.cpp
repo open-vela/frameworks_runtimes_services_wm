@@ -382,7 +382,7 @@ Status WindowManagerService::relayout(const sp<IWindow>& window, const LayoutPar
 
     bool visible = visibility == LayoutParams::WINDOW_VISIBLE ? true : false;
 
-    if (!xmsLiteMode()) win->destroySurfaceControl();
+    win->destroySurfaceControl();
 
     if (visible) {
         if (attrs.mWidth != requestedWidth || attrs.mHeight != requestedHeight) {

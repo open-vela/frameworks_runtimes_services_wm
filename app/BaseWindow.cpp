@@ -139,7 +139,8 @@ void BaseWindowDefault::doDie() {
 }
 
 void BaseWindowDefault::setVisible(bool visible) {
-    FLOGI("visible from %d to %d", mAppVisible, visible);
+    FLOGI("visible from %s to %s", mAppVisible ? "visible" : "invisible",
+          visible ? "visible" : "invisible");
 
     if (visible == mAppVisible) {
         return;

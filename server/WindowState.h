@@ -246,6 +246,10 @@ public:
         return mNeedInput;
     }
 
+#ifdef CONFIG_ENABLE_TRANSITION_ANIMATION
+    bool windowTransition(bool in);
+#endif
+
 private:
     sp<IWindow> mClient;
     std::shared_ptr<WindowToken> mToken;

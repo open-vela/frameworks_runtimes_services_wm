@@ -71,8 +71,8 @@ void WindowToken::removeWindow(WindowState* win) {
 
 void WindowToken::setClientVisibility(int32_t visibility) {
     if (mClientVisibility == visibility) return;
-    FLOGI("[%d] %" PRId32 " => %" PRId32 " (0:visible, 1:hold, 2:gone)", mClientPid,
-          mClientVisibility, visibility);
+    FLOGI("[%d] %s -> %s", mClientPid, LayoutParams::visibilityToName(mClientVisibility),
+          LayoutParams::visibilityToName(visibility));
 
     mClientVisibility = visibility;
     for (auto it = mChildren.begin(); it != mChildren.end(); it++) {
