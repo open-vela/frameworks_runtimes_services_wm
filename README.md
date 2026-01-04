@@ -1,90 +1,116 @@
 # Window Manager
 
-[English|[简体中文](./README_zh-cn.md)]
+[ English | [简体中文](./README_zh-cn.md) ]
 
-## Introduction
-Window Manager is one of the most important services in the openvela operating system, mainly responsible for input management, output management, and display management. Its main structure is shown in Figure 1.
+## Overview
 
-**Figure 1** Window Manager Service Architecture
-![Window Manager Service Architecture](./docs/Window_Manager_Architecture.jpg)
-- **Window Manager**
+The Window Manager Service (WMS) is a core service of the openvela operating system. It is primarily responsible for system input dispatching, output composition, and display management, ensuring smooth and stable user interface interactions.
 
-    The window management client on the application side runs in the application's user space, responsible for window management and rendering within the application, and passes the rendered image to the server.
-    
-- **Window Manager Server**
+### Core Functions
 
-    Server-side window management service, as a core capability of the system, runs in the kernel system service process, responsible for window management, scheduling, and composition between applications.
+The Window Manager Service provides the following core capabilities:
 
-### Features
-- Window attribute and style management: including adjustments of window position, size, opacity, etc.
-- Window lifecycle management: including window creation, display, hiding, and deletion
-- Event listener management
-- Window transition animation management
+- **Window Attribute & Style Management**: Supports dynamic adjustment of window position, size, opacity (Alpha), and hierarchy (Z-Order).
+- **Lifecycle Management**: Provides control interfaces for the full lifecycle including window creation, display, hiding, and destruction.
+- **Event Dispatching**: Manages the listening and dispatching of input events.
+- **Transition Animations**: Supports transition animation management during window switching.
 
-## Directory
+## Architecture
+
+Window management in openvela adopts a Client-Server separation architecture, as shown in Figure 1.
+
+**Figure 1** Window Manager Service Architecture Diagram
+
+![Window Manager Service Architecture](./docs/Window_Manager_Architecture.png)
+
+### Component Responsibilities
+
+- **Window Manager Client (App Side)**
+
+    - Runs in the **application User Space**.
+    - Responsible for internal window management and graphics rendering within the application.
+    - Submits rendered buffers to the server via IPC mechanisms.
+
+- **Window Manager Server (Service Side)**
+
+    - Runs as a core system service in **Kernel Space or as a system service process**.
+    - Responsible for global window scheduling, hierarchy management, and the final composition of multi-window screens.
+
+## Directory Structure
+
+```text
+├── app         # Application interfaces and examples
+├── common      # Common data structures and utility libraries
+├── config      # Configuration files
+├── include     # Public header files
+├── Kconfig     # Build configuration description file
+├── server      # Core implementation of the Window Manager Service
+└── test        # Test cases
 ```
-├── app
-├── common
-├── config
-├── include
-├── Kconfig
-├── server
-└── test
-```
-## Constraints
 
-- The .Kconfig file is used to configure compilation options for the window management service.
-- Language version: C++11 or above
-- Dependencies: OpenVela Core Service
+## Constraints and Dependencies
 
-## Instructions
+Please adhere to the following constraints before developing or integrating the Window Manager Service:
 
-The following are basic usage instructions for native application-side window management.
+- **Build Configuration**: Compilation options for the Window Manager Service must be configured via the `Kconfig` file.
+- **Language Standard**: C++11 or higher.
+- **System Dependency**: Must depend on the **Vela Core** service to run.
 
-### Get the Window Manager Service
+## Development Guide
 
-To get an instance of the window manager service, you can use the following code:
+This section describes how to call Window Manager interfaces in native applications.
+
+### 1. Get Window Manager Service Instance
+
+Obtain the client proxy object of the Window Manager Service by its service name.
 
 ```c++
 WindowManager windowManager = (WindowManager) getService(WindowManager::name());
 ```
 
-### Create a Window
+### 2. Create a Window
 
-Use WindowManager.LayoutParams to create a window, as shown in the following code:
+Configure the `LayoutParams` attributes and add a new window.
 
 ```c++
+// Initialize window layout parameters
 WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams();
-layoutParams.type = WindowManager.LayoutParams.TYPE_APPLICATION;
-layoutParams.format = PixelFormat.FORMAT_RGB_888;
-layoutParams.width = WindowManager.LayoutParams.MATCH_PARENT;
-layoutParams.height = WindowManager.LayoutParams.MATCH_PARENT;
-layoutParams.x = 0;
-layoutParams.y = 0;
-layoutParams.windowTransitionState = WindowManager.LayoutParams.WINDOW_TRANSITION_ENABLE;
+layoutParams.type = WindowManager.LayoutParams.TYPE_APPLICATION;   // Set window type to application window
+layoutParams.format = PixelFormat.FORMAT_RGB_888;                  // Set pixel format
+layoutParams.width = WindowManager.LayoutParams.MATCH_PARENT;      // Width matches parent container
+layoutParams.height = WindowManager.LayoutParams.MATCH_PARENT;     // Height matches parent container
+layoutParams.x = 0;                                                // Initial X coordinate
+layoutParams.y = 0;                                                // Initial Y coordinate
+layoutParams.windowTransitionState = WindowManager.LayoutParams.WINDOW_TRANSITION_ENABLE; // Enable transition animation
 
+// Create and add the window
 BaseWindow window = new BaseWindow(context, this);
 windowManager.addWindow(window, layoutParams, visibility);
 ```
 
-The above code creates a window for the application and adds it to the window list managed by the window manager service.
+The code above creates an application window and adds it to the Window Manager Service's window list for management.
 
-### Modify Window Attributes
+### 3. Modify Window Attributes
 
-To modify the attributes of a window, use the following code:
+Window layout parameters (such as position) can be dynamically updated while the window is running.
 
 ```c++
+// Get current window layout parameters
 WindowManager.LayoutParams layoutParams = getWindow().getLayoutParams();
+
+// Modify coordinates
 layoutParams.x = 200;
 layoutParams.y = 200;
+
+// Apply updated parameters
 getWindow().setLayoutParams(layoutParams);
 ```
 
-The above code changes the position of the current activity's window to (200, 200).
+The code above modifies the current Activity's window position to (200, 200).
 
-### Remove a Window
+### 4. Destroy a Window
 
-To remove a window, use the following code:
+When a window is no longer needed, it should be explicitly removed to release resources.
 
 ```c++
 windowManager.removeWindow(window);
