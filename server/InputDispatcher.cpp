@@ -49,12 +49,11 @@ void InputDispatcher::release() {
 }
 
 int InputDispatcher::sendMessage(const InputMessage* ie) {
-    int fd = mInputChannel.getEventFd();
-    if (fd == -1) {
+    if (!mInputChannel.isValid()) {
         FLOGW("can't send message without valid channel!");
         return -1;
     }
-
+    int fd = mInputChannel.getEventFd();
     int ret = mq_send(fd, (const char*)ie, sizeof(InputMessage), 100);
 
     if (ret < 0) {
