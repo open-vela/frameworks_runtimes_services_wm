@@ -234,7 +234,7 @@ void LVGLDriverProxy::updateVisibility(bool visible) {
 
 void LVGLDriverProxy::notifyVsyncEvent() {
     if (vsyncEventEnabled()) {
-        FLOGI("send vsync event");
+        FLOGD("send vsync event");
         lv_display_send_vsync_event(mDisp, NULL);
     }
 }
