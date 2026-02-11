@@ -91,7 +91,7 @@ config APP_WINDOW_RENDER_MODE
 
 config WINDOW_SERVICE_LOG_LEVEL
 	int "Window Service Log Level"
-	default 6
+	default 4
 	range 0 7
 	help
 		LOG_EMERG   :0
