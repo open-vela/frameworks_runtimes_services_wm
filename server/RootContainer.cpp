@@ -287,6 +287,7 @@ bool RootContainer::init() {
             .disp = mResult.disp,
             .indev = mResult.indev,
             .uindev = mResult.utouch_indev,
+            .mouse_indev = mResult.mouse_indev,
     };
     mUvData = lv_nuttx_uv_init(&uv_info);
 
@@ -298,9 +299,14 @@ bool RootContainer::init() {
 
     if (mListener) {
         gRootContainer = this;
-        lv_indev_set_read_preprocess_cb(mResult.indev, monitor_indev_read);
+        if (mResult.indev) {
+            lv_indev_set_read_preprocess_cb(mResult.indev, monitor_indev_read);
+        }
         if (mResult.utouch_indev) {
             lv_indev_set_read_preprocess_cb(mResult.utouch_indev, monitor_indev_read);
+        }
+        if (mResult.mouse_indev) {
+            lv_indev_set_read_preprocess_cb(mResult.mouse_indev, monitor_indev_read);
         }
     }
 #endif
