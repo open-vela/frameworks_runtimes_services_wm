@@ -190,7 +190,16 @@ bool RootContainer::readInput(lv_indev_t* indev, lv_indev_data_t* data) {
 
     msg.type = (InputMessageType)type;
     msg.state = (InputMessageState)data->state;
-    return mListener->responseInput(&msg);
+
+    bool has_gesture = mListener->responseInput(&msg);
+
+    /* For mouse_indev: always return false so LVGL updates cursor position.
+     * User clicks and drags to perform gestures (mouse button = PRESSED state). */
+    if (type == LV_INDEV_TYPE_POINTER && indev == mResult.mouse_indev) {
+        return false;
+    }
+
+    return has_gesture;
 }
 
 FrameMetaInfo* RootContainer::frameInfo() {
